@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "ERII",
-    "fetch_date": "2026-07-17T14:14:15.720068",
+    "fetch_date": "2026-08-03T15:15:55.340884",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": 8065000.0,
       "2025-06-30 00:00:00": 28051000.0,
@@ -35,5 +35,5 @@
     "inventory_to_sales_ratio": 3.182,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-07-17T14:14:15.721914"
+  "fetched_at": "2026-08-03T15:15:55.342381"
 }
