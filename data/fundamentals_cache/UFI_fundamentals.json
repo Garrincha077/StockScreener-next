@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "UFI",
-    "fetch_date": "2026-07-28T15:24:26.344871",
+    "fetch_date": "2026-08-04T15:29:54.637680",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": 146557000.0,
@@ -37,5 +37,5 @@
     "inventory_to_sales_ratio": 0.799,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-07-28T15:24:26.346320"
+  "fetched_at": "2026-08-04T15:29:54.639147"
 }
