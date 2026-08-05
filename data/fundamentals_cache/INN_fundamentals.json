@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "INN",
-    "fetch_date": "2026-07-29T14:54:18.530958",
+    "fetch_date": "2026-08-05T14:54:19.418411",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": 184478000.0,
@@ -27,5 +27,5 @@
     "operating_margin": 9.63,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-07-29T14:54:18.531917"
+  "fetched_at": "2026-08-05T14:54:19.419616"
 }
