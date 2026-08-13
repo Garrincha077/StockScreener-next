@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "BRUN",
-    "fetch_date": "2026-08-05T14:34:26.000070",
+    "fetch_date": "2026-08-13T13:36:17.919128",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": 2180000.0,
       "2025-03-31 00:00:00": 4140000.0,
@@ -21,5 +21,5 @@
     "operating_margin": -24.38,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:34:26.001233"
+  "fetched_at": "2026-08-13T13:36:17.920443"
 }

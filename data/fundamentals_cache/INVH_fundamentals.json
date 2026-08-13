@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "INVH",
-    "fetch_date": "2026-08-05T14:54:37.665033",
+    "fetch_date": "2026-08-13T13:56:32.643011",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 681401000.0,
       "2025-09-30 00:00:00": 688166000.0,
@@ -25,5 +25,5 @@
     "operating_margin": 25.18,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:54:37.666215"
+  "fetched_at": "2026-08-13T13:56:32.644383"
 }

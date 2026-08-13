@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "ATEX",
-    "fetch_date": "2026-08-05T14:30:25.059299",
+    "fetch_date": "2026-08-13T13:32:16.691066",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": 1389000.0,
@@ -25,5 +25,5 @@
     "operating_margin": -535.8,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:30:25.060216"
+  "fetched_at": "2026-08-13T13:32:16.692117"
 }

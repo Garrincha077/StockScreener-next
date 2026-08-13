@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "CTNM",
-    "fetch_date": "2026-08-05T14:40:04.123018",
+    "fetch_date": "2026-08-13T13:41:59.051361",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 0.0,
@@ -25,5 +25,5 @@
     "operating_margin": 0,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:40:04.123964"
+  "fetched_at": "2026-08-13T13:41:59.052304"
 }

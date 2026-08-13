@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "IOT",
-    "fetch_date": "2026-08-05T14:54:43.503065",
+    "fetch_date": "2026-08-13T13:56:38.628021",
     "quarterly_revenue": {
       "2025-01-31 00:00:00": NaN,
       "2025-04-30 00:00:00": 366884000.0,
@@ -37,5 +37,5 @@
     "inventory_to_sales_ratio": 0.109,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:54:43.504605"
+  "fetched_at": "2026-08-13T13:56:38.629639"
 }

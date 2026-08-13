@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "ITRI",
-    "fetch_date": "2026-08-05T14:55:12.546988",
+    "fetch_date": "2026-08-13T13:57:07.632597",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": 607151000.0,
       "2025-06-30 00:00:00": 606761000.0,
@@ -37,5 +37,5 @@
     "inventory_to_sales_ratio": NaN,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:55:12.548503"
+  "fetched_at": "2026-08-13T13:57:07.634244"
 }

@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "CLMB",
-    "fetch_date": "2026-08-05T14:37:47.520508",
+    "fetch_date": "2026-08-13T13:39:41.242224",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 159284000.0,
       "2025-09-30 00:00:00": 161343000.0,
@@ -36,5 +36,5 @@
     "inventory_to_sales_ratio": 0.026,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:37:47.522036"
+  "fetched_at": "2026-08-13T13:39:41.244717"
 }

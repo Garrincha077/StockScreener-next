@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "BMY",
-    "fetch_date": "2026-08-05T14:33:37.387833",
+    "fetch_date": "2026-08-13T13:35:29.949506",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
@@ -40,5 +40,5 @@
     "inventory_to_sales_ratio": 0.211,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:33:37.389352"
+  "fetched_at": "2026-08-13T13:35:29.951185"
 }

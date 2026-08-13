@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "IESC",
-    "fetch_date": "2026-08-05T14:53:39.706592",
+    "fetch_date": "2026-08-13T13:55:34.713108",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 890158000.0,
@@ -37,5 +37,5 @@
     "inventory_to_sales_ratio": 0.108,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-05T14:53:39.708090"
+  "fetched_at": "2026-08-13T13:55:34.715609"
 }
