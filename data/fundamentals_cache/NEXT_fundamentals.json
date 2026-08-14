@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "NEXT",
-    "fetch_date": "2026-08-06T15:07:13.683187",
+    "fetch_date": "2026-08-14T14:00:31.440130",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
@@ -29,5 +29,5 @@
     "operating_margin": 0,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-06T15:07:13.684070"
+  "fetched_at": "2026-08-14T14:00:31.441430"
 }

@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "MTZ",
-    "fetch_date": "2026-08-06T15:06:05.660429",
+    "fetch_date": "2026-08-14T13:59:23.462671",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 3544705000.0,
@@ -38,5 +38,5 @@
     "inventory_to_sales_ratio": 0.026,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-06T15:06:05.661817"
+  "fetched_at": "2026-08-14T13:59:23.464448"
 }

@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "CION",
-    "fetch_date": "2026-08-06T14:40:42.589392",
+    "fetch_date": "2026-08-14T13:34:00.931776",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": -39590000.0,
       "2025-06-30 00:00:00": 29915000.0,
@@ -22,5 +22,5 @@
     "eps_yoy_change": 43.75,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-06T14:40:42.589957"
+  "fetched_at": "2026-08-14T13:34:00.932450"
 }

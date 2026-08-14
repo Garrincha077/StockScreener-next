@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "PUMP",
-    "fetch_date": "2026-08-06T15:14:24.543835",
+    "fetch_date": "2026-08-14T14:07:43.585517",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
@@ -40,5 +40,5 @@
     "inventory_to_sales_ratio": 0.075,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-06T15:14:24.545012"
+  "fetched_at": "2026-08-14T14:07:43.587312"
 }

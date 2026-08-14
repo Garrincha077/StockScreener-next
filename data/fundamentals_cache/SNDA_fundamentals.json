@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "SNDA",
-    "fetch_date": "2026-08-06T15:20:34.588091",
+    "fetch_date": "2026-08-14T14:13:54.528513",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": 91923000.0,
@@ -27,5 +27,5 @@
     "operating_margin": -2.35,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-06T15:20:34.589117"
+  "fetched_at": "2026-08-14T14:13:54.529861"
 }
