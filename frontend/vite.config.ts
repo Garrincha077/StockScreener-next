@@ -55,6 +55,16 @@ const balancedMultiSort = `function applyMultiSort(rows:Stock[],sorting:SortingS
   }).map(x=>x.stock)
 }`
 
+const opportunityColumn = `helper.accessor(s=>opp(s),{id:'opportunityScore',header:'Opportunity',cell:i=><b className="dv-score">{fmt(i.getValue(),0)}</b>}),`
+const originalColumns = `
+    helper.accessor('originalBuyScore' as any,{id:'originalBuyScore',header:'Orig Buy',cell:i=><b className={num(i.getValue())>=90?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),
+    helper.accessor('originalRR' as any,{id:'originalRR',header:'Orig R/R',cell:i=><b className={num(i.getValue())>=2?'dv-good':''}>{fmt(i.getValue(),1)}:1</b>}),
+    helper.accessor('originalTTPasses' as any,{id:'originalTTPasses',header:'Orig TT',cell:i=>\`\${fmt(i.getValue(),0)}/8\`}),
+    helper.accessor('originalVcpQuality' as any,{id:'originalVcpQuality',header:'Orig VCP',cell:i=>fmt(i.getValue(),0)}),
+    helper.accessor('originalAdVolumeRatio' as any,{id:'originalAdVolumeRatio',header:'Orig A/D',cell:i=>\`\${fmt(i.getValue(),2)}x\`}),
+    helper.accessor('originalRiskPct' as any,{id:'originalRiskPct',header:'Orig Risk',cell:i=>\`\${fmt(i.getValue(),1)}%\`}),
+    helper.accessor('originalSellScore' as any,{id:'originalSellScore',header:'Orig Sell',cell:i=><b className={num(i.getValue())>=60?'dv-bad':''}>{fmt(i.getValue(),0)}</b>}),`
+
 function balancedMixPlugin(): Plugin {
   return {
     name: 'stockscout-balanced-multisort',
@@ -70,6 +80,13 @@ function balancedMixPlugin(): Plugin {
         .replace('<span>MULTI-SORT</span>', '<span>BALANCED MIX</span>')
         .replace('Click headers to build #1 → #2 → #3 priorities', 'Select 2+ numeric columns to build a balanced percentile mix')
         .replace("'First clicked column is priority #1; next is #2'", "'2+ sorts = percentile MIX; #1 gets only a mild extra weight'")
+      if (next.includes(opportunityColumn) && !next.includes("header:'Orig Buy'")) {
+        next = next.replace(opportunityColumn, opportunityColumn + originalColumns)
+      }
+      next = next.replace(
+        'const defaultVisibility:VisibilityState={',
+        "const defaultVisibility:VisibilityState={originalTTPasses:false,originalVcpQuality:false,originalAdVolumeRatio:false,originalRiskPct:false,originalSellScore:false,"
+      )
       return { code: next, map: null }
     },
   }
