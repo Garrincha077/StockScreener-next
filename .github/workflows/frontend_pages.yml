@@ -1,28 +1,22 @@
-name: Deploy StockScout Terminal
+name: Validate StockScout Terminal
 
 on:
   push:
     branches: [main]
     paths:
       - 'frontend/src/**'
-      - 'frontend/public/data/latest.json'
       - 'frontend/index.html'
       - 'frontend/package.json'
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
-      - 'hydrate_frontend_charts.py'
-      - 'enhance_frontend_dataset.py'
-      - 'compute_daily_changes.py'
       - '.github/workflows/frontend_pages.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
-  group: pages
+  group: frontend-validation
   cancel-in-progress: true
 
 jobs:
@@ -30,44 +24,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-
-      - name: Preserve previous dataset when scan data changed
-        if: ${{ hashFiles('frontend/public/data/latest.json') != '' }}
-        shell: bash
-        run: |
-          mkdir -p data/batch_results
-          rm -f data/batch_results/previous_frontend.json
-          if git rev-parse HEAD^ >/dev/null 2>&1 && git diff --name-only HEAD^ HEAD -- frontend/public/data/latest.json | grep -q 'frontend/public/data/latest.json'; then
-            if git show HEAD^:frontend/public/data/latest.json > data/batch_results/previous_frontend.json 2>/dev/null; then
-              echo "Previous dataset recovered from Git history for daily diff"
-            fi
-          fi
-
-      - name: Set up Python
-        if: ${{ hashFiles('frontend/public/data/latest.json') != '' }}
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
-
-      - name: Hydrate 5Y chart shards and decision features
-        if: ${{ hashFiles('frontend/public/data/latest.json') != '' }}
-        run: |
-          python -m pip install --upgrade pip
-          pip install yfinance pandas
-          python hydrate_frontend_charts.py
-          python enhance_frontend_dataset.py
-          if [ -s data/batch_results/previous_frontend.json ]; then
-            python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
-          fi
-          test -s frontend/public/data/latest.json
-          echo "Feature coverage: $(python - <<'PY'
-          import json
-          p=json.load(open('frontend/public/data/latest.json'))
-          print(p.get('market',{}).get('featureCoverage',0))
-          PY
-          )"
 
       - uses: actions/setup-node@v4
         with:
@@ -77,21 +33,11 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      - name: Build
+      - name: Typecheck and build
         working-directory: frontend
         run: npm run build
 
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: frontend/dist
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Explain deployment ownership
+        run: |
+          echo "Frontend source validated successfully."
+          echo "Live GitHub Pages deployment is owned by the stock-scan workflow so UI, latest.json and 5Y chart shards are deployed atomically."
