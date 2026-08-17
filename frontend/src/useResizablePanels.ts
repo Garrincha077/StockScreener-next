@@ -4,17 +4,17 @@ type ResizeMode='both'|'vertical'
 type Size={width?:number;height?:number}
 type Spec={selector:string;prefix:string;mode:ResizeMode;label?:boolean}
 
-const STORAGE_KEY='stockscout-panel-sizes-v1'
+const STORAGE_KEY='stockscout-panel-sizes-v2'
 const RESET_EVENT='stockscout:reset-panel-sizes'
 const TERMINAL_SPLIT_ID='terminal-detail-pane'
-const DETAIL_MIN=360
-const TABLE_MIN=430
+const DETAIL_MIN=320
+const TABLE_MIN=320
+const SPLITTER_WIDTH=16
 
 const specs:Spec[]=[
   {selector:'.dv-builder',prefix:'filter-builder',mode:'vertical'},
   {selector:'.dv-colpicker',prefix:'column-picker',mode:'vertical'},
   {selector:'.dv-tablebox',prefix:'stock-table',mode:'vertical'},
-  // Horizontal sizing is handled by the true pane splitter; native resize is height-only.
   {selector:'.dv-detail',prefix:'stock-detail',mode:'vertical'},
   {selector:'.dv-chartbox',prefix:'stock-chart',mode:'vertical'},
   {selector:'.dv-gridview',prefix:'rapid-review',mode:'both'},
@@ -50,7 +50,7 @@ export function resetPanelSizes(){window.dispatchEvent(new Event(RESET_EVENT))}
 export function useResizablePanels(){
   useEffect(()=>{
     let sizes=readSizes(),active:HTMLElement|null=null
-    let splitDrag:null|{host:HTMLElement;startX:number;startWidth:number}=null
+    let splitDrag:null|{host:HTMLElement;detail:HTMLElement;splitter:HTMLElement;startX:number;startWidth:number}=null
     const bound=new Set<HTMLElement>()
 
     const apply=(el:HTMLElement,spec:Spec,index:number)=>{
@@ -66,6 +66,20 @@ export function useResizablePanels(){
         if(saved.height)el.style.height=`${Math.round(saved.height)}px`
       }
     }
+
+    const maxDetailWidth=(host:HTMLElement)=>Math.max(DETAIL_MIN,host.getBoundingClientRect().width-TABLE_MIN-SPLITTER_WIDTH)
+    const setDetailWidth=(host:HTMLElement,detail:HTMLElement,width:number,persist=false)=>{
+      const next=Math.round(clamp(width,DETAIL_MIN,maxDetailWidth(host)))
+      detail.style.flexBasis=`${next}px`
+      detail.style.width='auto'
+      host.style.setProperty('--ss-detail-pane',`${next}px`)
+      if(persist){
+        sizes={...sizes,[TERMINAL_SPLIT_ID]:{width:next}}
+        localStorage.setItem(STORAGE_KEY,JSON.stringify(sizes))
+      }
+      return next
+    }
+
     const ensureTerminalSplitter=()=>{
       const host=document.querySelector<HTMLElement>('.dv-work')
       if(!host)return
@@ -80,24 +94,26 @@ export function useResizablePanels(){
         splitter.setAttribute('aria-orientation','vertical')
         splitter.setAttribute('aria-label','Resize table and chart panes')
         splitter.tabIndex=0
-        splitter.title='Drag left/right to resize table and chart · double-click to reset'
+        splitter.title='Drag left/right to resize chart · double-click to reset'
         host.insertBefore(splitter,detail)
       }
+      table.style.minWidth='0'
+      detail.style.minWidth='0'
       const saved=sizes[TERMINAL_SPLIT_ID]?.width
-      if(saved&&window.innerWidth>1050)host.style.setProperty('--ss-detail-pane',`${Math.round(saved)}px`)
+      if(window.innerWidth>1050){
+        const fallback=Math.round(host.getBoundingClientRect().width*.44)
+        setDetailWidth(host,detail,saved||fallback,false)
+      }
     }
-    const bindAll=()=>{specs.forEach(spec=>document.querySelectorAll<HTMLElement>(spec.selector).forEach((el,index)=>apply(el,spec,index)));ensureTerminalSplitter()}
+
+    const bindAll=()=>{
+      specs.forEach(spec=>document.querySelectorAll<HTMLElement>(spec.selector).forEach((el,index)=>apply(el,spec,index)))
+      ensureTerminalSplitter()
+    }
     bindAll()
     const mutations=new MutationObserver(bindAll)
     mutations.observe(document.body,{childList:true,subtree:true})
 
-    const setDetailWidth=(host:HTMLElement,width:number,persist=false)=>{
-      const max=Math.max(DETAIL_MIN,host.clientWidth-TABLE_MIN-12)
-      const next=Math.round(clamp(width,DETAIL_MIN,max))
-      host.style.setProperty('--ss-detail-pane',`${next}px`)
-      if(persist){sizes={...sizes,[TERMINAL_SPLIT_ID]:{width:next}};localStorage.setItem(STORAGE_KEY,JSON.stringify(sizes))}
-      return next
-    }
     const onPointerDown=(event:PointerEvent)=>{
       if(window.innerWidth<=1050)return
       const element=event.target instanceof Element?event.target:null
@@ -106,10 +122,12 @@ export function useResizablePanels(){
         const host=splitter.parentElement as HTMLElement|null
         const detail=host?.querySelector<HTMLElement>(':scope > .dv-detail')
         if(!host||!detail)return
-        splitDrag={host,startX:event.clientX,startWidth:detail.getBoundingClientRect().width}
+        splitDrag={host,detail,splitter,startX:event.clientX,startWidth:detail.getBoundingClientRect().width}
+        splitter.setPointerCapture?.(event.pointerId)
         document.body.classList.add('ss-is-splitting')
         splitter.classList.add('active')
         event.preventDefault()
+        event.stopPropagation()
         return
       }
       const target=element?.closest<HTMLElement>('.ss-resizable')||null
@@ -119,15 +137,13 @@ export function useResizablePanels(){
     }
     const onPointerMove=(event:PointerEvent)=>{
       if(!splitDrag)return
-      // Moving divider left increases the chart/detail pane; moving right increases the table.
-      setDetailWidth(splitDrag.host,splitDrag.startWidth-(event.clientX-splitDrag.startX),false)
+      setDetailWidth(splitDrag.host,splitDrag.detail,splitDrag.startWidth-(event.clientX-splitDrag.startX),false)
       event.preventDefault()
     }
     const persist=()=>{
       if(splitDrag){
-        const detail=splitDrag.host.querySelector<HTMLElement>(':scope > .dv-detail')
-        if(detail)setDetailWidth(splitDrag.host,detail.getBoundingClientRect().width,true)
-        splitDrag.host.querySelector<HTMLElement>(':scope > .ss-pane-splitter')?.classList.remove('active')
+        setDetailWidth(splitDrag.host,splitDrag.detail,splitDrag.detail.getBoundingClientRect().width,true)
+        splitDrag.splitter.classList.remove('active')
         document.body.classList.remove('ss-is-splitting')
         splitDrag=null
       }
@@ -142,9 +158,12 @@ export function useResizablePanels(){
       active=null
     }
     const resetTerminalSplit=(host:HTMLElement)=>{
+      const detail=host.querySelector<HTMLElement>(':scope > .dv-detail')
+      if(!detail)return
       delete sizes[TERMINAL_SPLIT_ID]
       localStorage.setItem(STORAGE_KEY,JSON.stringify(sizes))
       host.style.removeProperty('--ss-detail-pane')
+      setDetailWidth(host,detail,Math.round(host.getBoundingClientRect().width*.44),false)
     }
     const onDoubleClick=(event:MouseEvent)=>{
       if(window.innerWidth<=1050)return
@@ -167,14 +186,24 @@ export function useResizablePanels(){
       if(!detail)return
       event.preventDefault()
       if(event.key==='Home'){resetTerminalSplit(host);return}
-      const delta=event.shiftKey?100:32
-      const current=detail.getBoundingClientRect().width
-      setDetailWidth(host,current+(event.key==='ArrowLeft'?delta:-delta),true)
+      const delta=event.shiftKey?120:40
+      setDetailWidth(host,detail,detail.getBoundingClientRect().width+(event.key==='ArrowLeft'?delta:-delta),true)
+    }
+    const onWindowResize=()=>{
+      if(window.innerWidth<=1050)return
+      const host=document.querySelector<HTMLElement>('.dv-work'),detail=host?.querySelector<HTMLElement>(':scope > .dv-detail')
+      if(host&&detail)setDetailWidth(host,detail,detail.getBoundingClientRect().width,false)
     }
     const reset=()=>{
-      sizes={};localStorage.removeItem(STORAGE_KEY)
+      sizes={}
+      localStorage.removeItem(STORAGE_KEY)
       document.querySelectorAll<HTMLElement>('.ss-resizable').forEach(el=>{el.style.removeProperty('width');el.style.removeProperty('height')})
-      document.querySelectorAll<HTMLElement>('.dv-work').forEach(el=>el.style.removeProperty('--ss-detail-pane'))
+      document.querySelectorAll<HTMLElement>('.dv-work').forEach(host=>{
+        host.style.removeProperty('--ss-detail-pane')
+        const detail=host.querySelector<HTMLElement>(':scope > .dv-detail')
+        if(detail){detail.style.removeProperty('flex-basis');detail.style.removeProperty('width')}
+      })
+      requestAnimationFrame(ensureTerminalSplitter)
     }
 
     document.addEventListener('pointerdown',onPointerDown,true)
@@ -183,6 +212,7 @@ export function useResizablePanels(){
     document.addEventListener('pointercancel',persist,true)
     document.addEventListener('dblclick',onDoubleClick,true)
     document.addEventListener('keydown',onKeyDown,true)
+    window.addEventListener('resize',onWindowResize)
     window.addEventListener(RESET_EVENT,reset)
     return()=>{
       mutations.disconnect()
@@ -192,6 +222,7 @@ export function useResizablePanels(){
       document.removeEventListener('pointercancel',persist,true)
       document.removeEventListener('dblclick',onDoubleClick,true)
       document.removeEventListener('keydown',onKeyDown,true)
+      window.removeEventListener('resize',onWindowResize)
       window.removeEventListener(RESET_EVENT,reset)
       document.body.classList.remove('ss-is-splitting')
     }
