@@ -84,9 +84,16 @@ jobs:
         shell: bash
         run: |
           python export_frontend_data.py
+          python enhance_frontend_dataset.py
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
           echo "Chart shards: $(find frontend/public/data/charts -name '*.json' | wc -l)"
+          python - <<'PY'
+          import json
+          p=json.load(open('frontend/public/data/latest.json'))
+          print('Feature coverage:', p.get('market',{}).get('featureCoverage',0))
+          print('Feature model:', p.get('featureModel'))
+          PY
           du -sh frontend/public/data
 
       - name: Write run metadata
@@ -107,6 +114,7 @@ jobs:
               "report": "data/daily_scans/latest_optimized_scan.txt",
               "frontend_data": "frontend/public/data/latest.json",
               "chart_horizon": "5y",
+              "feature_model": "data-first-v1",
           }
           Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
           PY
@@ -149,9 +157,6 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          # The scan can run for an hour while frontend commits advance main.
-          # Keep retrying the data-only commit on top of the newest main instead of
-          # losing a successful scan to a non-fast-forward race.
           pushed=false
           for attempt in 1 2 3; do
             echo "Sync attempt $attempt/3"
