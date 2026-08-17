@@ -8026,5 +8026,13 @@
   "RRGB": {
     "last_updated": "2026-08-17T13:46:01.770132",
     "in_earnings_season": false
+  },
+  "CAMP": {
+    "last_updated": "2026-08-17T20:55:45.731011",
+    "in_earnings_season": false
+  },
+  "METC": {
+    "last_updated": "2026-08-17T20:55:57.882694",
+    "in_earnings_season": false
   }
 }
