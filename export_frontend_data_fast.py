@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 import pickle
+import time
 from pathlib import Path
 
 import pandas as pd
@@ -56,6 +57,28 @@ def build_from_scan_cache(tickers: list[str]) -> dict[str, str]:
         shards[shard][ticker] = bars
         mapping[ticker] = shard
 
+    # Rare fallback: if an analyzed stock used the legacy per-ticker path because
+    # Yahoo omitted it from the initial batch, fetch ONLY those missing histories
+    # and merge them into the already-built shards. Never destroy the cache-backed
+    # shard set by invoking the original full rebuild on only the missing subset.
+    if missing:
+        print(f"Fetching only {len(missing):,} missing chart histories from Yahoo")
+        still_missing: list[str] = []
+        for start in range(0, len(missing), 20):
+            chunk = missing[start:start + 20]
+            batch = base.download_batch(chunk, spy_close, threads=True)
+            for ticker in chunk:
+                bars = batch.get(ticker)
+                if not bars:
+                    still_missing.append(ticker)
+                    continue
+                shard = base.shard_for(ticker)
+                shards[shard][ticker] = bars
+                mapping[ticker] = shard
+            time.sleep(0.15)
+        if still_missing:
+            print(f"Charts unavailable after targeted fallback: {len(still_missing):,}")
+
     for name, payload in shards.items():
         if payload:
             (base.CHART_DIR / name).write_text(
@@ -67,20 +90,6 @@ def build_from_scan_cache(tickers: list[str]) -> dict[str, str]:
         f"Reused scan 5Y cache for {len(mapping):,}/{len(tickers):,} frontend charts "
         f"({size_mb:.1f} MB across {len([p for p in base.CHART_DIR.glob('*.json')])} shards)"
     )
-
-    # A small number of legacy/fallback analyses may not exist in the fast cache.
-    # Download only those missing symbols rather than re-fetching the whole universe.
-    if missing:
-        print(f"Fetching only {len(missing):,} missing chart histories from Yahoo")
-        try:
-            extra_mapping = base._ORIGINAL_BUILD_FIVE_YEAR_CHART_SHARDS(missing)
-            # The original function recreates the chart directory, so if this rare
-            # path is used it is safer to return its complete result. In normal fast
-            # runs the cache should cover every analyzed ticker and this branch is not used.
-            return extra_mapping
-        except Exception as exc:
-            print(f"Missing-chart fallback failed: {exc}")
-
     return mapping
 
 
