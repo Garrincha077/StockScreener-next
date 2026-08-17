@@ -21,6 +21,7 @@ import yfinance as yf
 
 from .optimized_batch_processor import OptimizedBatchProcessor
 from .phase_indicators import classify_phase, calculate_relative_strength, detect_vcp_pattern
+from .group_proxies import ALL_PROXY_TICKERS
 from ..data.fundamentals_fetcher import fetch_quarterly_financials, analyze_fundamentals_for_signal
 
 logger = logging.getLogger(__name__)
@@ -141,7 +142,7 @@ class FastOptimizedBatchProcessor(OptimizedBatchProcessor):
 
     def prefetch_price_history(self, tickers: List[str]) -> None:
         start = time.time()
-        unique = list(dict.fromkeys(["SPY", *[str(t).upper() for t in tickers]]))
+        unique = list(dict.fromkeys(["SPY", *ALL_PROXY_TICKERS, *[str(t).upper() for t in tickers]]))
         logger.info("=" * 60)
         logger.info("FAST PRICE PREFETCH: %s symbols, 5Y daily history", f"{len(unique):,}")
         logger.info("=" * 60)
@@ -279,8 +280,10 @@ class FastOptimizedBatchProcessor(OptimizedBatchProcessor):
     def _persist_analyzed_price_history(self, analyses: List[Dict]) -> None:
         wanted = {str(a.get("ticker", "")).upper() for a in analyses if a.get("ticker")}
         payload: Dict[str, pd.DataFrame] = {}
-        if "SPY" in self.price_history:
-            payload["SPY"] = self.price_history["SPY"]
+        for ticker in ("SPY", *ALL_PROXY_TICKERS):
+            frame = self.price_history.get(ticker)
+            if frame is not None and not frame.empty:
+                payload[ticker] = frame
         for ticker in wanted:
             frame = self.price_history.get(ticker)
             if frame is not None and not frame.empty:
