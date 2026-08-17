@@ -24,6 +24,7 @@ type EngineRow={
   originalEngine?:any
 }
 type Payload={market?:any;universe?:EngineRow[];originalEngineModel?:string}
+type Props={open:boolean;onOpenChange:(open:boolean)=>void;embedded?:boolean}
 
 const fmt=(v:any,d=1)=>typeof v==='number'&&Number.isFinite(v)?v.toFixed(d):'—'
 const money=(v:any)=>typeof v==='number'&&Number.isFinite(v)?`$${v.toFixed(2)}`:'—'
@@ -40,8 +41,7 @@ const criteriaLabels:Record<string,string>={
   confirmed_stage_2:'Confirmed Stage 2',
 }
 
-export default function OriginalEngineDock(){
-  const[open,setOpen]=useState(false)
+export default function OriginalEngineDock({open,onOpenChange,embedded=false}:Props){
   const[payload,setPayload]=useState<Payload|null>(null)
   const[ticker,setTicker]=useState(()=>location.hash.replace('#','').toUpperCase())
 
@@ -65,9 +65,9 @@ export default function OriginalEngineDock(){
   const qualified=Boolean(e?.buy?.marketQualified)
 
   return <>
-    <button className={`oe-launch ${qualified?'qualified':''}`} onClick={()=>setOpen(x=>!x)} title="Inspect repository source signal engine">ORIGINAL {row?.originalBuyScore!=null?fmt(row.originalBuyScore,0):''}</button>
-    {open&&<aside className="oe-dock">
-      <header><div><small>SOURCE METHODOLOGY</small><b>ORIGINAL ENGINE · {row?.ticker||'—'}</b></div><button onClick={()=>setOpen(false)}>×</button></header>
+    {!open&&<button className={`oe-launch ${qualified?'qualified':''}`} onClick={()=>onOpenChange(true)} title="Open repository source signal engine" aria-expanded={false}>ORIGINAL {row?.originalBuyScore!=null?fmt(row.originalBuyScore,0):''}</button>}
+    {open&&<aside className={`oe-dock ${embedded?'embedded':''}`}>
+      <header><div><small>SOURCE METHODOLOGY</small><b>ORIGINAL ENGINE · {row?.ticker||'—'}</b></div><button onClick={()=>onOpenChange(false)} aria-label="Close Original Engine">×</button></header>
       {!e?<div className="oe-empty">Original-engine fields are not present in this dataset yet.</div>:<div className="oe-body">
         <section className="oe-summary">
           <div><small>BUY SCORE</small><strong>{fmt(e.buy?.score,0)}<em>/125</em></strong></div>
