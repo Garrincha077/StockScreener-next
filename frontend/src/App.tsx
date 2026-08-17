@@ -1,3 +1,3 @@
-import DataScreener from './DataScreener'
+import DeepVueTerminal from './DeepVueTerminal'
 
-export default DataScreener
+export default DeepVueTerminal
