@@ -8,6 +8,7 @@ on:
       - 'tests/test_setup_calibration.py'
       - 'enhance_frontend_dataset.py'
       - 'calibrate_frontend_setups.py'
+      - 'compute_group_leadership.py'
       - 'audit_frontend_dataset.py'
       - '.github/workflows/stockscout_validation.yml'
   workflow_dispatch:
@@ -33,6 +34,9 @@ jobs:
 
       - name: Regression tests
         run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_setup_calibration.py -q
+
+      - name: Syntax-check group engine
+        run: python -m py_compile compute_group_leadership.py
 
       - name: Apply current setup calibration in workspace
         run: python calibrate_frontend_setups.py
