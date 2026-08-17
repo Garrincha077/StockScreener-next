@@ -1,18 +1,18 @@
 ================================================================================
 OPTIMIZED FULL MARKET SCAN - ALL US STOCKS
 Scan Date: 2026-08-17
-Generated: 2026-08-17 21:45:15
+Generated: 2026-08-17 21:56:36
 ================================================================================
 
 SCANNING STATISTICS
 --------------------------------------------------------------------------------
 Total Universe: 3,782 stocks
-Analyzed: 2,013 stocks
+Analyzed: 2,012 stocks
 Processing Time: 0.4 minutes
-Actual TPS: 140.56
+Actual TPS: 163.20
 🟢 Error Rate: 0.00%
-🟢 Buy Signals: 661
-🔴 Sell Signals: 203
+🟢 Buy Signals: 658
+🔴 Sell Signals: 204
 
 
 ============================================================
@@ -27,9 +27,9 @@ BENCHMARK SUMMARY
   🟢 200 SMA: $703.21 (slope: 0.0690)
   🟢 Confidence: 85%
 
-Market Breadth (n=2013):
-  🟡 Phase 1 (Base Building): 973 stocks (48.3%)
-  🟢 Phase 2 (Uptrend): 785 stocks (39.0%)
+Market Breadth (n=2012):
+  🟡 Phase 1 (Base Building): 973 stocks (48.4%)
+  🟢 Phase 2 (Uptrend): 784 stocks (39.0%)
   🟡 Phase 3 (Distribution): 32 stocks (1.6%)
   🔴 Phase 4 (Downtrend): 223 stocks (11.1%)
   🔴 Breadth Quality: Good
@@ -43,7 +43,7 @@ Interpretation:
 
 
 ================================================================================
-🟢 TOP BUY SIGNALS (Score >= 70) - 661 Total
+🟢 TOP BUY SIGNALS (Score >= 70) - 658 Total
 ================================================================================
 
 
@@ -80,41 +80,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #2: LEGH | Score: 112.7/125
-################################################################################
-Phase: 2
-🟢 Entry Quality: Good
-Stop Loss: $26.19
-🟢 Risk/Reward: 3.0:1 (Risk $2.91, Reward $8.73)
-🟡 RS: 0.374
-
-Key Reasons:
-  • Strong Stage 2: 11.0% above 50 SMA
-  • SMAs rising strongly (50:0.340, 200:0.091)
-  • 🟢 Revenue: 3Q avg 25.8% QoQ (-5.5% → -10.2% → 93.1%)
-  • 🟢 EPS: +65% YoY (strong earnings)
-  • ✓ Inventory drawing (-12.8% QoQ - strong demand)
-  • ✓ Volume heavier on up days (0.1M vs 0.1M, ratio 1.46)
-  • ✓ Strong RS: 0.374 (outperforming SPY)
-
-============================================================
-FUNDAMENTAL SNAPSHOT - LEGH
-============================================================
-✓ Revenue: ACCELERATING strongly (YoY: +32.3%, QoQ: +93.1%)
-  QoQ Trend (last 4Q): -19.3% → -5.5% → -10.2% → +93.1%
-✓ EPS: STRONG growth (YoY: +65.0%, QoQ: +115.2%)
-  QoQ Trend (last 4Q): -41.7% → N/A → N/A → +115.2%
-✗ Margins: CONTRACTING (49.4%, -3.6pp QoQ)
-✓ Inventory: DRAWING (-12.8% QoQ, ratio: 0.66)
-  → Strong demand signal
-  Note: Detailed breakdown (raw/WIP/finished) not available via API
-
-Overall Assessment:
-⚠ Some concerns: margins contracting
-
-
-################################################################################
-⭐ BUY #3: NVEC | Score: 112.2/125
+⭐ BUY #2: NVEC | Score: 112.2/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -148,7 +114,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #4: ENTG | Score: 111.8/125
+⭐ BUY #3: ENTG | Score: 111.8/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -177,6 +143,37 @@ FUNDAMENTAL SNAPSHOT - ENTG
 
 Overall Assessment:
 ✓ Fundamentals SUPPORT technical breakout
+
+
+################################################################################
+⭐ BUY #4: AAMI | Score: 111.4/125
+################################################################################
+Phase: 2
+🟢 Entry Quality: Good
+Stop Loss: $86.07
+🟢 Risk/Reward: 4.0:1 (Risk $6.92, Reward $27.90)
+🟢 RS: 0.538
+
+Key Reasons:
+  • Strong Stage 2: 14.8% above 50 SMA
+  • SMAs rising strongly (50:0.415, 200:0.349)
+  • 🟢 Revenue: 3Q avg 9.1% QoQ (19.4% → -3.0% → 10.8%)
+  • 🟢 EPS: +171% YoY (strong earnings)
+  • ✓ Volume heavier on up days (0.4M vs 0.3M, ratio 1.35)
+  • ✓ Strong RS: 0.538 (outperforming SPY)
+  • 🟢 Excellent R/R: 4.0:1 ($27.90 upside, $6.92 risk)
+
+============================================================
+FUNDAMENTAL SNAPSHOT - AAMI
+============================================================
+✓ Revenue: ACCELERATING strongly (YoY: +45.3%, QoQ: +10.8%)
+  QoQ Trend (last 4Q): +13.2% → +19.4% → -3.0% → +10.8%
+✓ EPS: STRONG growth (YoY: +171.4%, QoQ: +11.8%)
+  QoQ Trend (last 4Q): +50.0% → +131.0% → -29.9% → +11.8%
+✗ Margins: CONTRACTING (34.1%, -8.1pp QoQ)
+
+Overall Assessment:
+⚠ Some concerns: margins contracting
 
 
 ################################################################################
@@ -245,7 +242,41 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #7: NUE | Score: 110.6/125
+⭐ BUY #7: LEGH | Score: 110.7/125
+################################################################################
+Phase: 2
+🟢 Entry Quality: Good
+Stop Loss: $26.19
+🟢 Risk/Reward: 3.0:1 (Risk $2.91, Reward $8.73)
+🟡 RS: 0.398
+
+Key Reasons:
+  • Strong Stage 2: 10.5% above 50 SMA
+  • SMAs rising strongly (50:0.346, 200:0.097)
+  • 🟢 Revenue: 3Q avg 25.8% QoQ (-5.5% → -10.2% → 93.1%)
+  • 🟢 EPS: +65% YoY (strong earnings)
+  • ✓ Inventory drawing (-12.8% QoQ - strong demand)
+  • Volume slightly heavier on up days (ratio 1.30)
+  • ✓ Strong RS: 0.398 (outperforming SPY)
+
+============================================================
+FUNDAMENTAL SNAPSHOT - LEGH
+============================================================
+✓ Revenue: ACCELERATING strongly (YoY: +32.3%, QoQ: +93.1%)
+  QoQ Trend (last 4Q): -19.3% → -5.5% → -10.2% → +93.1%
+✓ EPS: STRONG growth (YoY: +65.0%, QoQ: +115.2%)
+  QoQ Trend (last 4Q): -41.7% → N/A → N/A → +115.2%
+✗ Margins: CONTRACTING (49.4%, -3.6pp QoQ)
+✓ Inventory: DRAWING (-12.8% QoQ, ratio: 0.66)
+  → Strong demand signal
+  Note: Detailed breakdown (raw/WIP/finished) not available via API
+
+Overall Assessment:
+⚠ Some concerns: margins contracting
+
+
+################################################################################
+⭐ BUY #8: NUE | Score: 110.6/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -274,37 +305,6 @@ FUNDAMENTAL SNAPSHOT - NUE
 
 Overall Assessment:
 ✓ Fundamentals SUPPORT technical breakout
-
-
-################################################################################
-⭐ BUY #8: AAMI | Score: 110.3/125
-################################################################################
-Phase: 2
-🟢 Entry Quality: Good
-Stop Loss: $88.27
-🟢 Risk/Reward: 5.9:1 (Risk $4.72, Reward $27.90)
-🟢 RS: 0.526
-
-Key Reasons:
-  • Strong Stage 2: 14.3% above 50 SMA
-  • SMAs rising strongly (50:0.424, 200:0.352)
-  • 🟢 Revenue: 3Q avg 9.1% QoQ (19.4% → -3.0% → 10.8%)
-  • 🟢 EPS: +171% YoY (strong earnings)
-  • Volume slightly heavier on up days (ratio 1.24)
-  • ✓ Strong RS: 0.526 (outperforming SPY)
-  • 🟢 Outstanding R/R: 5.9:1 ($27.90 upside, $4.72 risk)
-
-============================================================
-FUNDAMENTAL SNAPSHOT - AAMI
-============================================================
-✓ Revenue: ACCELERATING strongly (YoY: +45.3%, QoQ: +10.8%)
-  QoQ Trend (last 4Q): +13.2% → +19.4% → -3.0% → +10.8%
-✓ EPS: STRONG growth (YoY: +171.4%, QoQ: +11.8%)
-  QoQ Trend (last 4Q): +50.0% → +131.0% → -29.9% → +11.8%
-✗ Margins: CONTRACTING (34.1%, -8.1pp QoQ)
-
-Overall Assessment:
-⚠ Some concerns: margins contracting
 
 
 ################################################################################
@@ -969,7 +969,41 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #29: STLD | Score: 103.3/125
+⭐ BUY #29: FENC | Score: 103.4/125
+################################################################################
+Phase: 2
+🟢 Entry Quality: Good
+Stop Loss: $10.65
+🟢 Risk/Reward: 3.0:1 (Risk $1.18, Reward $3.55)
+🟢 RS: 0.824
+
+Key Reasons:
+  • Strong Stage 2: 15.2% above 50 SMA
+  • SMAs rising strongly (50:0.237, 200:0.107)
+  • 🟢 Revenue: 3Q avg 16.4% QoQ (29.1% → 10.6% → 9.7%)
+  • 🟢 EPS: +125% YoY (strong earnings)
+  • ⚠ Inventory building rapidly (18.6% QoQ - demand concern)
+  • ✓ Volume heavier on up days (0.4M vs 0.2M, ratio 1.57)
+  • ✓ Strong RS: 0.824 (outperforming SPY)
+
+============================================================
+FUNDAMENTAL SNAPSHOT - FENC
+============================================================
+✓ Revenue: ACCELERATING strongly (YoY: +72.6%, QoQ: +9.7%)
+  QoQ Trend (last 4Q): +10.3% → +29.1% → +10.6% → +9.7%
+✓ EPS: STRONG growth (YoY: +125.0%, QoQ: +105.9%)
+  QoQ Trend (last 4Q): -175.0% → +81.8% → -750.0% → +105.9%
+✓ Margins: EXPANDING (96.2%, +9.0pp QoQ)
+⚠ Inventory: BUILDING (+18.6% QoQ, ratio: 0.12)
+  → Potential demand weakness or production ramp
+  Note: Detailed breakdown (raw/WIP/finished) not available via API
+
+Overall Assessment:
+⚠ Some concerns: inventory building rapidly
+
+
+################################################################################
+⭐ BUY #30: STLD | Score: 103.3/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1002,7 +1036,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #30: DELL | Score: 103.2/125
+⭐ BUY #31: DELL | Score: 103.2/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1036,7 +1070,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #31: UMH | Score: 103.2/125
+⭐ BUY #32: UMH | Score: 103.2/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1072,7 +1106,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #32: HNI | Score: 103.0/125
+⭐ BUY #33: HNI | Score: 103.0/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1106,7 +1140,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #33: PSX | Score: 102.6/125
+⭐ BUY #34: PSX | Score: 102.6/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1140,7 +1174,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #34: WEX | Score: 102.6/125
+⭐ BUY #35: WEX | Score: 102.6/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1171,7 +1205,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #35: MTRN | Score: 102.3/125
+⭐ BUY #36: MTRN | Score: 102.3/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1204,7 +1238,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #36: SMBK | Score: 102.3/125
+⭐ BUY #37: SMBK | Score: 102.3/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1234,7 +1268,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #37: SWK | Score: 102.3/125
+⭐ BUY #38: SWK | Score: 102.3/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1261,36 +1295,6 @@ FUNDAMENTAL SNAPSHOT - SWK
 ✓ Margins: EXPANDING (33.0%, +2.9pp QoQ)
 • Inventory: Slight draw (-4.0% QoQ, ratio: 0.98)
   Note: Detailed breakdown (raw/WIP/finished) not available via API
-
-Overall Assessment:
-✓ Fundamentals SUPPORT technical breakout
-
-
-################################################################################
-⭐ BUY #38: SEPN | Score: 102.0/125
-################################################################################
-Phase: 2
-🟡 Entry Quality: Extended
-Stop Loss: $39.78
-🟢 Risk/Reward: 3.0:1 (Risk $4.42, Reward $13.26)
-🟢 RS: 1.696
-
-Key Reasons:
-  • Strong Stage 2: 23.0% above 50 SMA
-  • SMAs rising strongly (50:0.591, 200:0.287)
-  • Moderately extended above 50 SMA
-  • 🟢 Revenue: 3Q avg 5995.1% QoQ (17963.0% → 12.2% → 10.0%)
-  • 🟢 EPS: +61% YoY (strong earnings)
-  • ✓ Volume heavier on up days (1.2M vs 0.6M, ratio 1.87)
-  • ✓ Strong RS: 1.696 (outperforming SPY)
-
-============================================================
-FUNDAMENTAL SNAPSHOT - SEPN
-============================================================
-✓ Revenue: ACCELERATING strongly (YoY: +12011.0%, QoQ: +10.0%)
-  QoQ Trend (last 4Q): -45.7% → +17963.0% → +12.2% → +10.0%
-✓ EPS: STRONG growth (YoY: +61.2%, QoQ: +20.8%)
-  QoQ Trend (last 4Q): -14.3% → +132.1% → -233.3% → +20.8%
 
 Overall Assessment:
 ✓ Fundamentals SUPPORT technical breakout
@@ -1328,7 +1332,40 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #40: MCS | Score: 101.8/125
+⭐ BUY #40: LPG | Score: 101.8/125
+################################################################################
+Phase: 2
+🟢 Entry Quality: Good
+Stop Loss: $43.58
+🟢 Risk/Reward: 3.0:1 (Risk $4.84, Reward $14.53)
+🟡 RS: 0.060
+
+Key Reasons:
+  • Strong Stage 2: 16.7% above 50 SMA
+  • SMAs rising strongly (50:0.174, 200:0.316)
+  • 🟢 Revenue: 3Q avg 15.7% QoQ (-3.3% → 27.8% → 22.6%)
+  • 🟢 EPS: +1250% YoY (strong earnings)
+  • ⚠ Inventory building (5.7% QoQ)
+  • Volume pattern neutral (ratio 1.05)
+  • Positive RS: 0.060
+
+============================================================
+FUNDAMENTAL SNAPSHOT - LPG
+============================================================
+✓ Revenue: ACCELERATING strongly (YoY: +123.1%, QoQ: +22.6%)
+  QoQ Trend (last 4Q): +47.3% → -3.3% → +27.8% → +22.6%
+✓ EPS: STRONG growth (YoY: +1250.0%, QoQ: +70.5%)
+  QoQ Trend (last 4Q): +441.7% → -14.6% → +71.2% → +70.5%
+✓ Margins: EXPANDING (67.6%, +3.9pp QoQ)
+• Inventory: Moderate build (+5.7% QoQ, ratio: 0.01)
+  Note: Detailed breakdown (raw/WIP/finished) not available via API
+
+Overall Assessment:
+✓ Fundamentals SUPPORT technical breakout
+
+
+################################################################################
+⭐ BUY #41: MCS | Score: 101.8/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1359,7 +1396,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #41: RELY | Score: 101.8/125
+⭐ BUY #42: RELY | Score: 101.8/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1390,7 +1427,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #42: ALSN | Score: 101.7/125
+⭐ BUY #43: ALSN | Score: 101.7/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1426,7 +1463,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #43: DGII | Score: 101.7/125
+⭐ BUY #44: DGII | Score: 101.7/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1459,7 +1496,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #44: MLKN | Score: 101.7/125
+⭐ BUY #45: MLKN | Score: 101.7/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1492,7 +1529,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #45: BBT | Score: 101.3/125
+⭐ BUY #46: BBT | Score: 101.3/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1522,7 +1559,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #46: SXI | Score: 101.3/125
+⭐ BUY #47: SXI | Score: 101.3/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1554,7 +1591,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #47: APH | Score: 101.2/125
+⭐ BUY #48: APH | Score: 101.2/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1587,7 +1624,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #48: SCL | Score: 101.1/125
+⭐ BUY #49: SCL | Score: 101.1/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1621,7 +1658,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #49: SUN | Score: 101.1/125
+⭐ BUY #50: SUN | Score: 101.1/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1653,111 +1690,75 @@ Overall Assessment:
 ⚠ Some concerns: margins contracting
 
 
-################################################################################
-⭐ BUY #50: SNX | Score: 101.0/125
-################################################################################
-Phase: 2
-🟢 Entry Quality: Good
-Stop Loss: $255.96
-🟢 Risk/Reward: 10.0:1 (Risk $7.92, Reward $79.16)
-Breakout: $259.56
-🔴 RS: -0.047
-
-Key Reasons:
-  • Weak Stage 2: 1.7% above 50 SMA
-  • SMAs rising strongly (50:0.102, 200:0.261)
-  • 🟡 50 SMA Breakout (low volume)
-  • 🟢 Revenue: 3Q avg 8.0% QoQ (11.0% → -1.3% → 14.1%)
-  • 🟢 EPS: +88% YoY (strong earnings)
-  • ⚠ Inventory building rapidly (26.5% QoQ - demand concern)
-  • Volume pattern neutral (ratio 1.09)
-
-============================================================
-FUNDAMENTAL SNAPSHOT - SNX
-============================================================
-✓ Revenue: ACCELERATING strongly (YoY: +31.0%, QoQ: +14.1%)
-  QoQ Trend (last 4Q): +4.7% → +11.0% → -1.3% → +14.1%
-✓ EPS: STRONG growth (YoY: +87.8%, QoQ: +2.7%)
-  QoQ Trend (last 4Q): +24.0% → +10.9% → +32.9% → +2.7%
-• Margins: Flat (6.8%, -0.5pp QoQ)
-⚠ Inventory: BUILDING (+26.5% QoQ, ratio: 0.71)
-  → Potential demand weakness or production ramp
-  Note: Detailed breakdown (raw/WIP/finished) not available via API
-
-Overall Assessment:
-⚠ Some concerns: inventory building rapidly
-
-
 ================================================================================
-ADDITIONAL BUYS (611 more)
+ADDITIONAL BUYS (608 more)
 ================================================================================
 
-THC, CLH, DHT, BCRX, ETON, SLDE, GRMN, IVZ, CPAY, INCY
-LYV, MBIN, IESC, FENC, DXCM, EOLS, RS, KNTK, XOM, CNS
-WES, VSEC, CVCO, GPN, PTGX, DCO, MITK, THRM, TXO, WTS
-ALOT, CHEF, GIC, RDVT, WKC, CVX, LPG, ONTO, COP, AVBC
-OBK, PENG, PH, HALO, FHI, ASH, NSIT, BAX, PAA, SCCO
-AMGN, NP, GD, ZETA, SMTI, DK, ZION, LILA, AME, BLFS
-MSBI, QUAD, SAIC, AGM, IEX, CORT, HPE, SMHI, CLMT, ATI
-LZB, S, HEI, MUSA, IMAX, MPB, MRCY, ENVA, FRSH, NATL
-TDY, CTO, HNGE, SHIP, CHE, DRI, JLL, NTRA, TWLO, LTH
-SXT, ANGO, FDX, TENB, LILAK, NHC, SIBN, ATLC, CNO, GABC
-HVT, ONB, EXPE, FSUN, TPC, BNY, MAN, CNOB, HRI, PBYI
-RBRK, FRST, PLPC, BOKF, FIVE, NLY, RVTY, A, LFST, MFG
-FTK, MDB, HZO, AMG, BAC, CHYM, GKOS, OVV, SSD, TNK
-CUBI, FA, VAC, CAKE, STT, TFC, FTNT, GEF, PRAA, PUBM
-SENEA, ARMK, CON, KAI, KO, PNFP, QNST, SHC, BMY, TTC
-WHD, ECO, KIDS, TSM, BIO, FATN, HUM, PKOH, GEN, PKE
-RCEL, BFH, DXPE, GFF, GH, PAY, GEO, RTX, TWFG, CROX
-GDOT, SXC, AMAL, SBCF, HQY, EXPD, HRMY, ING, RYTM, UCB
-GRND, PAYS, PRLB, WSFS, FMNB, FRBA, HOPE, USFD, ITT, KRNY
-LH, MGNI, WLY, BBVA, IQV, WAB, KN, OGN, ALRS, FAST
-LQDT, RYZ, NDSN, PAG, SBH, VG, LCUT, RCUS, MUFG, NTAP
-C, FSS, NBN, ZD, MFC, JRSH, OOMA, PFS, NPO, WELL
-HPQ, NBBK, HWM, ACAD, FISI, FSBC, IOSP, PBF, AFG, AX
-HXL, VSAT, FET, GE, KMX, KINS, UVE, ATRC, CBAN, DINO
-SLF, PGC, SHOO, TECH, KEY, IBCP, PK, WSBC, UFPT, ZBRA
-LAD, RBKB, JBHT, RAL, HFWA, OKTA, RRGB, VTOL, NRIX, SOLV
-KRT, PNTG, ALNT, DV, RGA, UFI, FBP, OC, OII, UFCS
-UMBF, RUSHA, VRTX, PRK, UMAC, WAT, FCX, JPM, FTI, AMRX
-BC, CBRL, CFG, GL, KFY, KRO, MDLZ, AIT, BSAC, RUSHB
-DGX, OPHC, BMRN, TOWN, LTC, NET, OPY, AVNT, ABBV, JAKK
-MEDP, MGA, MS, BPOP, CBLL, EPC, JCI, MLAB, MYE, TRIN
-BCS, FBK, RLI, SVV, EWBC, SB, GCMG, NGVT, TFIN, AXGN
-BJRI, CRBG, GHM, ILMN, LGND, MSEX, MSM, NMM, DCTH, AMP
-MCY, ACOG, GBTG, NAT, WNC, BATRK, CNMD, ESQ, MMM, CFFN
-ALRM, FTRE, KFRC, LLYVK, MET, ABNB, SLG, TXRH, CPIX, CRNX
-HESM, VLY, BELFB, CCNE, CNXN, LLYVA, ANIK, FAF, CCK, DBX
-NX, TIGO, VSXY, CART, SAN, VIRT, CNI, ELVN, HAFC, SRCE
-ALTG, NMIH, SEIC, UHAL, DAC, DSP, ELS, AMTB, FVCB, CVBF
-FITB, LGIH, WBS, CCS, IMMX, PKG, RPM, CCSI, OSBC, MLI
-PNC, URI, ATRO, CSX, PACS, AMN, SAFT, ASB, LIND, EAT
-IRDM, SPFI, ACA, ALL, CLDX, TEX, HSIC, MSGE, TRGP, TRNS
+SNX, THC, AVBC, CLH, DHT, TXO, BCRX, ETON, SLDE, GRMN
+IVZ, CPAY, INCY, LYV, MBIN, IESC, DXCM, EOLS, RS, XOM
+CNS, WES, VSEC, CVCO, GPN, PTGX, DCO, MITK, THRM, WTS
+ALOT, CHEF, GIC, SEPN, WKC, CVX, ONTO, COP, OBK, PENG
+PH, RDVT, HALO, FHI, ASH, NSIT, BAX, PAA, SCCO, AMGN
+NP, GD, ZETA, SMTI, DK, ZION, LILA, AME, BLFS, QUAD
+SAIC, AGM, IEX, CORT, HPE, CLMT, ATI, LZB, S, HEI
+MUSA, IMAX, MPB, MRCY, ENVA, FRSH, NATL, TDY, CTO, HNGE
+SHIP, CHE, DRI, JLL, NTRA, TWLO, LTH, SXT, ANGO, FDX
+TENB, LILAK, NHC, ATLC, CNO, MSBI, GABC, HVT, ONB, EXPE
+AMAL, CUBI, TPC, BNY, MAN, CNOB, FSUN, HRI, PBYI, RBRK
+FRST, PLPC, BOKF, FIVE, NLY, RVTY, A, LFST, MFG, FTK
+KNTK, MDB, SMHI, HZO, AMG, BAC, CHYM, GKOS, SIBN, OVV
+SSD, TNK, FA, VAC, CAKE, STT, TFC, FTNT, RYZ, GEF
+PRAA, SENEA, ARMK, CON, KAI, KO, PNFP, QNST, SHC, BMY
+TTC, WHD, ECO, KIDS, TSM, BIO, FATN, HUM, PKOH, GEN
+PKE, RCEL, BFH, DXPE, GFF, GH, PAY, GEO, RTX, CROX
+GDOT, SXC, SBCF, EXPD, HRMY, ING, RYTM, UCB, GRND, PAYS
+PRLB, WSFS, FMNB, FRBA, HOPE, USFD, ITT, KRNY, LH, MGNI
+TWFG, WLY, BBVA, IQV, WAB, KN, OGN, ALRS, FAST, LQDT
+NDSN, PAG, SBH, VG, LCUT, RCUS, MUFG, NTAP, C, FSS
+NBN, ZD, MFC, JRSH, OOMA, PFS, NPO, WELL, HPQ, NBBK
+HQY, HWM, ACAD, FISI, FSBC, IOSP, PBF, AFG, AX, HXL
+VSAT, GE, KMX, KINS, UVE, ATRC, CBAN, DINO, RBKB, SLF
+PGC, SHOO, TECH, KEY, IBCP, NRIX, WSBC, PK, UFPT, ZBRA
+LAD, ESQ, JBHT, RAL, HFWA, OKTA, RRGB, FET, SOLV, CCS
+KRT, PNTG, ALNT, DV, RGA, UFI, AMTB, FBP, OC, OII
+UFCS, UMBF, RUSHA, VRTX, PRK, UMAC, WAT, FCX, JPM, FTI
+AMRX, BC, CBRL, CFG, GL, KFY, KRO, MDLZ, AIT, BSAC
+LGIH, RUSHB, DGX, PUBM, OPHC, BMRN, TOWN, LTC, NET, OPY
+CART, AVNT, JAKK, MEDP, MGA, MS, BPOP, VTOL, CBLL, EPC
+JCI, MLAB, MYE, NGVT, TRIN, BCS, RLI, FBK, SVV, EWBC
+SB, ABBV, GCMG, VIRT, TFIN, AXGN, BJRI, CRBG, GHM, ILMN
+LGND, MSEX, MSM, NMM, DCTH, AMP, MCY, GBTG, HESM, NAT
+WNC, BATRK, CNMD, MMM, CFFN, ALRM, FTRE, KFRC, LLYVK, OMF
+MET, ABNB, MC, SLG, TXRH, CPIX, CRNX, VLY, BELFB, CCNE
+CNXN, LLYVA, ANIK, FAF, AES, CCK, DBX, NX, VSXY, ACA
+SAN, CNI, HAFC, SRCE, ALTG, NMIH, SEIC, UHAL, CCSI, DAC
+ELS, CVBF, FITB, WBS, IMMX, PKG, RPM, OSBC, TIGO, ACOG
+MLI, PNC, URI, ATRO, CSX, AMN, SAFT, ASB, EAT, IRDM
+SPFI, ALL, CLDX, TEX, HSIC, LIND, MAX, MSGE, TRGP, TRNS
 SYBT, CQP, ECPG, MDGL, OFG, SKY, HWC, MSGS, AIZ, BDX
-WFG, QLYS, JXN, NBTB, DRH, FRME, SFL, SGMT, SWX, BLZE
-EWTX, LLY, LNG, RHI, RVMD, BIP, BWIN, EFC, SSB, WAFD
-BUSE, MC, CTNM, HSTM, OMF, PSA, SLAB, ACT, MBWM, IMVT
-TNET, AMCX, FIBK, THG, CARS, DYN, CGON, ICUI, INNV, QCRH
-SBUX, CGEM, WST, CATY, MAX, SFNC, APGE, MRK, CHCO, DRS
-INDB, BZH, CASY, HSBC, FHN, NSP, SKWD, SRRK, ADM, CAL
-KELYA, TRV, BWEN, USB, CRL, PFG, OSK, BMO, TT, COKE
-EFSC, FFBC, DNLI, BHRB, TVTX, IDT, UNF, BBDC, KTB, MTB
-LNC, NRIM, GSBD, SJM, BEN, BRC, OCFC, VZ, SLP, BY
-FNB, UNP, CLBK, EBF, RNST, KB, OSPN, RIGL, NSC, STRA
-CM, HTO, MPLX, TRVI, BBY, APOG, HAE, NVCT, AES, BMRC
-HBCP, SPB, STBA, DAL, TGT, MBX, DBRG, EQH, JNJ, BCAL
-HMN, ABM, BH, CBL, SMP, CPF, HGTY, HRTG, PRI, HTH
-FEIM, KVUE, PAYO, SBRA, EMBJ, UNM, CSWC, RF, APD, MD
-NWN, BSM, KOP, MHO, BIIB, DB, ORKA, SON, FULT, PCVX
-RBCAA, TBI, PSO, DEA, XYZ, ACHC, AZZ, DIN, RY, LBRX
-CNA, CVV, GM, DKL, EGBN, PEBO, COLB, ECL, HBNC, WABC
-ABCB, ETSY, TFX, WSM, KSS, GAIN, UTZ, LOVE, LKFN, VVX
-NRC, IDYA, BLMN, AGNC, MGRC, ANF, EG, MCFT, AM, PHM
-RBB
+WFG, JXN, NBTB, DRH, FRME, PACS, SFL, SGMT, SWX, BLZE
+EWTX, LLY, LNG, RHI, BIP, EFC, SSB, WAFD, BUSE, QLYS
+CTNM, TNET, HSTM, PSA, SLAB, ACT, MBWM, AMCX, FIBK, IMVT
+THG, CARS, DYN, CGON, ELVN, ICUI, INNV, SRRK, QCRH, SBUX
+CGEM, WST, CATY, SFNC, MRK, CHCO, DRS, INDB, BZH, TRVI
+CASY, HSBC, FHN, NSP, SKWD, ADM, CAL, KELYA, TRV, BWEN
+USB, DSP, CRL, RVMD, APGE, PFG, OSK, BMO, TT, COKE
+EFSC, FFBC, DNLI, BHRB, BWIN, NVCT, TVTX, CLBK, IDT, UNF
+BBDC, MTB, LNC, NRIM, SJM, BEN, BRC, OCFC, VZ, SLP
+BY, FNB, UNP, EBF, RNST, KB, OSPN, RIGL, NSC, STRA
+CM, HTO, MPLX, BBY, APOG, HAE, BMRC, HBCP, SPB, STBA
+DAL, TGT, MBX, DBRG, EQH, JNJ, BCAL, HMN, ABM, BH
+CBL, SMP, CPF, HGTY, HRTG, PRI, HTH, FEIM, KVUE, PAYO
+SBRA, EMBJ, GSBD, UNM, CSWC, RF, APD, BSM, DEA, MD
+NWN, KOP, MHO, BIIB, DB, ORKA, SON, FULT, PCVX, RBCAA
+TBI, PSO, XYZ, ACHC, AZZ, DIN, DKL, RY, VVX, LBRX
+CNA, CVV, GM, EGBN, PEBO, AGNC, COLB, ECL, HBNC, WABC
+ABCB, TFX, WSM, KSS, GAIN, UTZ, LOVE, LKFN, BLMN, NRC
+MGRC, ANF, EG, MCFT, AM, IDYA, PHM, RBB
 
 
 ================================================================================
-🔴 TOP SELL SIGNALS (Score >= 60) - 203 Total
+🔴 TOP SELL SIGNALS (Score >= 60) - 204 Total
 ================================================================================
 
 
@@ -1878,14 +1879,14 @@ No data available
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
 Breakdown: $12.57
-🟡 RS: -0.497
+🟡 RS: -0.491
 
 Sell Reasons:
   • In Phase 4 (Downtrend)
   • Below 50 SMA by 4.1%
-  • 50 SMA declining (slope: -0.0302)
-  • High volume breakdown: 2.9x
-  • Weak RS rollover: -0.50
+  • 50 SMA declining (slope: -0.0237)
+  • High volume breakdown: 2.8x
+  • Weak RS rollover: -0.49
 FUNDAMENTAL SNAPSHOT - BCSF
 No data available
 
@@ -1893,15 +1894,15 @@ No data available
 🚨 SELL #9: COLL | Score: 95/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
-Breakdown: $34.11
-🔴 RS: -3.051
+Breakdown: $34.25
+🔴 RS: -2.920
 
 Sell Reasons:
   • In Phase 4 (Downtrend)
-  • Broke below 50 SMA by 17.7%
-  • 50 SMA declining (slope: -0.0680)
-  • Elevated volume: 1.3x
-  • Sharp RS decline: -3.05
+  • Broke below 50 SMA by 18.0%
+  • 50 SMA declining (slope: -0.0477)
+  • Elevated volume: 1.4x
+  • Sharp RS decline: -2.92
 FUNDAMENTAL SNAPSHOT - COLL
 No data available
 
@@ -2018,23 +2019,7 @@ FUNDAMENTAL SNAPSHOT - STUB
 No data available
 
 ################################################################################
-🚨 SELL #17: VERA | Score: 92/110
-################################################################################
-Phase: 4 | 🚨 Severity: CRITICAL
-Breakdown: $36.20
-🔴 RS: -1.157
-
-Sell Reasons:
-  • In Phase 4 (Downtrend)
-  • Broke below 50 SMA by 12.6%
-  • 50 SMA declining (slope: -0.1573)
-  • Elevated volume: 1.3x
-  • RS declining: -1.16
-FUNDAMENTAL SNAPSHOT - VERA
-No data available
-
-################################################################################
-🚨 SELL #18: BWXT | Score: 90/110
+🚨 SELL #17: BWXT | Score: 90/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
 Breakdown: $182.61
@@ -2047,6 +2032,22 @@ Sell Reasons:
   • High volume breakdown: 1.9x
   • Weak RS rollover: -0.12
 FUNDAMENTAL SNAPSHOT - BWXT
+No data available
+
+################################################################################
+🚨 SELL #18: CCAP | Score: 90/110
+################################################################################
+Phase: 4 | 🚨 Severity: CRITICAL
+Breakdown: $11.03
+🟡 RS: -0.267
+
+Sell Reasons:
+  • In Phase 4 (Downtrend)
+  • Just below 50 SMA (1.9%)
+  • 50 SMA declining (slope: -0.0243)
+  • High volume breakdown: 1.7x
+  • Weak RS rollover: -0.27
+FUNDAMENTAL SNAPSHOT - CCAP
 No data available
 
 ################################################################################
@@ -2082,23 +2083,39 @@ FUNDAMENTAL SNAPSHOT - RDDT
 No data available
 
 ################################################################################
-🚨 SELL #21: WMG | Score: 87/110
+🚨 SELL #21: VERA | Score: 90/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
-Breakdown: $27.54
-🔴 RS: -1.120
+Breakdown: $36.14
+🔴 RS: -0.929
 
 Sell Reasons:
   • In Phase 4 (Downtrend)
-  • Below 50 SMA by 4.2%
-  • 50 SMA declining (slope: -0.4643)
+  • Broke below 50 SMA by 12.5%
+  • 50 SMA declining (slope: -0.1627)
   • Elevated volume: 1.3x
-  • RS declining: -1.12
+  • Weak RS rollover: -0.93
+FUNDAMENTAL SNAPSHOT - VERA
+No data available
+
+################################################################################
+🚨 SELL #22: WMG | Score: 87/110
+################################################################################
+Phase: 4 | 🚨 Severity: CRITICAL
+Breakdown: $27.64
+🔴 RS: -1.164
+
+Sell Reasons:
+  • In Phase 4 (Downtrend)
+  • Below 50 SMA by 4.6%
+  • 50 SMA declining (slope: -0.4592)
+  • Elevated volume: 1.4x
+  • RS declining: -1.16
 FUNDAMENTAL SNAPSHOT - WMG
 No data available
 
 ################################################################################
-🚨 SELL #22: GEOS | Score: 85/110
+🚨 SELL #23: GEOS | Score: 85/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
 Breakdown: $6.84
@@ -2114,7 +2131,7 @@ FUNDAMENTAL SNAPSHOT - GEOS
 No data available
 
 ################################################################################
-🚨 SELL #23: LHX | Score: 85/110
+🚨 SELL #24: LHX | Score: 85/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
 Breakdown: $292.73
@@ -2130,23 +2147,23 @@ FUNDAMENTAL SNAPSHOT - LHX
 No data available
 
 ################################################################################
-🚨 SELL #24: LMB | Score: 85/110
+🚨 SELL #25: LMB | Score: 85/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
-Breakdown: $72.25
-🔴 RS: -4.933
+Breakdown: $71.49
+🔴 RS: -4.836
 
 Sell Reasons:
   • In Phase 4 (Downtrend)
-  • Broke below 50 SMA by 37.6%
-  • 50 SMA declining (slope: -0.3207)
+  • Broke below 50 SMA by 37.0%
+  • 50 SMA declining (slope: -0.3874)
   • Moderate volume: 1.3x
-  • Sharp RS decline: -4.93
+  • Sharp RS decline: -4.84
 FUNDAMENTAL SNAPSHOT - LMB
 No data available
 
 ################################################################################
-🚨 SELL #25: PZZA | Score: 85/110
+🚨 SELL #26: PZZA | Score: 85/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
 Breakdown: $31.69
@@ -2162,7 +2179,7 @@ FUNDAMENTAL SNAPSHOT - PZZA
 No data available
 
 ################################################################################
-🚨 SELL #26: UVV | Score: 85/110
+🚨 SELL #27: UVV | Score: 85/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
 Breakdown: $51.38
@@ -2178,7 +2195,7 @@ FUNDAMENTAL SNAPSHOT - UVV
 No data available
 
 ################################################################################
-🚨 SELL #27: AMSF | Score: 82/110
+🚨 SELL #28: AMSF | Score: 82/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
 Breakdown: $31.57
@@ -2194,7 +2211,23 @@ FUNDAMENTAL SNAPSHOT - AMSF
 No data available
 
 ################################################################################
-🚨 SELL #28: AHCO | Score: 80/110
+🚨 SELL #29: REZI | Score: 82/110
+################################################################################
+Phase: 4 | 🚨 Severity: CRITICAL
+Breakdown: $23.16
+🔴 RS: -1.535
+
+Sell Reasons:
+  • In Phase 4 (Downtrend)
+  • Broke below 50 SMA by 10.9%
+  • Elevated volume: 1.3x
+  • RS declining: -1.54
+  • Failed breakout - closed back inside base
+FUNDAMENTAL SNAPSHOT - REZI
+No data available
+
+################################################################################
+🚨 SELL #30: AHCO | Score: 80/110
 ################################################################################
 Phase: 4 | 🚨 Severity: CRITICAL
 Breakdown: $9.45
@@ -2209,60 +2242,28 @@ Sell Reasons:
 FUNDAMENTAL SNAPSHOT - AHCO
 No data available
 
-################################################################################
-🚨 SELL #29: ALHC | Score: 80/110
-################################################################################
-Phase: 4 | 🚨 Severity: CRITICAL
-Breakdown: $19.09
-🔴 RS: -2.729
-
-Sell Reasons:
-  • In Phase 4 (Downtrend)
-  • Broke below 50 SMA by 29.5%
-  • 50 SMA declining (slope: -0.0676)
-  • Low volume breakdown: 0.6x
-  • Sharp RS decline: -2.73
-FUNDAMENTAL SNAPSHOT - ALHC
-No data available
-
-################################################################################
-🚨 SELL #30: ATO | Score: 80/110
-################################################################################
-Phase: 4 | 🚨 Severity: CRITICAL
-Breakdown: $173.32
-🔴 RS: -0.753
-
-Sell Reasons:
-  • In Phase 4 (Downtrend)
-  • Just below 50 SMA (2.0%)
-  • 50 SMA declining (slope: -0.0265)
-  • Elevated volume: 1.3x
-  • Weak RS rollover: -0.75
-FUNDAMENTAL SNAPSHOT - ATO
-No data available
-
 ================================================================================
-ADDITIONAL SELLS (173 more)
+ADDITIONAL SELLS (174 more)
 ================================================================================
 
-CCAP, CCOI, CMRE, GBFH, LMAT, LOMA, MNRO, NYT, POST, RBLX
-WD, AGCO, ALNY, CCB, CSV, CTRI, FICO, GME, HE, HLI
-HUN, KNF, MMS, OI, OLN, OMCL, PFSI, TGS, TWI, VFC
-WVE, DBI, ERII, EVLV, FLO, HWKN, KBDC, LMND, LZ, MLM
-NRG, PLAY, PRIM, PSN, ROL, SRE, STZ, TKC, VTVT, WSO
-YUM, ASLE, OXM, PODD, REZI, WING, ZUMZ, ACI, ALG, AZO
+ALHC, ATO, CCOI, CMRE, GBFH, LMAT, LOMA, MNRO, NYT, POST
+RBLX, WD, AGCO, ALNY, ASLE, CCB, CSV, CTRI, FICO, GME
+HE, HUN, KNF, MMS, OI, OLN, OMCL, TGS, TWI, VFC
+WVE, DBI, ERII, EVLV, FLO, HLI, HWKN, KBDC, LMND, LZ
+MLM, NRG, PFSI, PLAY, PRIM, PSN, ROL, SRE, STZ, TKC
+VTVT, WSO, YUM, OXM, PODD, WING, ZUMZ, ACI, ALG, AZO
 CE, CNM, DAKT, DERM, GT, JBTM, KEP, LAND, LBRT, LEN
 LOPE, LVS, MCD, META, MLYS, OFIX, ONT, OPFI, PEG, SBAC
-SNDX, TSLA, UAMY, VICI, VST, XPOF, ZTS, ACM, AEO, AGO
-DRVN, EYE, GBX, GXO, IRMD, LEG, LIF, MQ, RAIL, TGLS
-UPWK, VITL, VRSK, WBTN, YELP, AMT, BKE, BMI, CCI, CENX
-CWH, EVCM, GAP, GLXY, GPGI, HDB, JOBY, NCDL, ORCL, PATK
-PCT, PEP, RDY, REFI, SGI, SITE, SLVM, SPH, TMUS, VNDA
-WMT, FCN, NHI, PAM, PLNT, RVLV, SNN, AA, ACDC, AMSC
-ASTS, CNXC, CPS, CRC, CWST, DKNG, ECHO, EH, ENOV, FLGT
-FRMI, GLSI, HCKT, HD, HNRG, IBM, IDXX, IONS, IPX, ISRG
-JBI, KROS, LPX, MOS, NNE, OKLO, PL, POOL, PRCT, SMPL
-TDG, TTI, VYX
+TSLA, UAMY, VICI, VST, XPOF, ZTS, ACM, AEO, AGO, DRVN
+EYE, GBX, GXO, LEG, LIF, MQ, RAIL, TGLS, UPWK, VITL
+VRSK, WBTN, YELP, AMT, BIPC, BKE, BMI, CCI, CENX, CWH
+EVCM, GAP, GLXY, GPGI, HDB, JOBY, NCDL, ORCL, PATK, PCT
+PEP, RDY, SGI, SITE, SLVM, SPH, TMUS, VNDA, WMT, FCN
+NHI, PAM, PLNT, RVLV, SNN, AA, ACDC, AMSC, ASTS, CNXC
+CPS, CRC, CWST, DKNG, ECHO, EH, ENOV, FLGT, FRMI, GLSI
+HCKT, HD, HNRG, IBM, IDXX, IONS, IPX, ISRG, JBI, KROS
+LPX, MOS, NNE, OKLO, OTIS, PL, POOL, PRCT, REFI, SMPL
+SNDX, TDG, TTI, VYX
 
 
 ================================================================================
