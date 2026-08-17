@@ -1,0 +1,28 @@
+name: Frontend Compile Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - '.github/workflows/frontend_compile_smoke.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: frontend-compile-smoke
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install
+        working-directory: frontend
+        run: npm install
+      - name: TypeScript and Vite build
+        working-directory: frontend
+        run: npm run build
