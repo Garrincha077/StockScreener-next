@@ -49,6 +49,21 @@ export const fieldDefs:FieldDef[]=[
   {id:'changeImpact',label:'Change impact',kind:'number',defaultOp:'>='},
   {id:'opportunityDelta',label:'Δ Opportunity',kind:'number',defaultOp:'>='},
   {id:'rsRankDelta',label:'Δ RS Rank',kind:'number',defaultOp:'>='},
+
+  // Repository SOURCE methodology. These fields come directly from
+  // src/screening/signal_engine.py / phase_indicators.py via enrich_original_engine.py.
+  {id:'originalMarketQualifiedBuy',label:'ORIGINAL market-qualified BUY',kind:'boolean',defaultOp:'true'},
+  {id:'originalBuyScore',label:'ORIGINAL Buy Score /125',kind:'number',defaultOp:'>='},
+  {id:'originalRR',label:'ORIGINAL Risk/Reward',kind:'number',defaultOp:'>='},
+  {id:'originalRiskPct',label:'ORIGINAL stop risk %',kind:'number',defaultOp:'<='},
+  {id:'originalTTPasses',label:'ORIGINAL Minervini TT /8',kind:'number',defaultOp:'>='},
+  {id:'originalTTScore',label:'ORIGINAL TT score /100',kind:'number',defaultOp:'>='},
+  {id:'originalVcpQuality',label:'ORIGINAL VCP quality',kind:'number',defaultOp:'>='},
+  {id:'originalAdVolumeRatio',label:'ORIGINAL A/D volume ratio',kind:'number',defaultOp:'>='},
+  {id:'originalBreakoutVolumeConfirmed',label:'ORIGINAL breakout volume confirmed',kind:'boolean',defaultOp:'true'},
+  {id:'originalBreakoutType',label:'ORIGINAL breakout type',kind:'text',defaultOp:'contains'},
+  {id:'originalSell',label:'ORIGINAL sell signal',kind:'boolean',defaultOp:'true'},
+  {id:'originalSellScore',label:'ORIGINAL Sell Score',kind:'number',defaultOp:'>='},
 ]
 
 export const opsByKind={
@@ -109,6 +124,16 @@ const rule=(field:string,op:RuleOp,value=''):Rule=>({id:uid(),field,op,value})
 const group=(logic:Logic,rules:Rule[]):RuleGroup=>({id:uid(),logic,rules})
 
 export const builtInScreens:ScreenState[]=[
+  {
+    name:'Original Engine — Source Rank',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
+    sorting:[{id:'originalBuyScore',desc:true}],
+    groups:[group('ALL',[rule('originalMarketQualifiedBuy','true')])],
+  },
+  {
+    name:'Original Engine — Balanced Mix',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
+    sorting:[{id:'originalBuyScore',desc:true},{id:'originalRR',desc:true},{id:'originalTTPasses',desc:true},{id:'originalVcpQuality',desc:true},{id:'originalAdVolumeRatio',desc:true}],
+    groups:[group('ALL',[rule('originalMarketQualifiedBuy','true')])],
+  },
   {
     name:'Perfect Setup',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
     sorting:[{id:'confluence',desc:true},{id:'freshnessScore',desc:true},{id:'rsRank',desc:true},{id:'opportunityScore',desc:true}],
