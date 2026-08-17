@@ -114,13 +114,15 @@ class USStockUniverseFetcher:
         # Keep only symbols that are 1-5 uppercase letters
         df = df[df['symbol'].str.match(r'^[A-Z]{1,5}$', na=False)]
 
-        # Remove obvious ETFs and funds (heuristic based on name)
+        # Remove obvious ETFs and funds (heuristic based on name). Recompute the
+        # mask from the current frame on each pass so its index always matches df;
+        # this avoids pandas reindex warnings and makes the filtering deterministic.
         etf_keywords = [
             'ETF', 'FUND', 'TRUST', 'INDEX', 'PORTFOLIO',
             'SHARES', 'NOTES', 'BOND', 'TREASURY'
         ]
-        name_upper = df['name'].str.upper()
         for keyword in etf_keywords:
+            name_upper = df['name'].str.upper()
             df = df[~name_upper.str.contains(keyword, na=False)]
 
         filtered_count = len(df)
