@@ -55,6 +55,47 @@ class FastOptimizedBatchProcessor(OptimizedBatchProcessor):
             frame.index = frame.index.tz_localize(None)
         return frame.sort_index()
 
+    @staticmethod
+    def _sanitize_quarterly_data(data: Dict) -> Dict:
+        """Remove null optional metrics before legacy fundamental scoring.
+
+        The fetch/cache layer intentionally represents unavailable metrics as
+        ``None``. The legacy fundamental scorer uses ``dict.get(key, 0)`` and
+        then performs numeric comparisons; when a key exists with a ``None``
+        value the default is not used and Python raises ``TypeError``. Removing
+        only null optional numeric keys preserves the semantic distinction for
+        report rendering (a missing key still renders as N/A) while allowing the
+        legacy scorer to use its established neutral defaults.
+        """
+        if not isinstance(data, dict) or not data:
+            return {}
+
+        cleaned = dict(data)
+        optional_numeric = (
+            "revenue_yoy_change",
+            "revenue_qoq_change",
+            "eps_yoy_change",
+            "eps_qoq_change",
+            "inventory_qoq_change",
+            "inventory_to_sales_ratio",
+            "gross_margin",
+            "margin_change",
+            "operating_margin",
+        )
+        for key in optional_numeric:
+            if key not in cleaned:
+                continue
+            value = cleaned.get(key)
+            is_missing = value is None
+            if not is_missing:
+                try:
+                    is_missing = bool(pd.isna(value))
+                except (TypeError, ValueError):
+                    is_missing = False
+            if is_missing:
+                cleaned.pop(key, None)
+        return cleaned
+
     @classmethod
     def _extract_ticker_frame(cls, download: pd.DataFrame, ticker: str, chunk_size: int) -> pd.DataFrame:
         if download is None or download.empty:
@@ -212,6 +253,7 @@ class FastOptimizedBatchProcessor(OptimizedBatchProcessor):
                     quarterly_data = self.git_fetcher.fetch_fundamentals_smart(ticker)
                 else:
                     quarterly_data = fetch_quarterly_financials(ticker)
+                quarterly_data = self._sanitize_quarterly_data(quarterly_data)
                 fundamental_analysis = analyze_fundamentals_for_signal(quarterly_data)
 
             return {
@@ -231,7 +273,7 @@ class FastOptimizedBatchProcessor(OptimizedBatchProcessor):
             error_type = type(exc).__name__
             self.error_types[error_type] = self.error_types.get(error_type, 0) + 1
             self.error_examples.setdefault(error_type, (ticker, str(exc)))
-            logger.error("Fast analysis failed for %s: %s", ticker, exc)
+            logger.exception("Fast analysis failed for %s: %s", ticker, exc)
             return None
 
     def _persist_analyzed_price_history(self, analyses: List[Dict]) -> None:
