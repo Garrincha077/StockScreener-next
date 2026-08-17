@@ -4,6 +4,7 @@ import App from './App'
 import './styles.css'
 import './terminal.css'
 import './datafirst.css'
+import './deepvue.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
