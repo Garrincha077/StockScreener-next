@@ -11,6 +11,7 @@ on:
         required: false
         type: boolean
         default: false
+  workflow_call:
 
 concurrency:
   group: daily-stock-screening
@@ -62,6 +63,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Fast-engine regression test
+        run: python -m pytest tests/test_fast_batch_processor_regression.py -q
+
       - name: Preserve previous terminal snapshot
         shell: bash
         run: |
@@ -98,6 +102,8 @@ jobs:
         run: |
           python export_frontend_data_fast.py
           python enhance_frontend_dataset.py
+          python calibrate_frontend_setups.py
+          python compute_group_leadership.py
           python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
@@ -105,11 +111,19 @@ jobs:
           python - <<'PY'
           import json
           p=json.load(open('frontend/public/data/latest.json'))
-          print('Feature coverage:', p.get('market',{}).get('featureCoverage',0))
+          m=p.get('market',{})
+          print('Feature coverage:', m.get('featureCoverage',0))
           print('Feature model:', p.get('featureModel'))
-          print('Daily changes:', p.get('market',{}).get('dailyChanges',{}))
+          print('Calibration:', p.get('calibrationModel'))
+          print('Group model:', m.get('groupModel'))
+          print('Top sector:', m.get('topSector'))
+          print('Top industry:', m.get('topIndustry'))
+          print('Daily changes:', m.get('dailyChanges',{}))
           PY
           du -sh frontend/public/data
+
+      - name: Setup calibration audit
+        run: python audit_frontend_dataset.py
 
       - name: Write run metadata
         env:
@@ -129,7 +143,9 @@ jobs:
               "report": "data/daily_scans/latest_optimized_scan.txt",
               "frontend_data": "frontend/public/data/latest.json",
               "chart_horizon": "5y",
-              "feature_model": "data-first-v2-daily-diff",
+              "feature_model": "data-first-v2-early-leader-groups",
+              "calibration_model": "early-leader-v2",
+              "group_model": "behavioral-proxy-v1",
               "scan_engine": "fast-batched-5y-v1",
           }
           Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
