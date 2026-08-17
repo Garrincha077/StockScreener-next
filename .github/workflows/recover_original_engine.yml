@@ -1,0 +1,141 @@
+name: Recover Original Engine Layer
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/recover_original_engine.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: original-engine-recovery
+  cancel-in-progress: true
+
+jobs:
+  enrich-build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Recover latest completed scan state
+        uses: actions/download-artifact@v4
+        with:
+          name: scan-state-2026-08-17-32073103635
+          path: recovered
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: Garrincha077/stock-screener2
+          run-id: 32073103635
+
+      - name: Restore scan analysis only
+        shell: bash
+        run: |
+          mkdir -p data/batch_results data/daily_scans
+          cp recovered/data/batch_results/batch_progress.pkl data/batch_results/batch_progress.pkl
+          cp recovered/data/daily_scans/latest_optimized_scan.txt data/daily_scans/latest_optimized_scan.txt
+          test -s data/batch_results/batch_progress.pkl
+          test -s frontend/public/data/latest.json
+
+      - name: Export original repository methodology
+        run: python enrich_original_engine.py
+
+      - name: Validate original output against completed scan
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json, re
+          from pathlib import Path
+          p=json.loads(Path('frontend/public/data/latest.json').read_text())
+          m=p.get('market',{})
+          text=Path('data/daily_scans/latest_optimized_scan.txt').read_text(errors='ignore')
+          expected_buy=int(re.search(r'Buy Signals:\s*(\d+)',text).group(1))
+          expected_sell=int(re.search(r'Sell Signals:\s*(\d+)',text).group(1))
+          coverage=int(m.get('originalEngineCoverage',0))
+          errors=int(m.get('originalEngineErrors',0))
+          actual_buy=int(m.get('originalQualifiedBuys',0))
+          actual_sell=int(m.get('originalSells',0))
+          gate=m.get('originalSignalGate',{}).get('gate',{})
+          print('Original coverage:',coverage)
+          print('Original errors:',errors)
+          print('Market gate:',gate)
+          print('BUY report/enrichment:',expected_buy,actual_buy)
+          print('SELL report/enrichment:',expected_sell,actual_sell)
+          assert coverage >= 2000, (coverage,'coverage too low')
+          assert errors == 0, (errors,'original enrichment errors')
+          assert gate.get('should_generate_buys') is True, gate
+          assert actual_buy == expected_buy, (actual_buy,expected_buy)
+          assert actual_sell == expected_sell, (actual_sell,expected_sell)
+          # Inspect a representative top original signal.
+          rows=sorted(p['universe'],key=lambda r:float(r.get('originalBuyScore') or 0),reverse=True)
+          top=rows[0]
+          print('Top original:',top['ticker'],top['originalBuyScore'],top.get('originalRR'),top.get('originalTTPasses'),top.get('originalVcpQuality'))
+          assert top.get('originalEngine',{}).get('minervini',{}).get('criteria')
+          PY
+
+      - name: Persist enriched canonical dataset
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git add -f frontend/public/data/latest.json
+          if ! git diff --staged --quiet; then
+            git commit -m 'data: attach original signal engine methodology'
+            for attempt in 1 2 3; do
+              git fetch origin main
+              if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+              git rebase --abort || true
+              sleep $((attempt*3))
+            done
+            exit 1
+          fi
+
+      - name: Hydrate 5Y chart shards from canonical dataset
+        run: python hydrate_frontend_charts.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install frontend
+        working-directory: frontend
+        run: npm install
+
+      - name: Typecheck and build
+        working-directory: frontend
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy-pages:
+    needs: enrich-build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy enriched terminal
+        id: deployment
+        uses: actions/deploy-pages@v4
