@@ -4,7 +4,6 @@ import {
   flexRender,
   getCoreRowModel,
   getPaginationRowModel,
-  getSortedRowModel,
   type PaginationState,
   type SortingState,
   type VisibilityState,
@@ -52,6 +51,38 @@ const num=(v:any,f=0)=>typeof v==='number'&&Number.isFinite(v)?v:f
 
 function loadLocal<T>(key:string,fallback:T):T{try{const x=JSON.parse(localStorage.getItem(key)||'null');return x??fallback}catch{return fallback}}
 
+function sortValue(stock:Stock,id:string):any{
+  if(id==='opportunityScore')return opp(stock)
+  if(id==='primarySetup')return setupOf(stock)
+  return (stock as any)[id]
+}
+function compareValues(a:any,b:any):number{
+  const aMissing=a===null||a===undefined||(typeof a==='number'&&!Number.isFinite(a))
+  const bMissing=b===null||b===undefined||(typeof b==='number'&&!Number.isFinite(b))
+  if(aMissing&&bMissing)return 0
+  if(aMissing)return 1
+  if(bMissing)return -1
+  if(typeof a==='number'&&typeof b==='number')return a-b
+  if(typeof a==='boolean'&&typeof b==='boolean')return Number(a)-Number(b)
+  return String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:'base'})
+}
+function applyMultiSort(rows:Stock[],sorting:SortingState):Stock[]{
+  if(!sorting.length)return rows
+  return rows.map((stock,index)=>({stock,index})).sort((a,b)=>{
+    for(const spec of sorting){
+      const av=sortValue(a.stock,spec.id)
+      const bv=sortValue(b.stock,spec.id)
+      const aMissing=av===null||av===undefined||(typeof av==='number'&&!Number.isFinite(av))
+      const bMissing=bv===null||bv===undefined||(typeof bv==='number'&&!Number.isFinite(bv))
+      if(aMissing!==bMissing)return aMissing?1:-1
+      const cmp=compareValues(av,bv)
+      if(cmp!==0)return spec.desc?-cmp:cmp
+    }
+    const tickerCmp=a.stock.ticker.localeCompare(b.stock.ticker)
+    return tickerCmp!==0?tickerCmp:a.index-b.index
+  }).map(x=>x.stock)
+}
+
 function aggregateWeekly(bars:Bar[]):Bar[]{
   const out:Bar[]=[]
   for(const b of bars){
@@ -94,7 +125,7 @@ function DataScreener(){
   const [page,setPage]=useState<Page>('Screener')
   const [recipe,setRecipe]=useState('All')
   const [query,setQuery]=useState('')
-  const [sorting,setSorting]=useState<SortingState>(()=>loadLocal('df-sorts',[{id:'opportunityScore',desc:true},{id:'freshnessScore',desc:true},{id:'rsRank',desc:true}]))
+  const [sorting,setSorting]=useState<SortingState>(()=>loadLocal('df-sorts-v2',[]))
   const [pagination,setPagination]=useState<PaginationState>({pageIndex:0,pageSize:100})
   const [filters,setFilters]=useState<Filters>(()=>loadLocal('df-filters',defaultFilters))
   const [filtersOpen,setFiltersOpen]=useState(false)
@@ -111,7 +142,7 @@ function DataScreener(){
 
   const load=()=>fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}).then((p:Payload)=>{if(!p.universe?.length)throw new Error('Dataset is empty');setPayload(p);setError('');if(!selectedTicker)setSelectedTicker(p.universe[0].ticker)}).catch(e=>setError(String(e)))
   useEffect(()=>{load()},[])
-  useEffect(()=>localStorage.setItem('df-sorts',JSON.stringify(sorting)),[sorting])
+  useEffect(()=>localStorage.setItem('df-sorts-v2',JSON.stringify(sorting)),[sorting])
   useEffect(()=>localStorage.setItem('df-filters',JSON.stringify(filters)),[filters])
   useEffect(()=>localStorage.setItem('df-cols',JSON.stringify(visibility)),[visibility])
   useEffect(()=>localStorage.setItem('stockscout-watchlist',JSON.stringify(watchlist)),[watchlist])
@@ -142,7 +173,8 @@ function DataScreener(){
     if(filters.hideExtended&&s.extended)return false
     return true
   }),[universe,page,watchlist,query,recipe,filters])
-  useEffect(()=>setPagination(p=>({...p,pageIndex:0})),[recipe,query,filters,page])
+  const sortedData=useMemo(()=>applyMultiSort(filtered,sorting),[filtered,sorting])
+  useEffect(()=>setPagination(p=>({...p,pageIndex:0})),[recipe,query,filters,page,sorting])
 
   const columns=useMemo(()=>[
     helper.display({id:'watch',header:'',enableSorting:false,cell:({row})=><button className={`df-star ${watchlist.includes(row.original.ticker)?'on':''}`} onClick={e=>{e.stopPropagation();toggleWatch(row.original.ticker)}}>★</button>}),
@@ -178,11 +210,12 @@ function DataScreener(){
     helper.accessor('fundamentalSupport',{header:'Fund',cell:i=>i.getValue()==null?'—':i.getValue()?'✓':'×'}),
   ],[watchlist])
 
-  const table=useReactTable({data:filtered,columns,state:{sorting,pagination,columnVisibility:visibility},onSortingChange:setSorting,onPaginationChange:setPagination,onColumnVisibilityChange:setVisibility,getCoreRowModel:getCoreRowModel(),getSortedRowModel:getSortedRowModel(),getPaginationRowModel:getPaginationRowModel(),enableMultiSort:true})
+  const table=useReactTable({data:sortedData,columns,state:{pagination,columnVisibility:visibility},onPaginationChange:setPagination,onColumnVisibilityChange:setVisibility,getCoreRowModel:getCoreRowModel(),getPaginationRowModel:getPaginationRowModel()})
 
   const cycleSort=(id:string)=>setSorting(prev=>{const idx=prev.findIndex(s=>s.id===id);if(idx<0)return[...prev,{id,desc:true}];if(prev[idx].desc)return prev.map((s,i)=>i===idx?{...s,desc:false}:s);return prev.filter((_,i)=>i!==idx)})
   const removeSort=(id:string)=>setSorting(s=>s.filter(x=>x.id!==id))
   const moveSort=(id:string,dir:-1|1)=>setSorting(s=>{const a=[...s],i=a.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=a.length)return s;[a[i],a[j]]=[a[j],a[i]];return a})
+  const makePrimary=(id:string)=>setSorting(s=>{const i=s.findIndex(x=>x.id===id);if(i<=0)return s;const a=[...s];const [item]=a.splice(i,1);a.unshift(item);return a})
   const presets:Record<string,SortingState>={
     'Early Leaders':[{id:'freshnessScore',desc:true},{id:'rsRank',desc:true},{id:'opportunityScore',desc:true},{id:'stage2AgeWeeks',desc:false}],
     'Neglected→Leader':[{id:'neglectedScore',desc:true},{id:'rsAcceleration',desc:true},{id:'return3m',desc:true},{id:'volumeRatio',desc:true}],
@@ -190,7 +223,7 @@ function DataScreener(){
     'RS + Volume':[{id:'rsRank',desc:true},{id:'rsAcceleration',desc:true},{id:'volumeRatio',desc:true},{id:'opportunityScore',desc:true}],
     'Tight / VCP':[{id:'vcpScore',desc:true},{id:'atrCompression',desc:true},{id:'tightRange20',desc:false},{id:'volumeDryUp',desc:false}],
   }
-  const exportCsv=()=>{const cols=table.getAllLeafColumns().filter(c=>c.id!=='watch'&&c.getIsVisible());const lines=[cols.map(c=>c.id).join(','),...table.getSortedRowModel().rows.map(r=>cols.map(c=>JSON.stringify((r.original as any)[c.id]??(c.id==='opportunityScore'?opp(r.original):c.id==='primarySetup'?setupOf(r.original):''))).join(','))];const u=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));const a=document.createElement('a');a.href=u;a.download=`stockscout-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u)}
+  const exportCsv=()=>{const cols=table.getAllLeafColumns().filter(c=>c.id!=='watch'&&c.getIsVisible());const lines=[cols.map(c=>c.id).join(','),...sortedData.map(stock=>cols.map(c=>JSON.stringify((stock as any)[c.id]??(c.id==='opportunityScore'?opp(stock):c.id==='primarySetup'?setupOf(stock):''))).join(','))];const u=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'}));const a=document.createElement('a');a.href=u;a.download=`stockscout-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u)}
 
   useEffect(()=>{const fn=(e:KeyboardEvent)=>{const t=e.target as HTMLElement;if(['INPUT','SELECT','TEXTAREA'].includes(t?.tagName))return;const rows=table.getRowModel().rows;const i=rows.findIndex(r=>r.original.ticker===selected?.ticker);if((e.key==='j'||e.key==='ArrowDown')&&rows.length){e.preventDefault();setSelectedTicker(rows[Math.min(rows.length-1,Math.max(0,i)+1)].original.ticker)}if((e.key==='k'||e.key==='ArrowUp')&&rows.length){e.preventDefault();setSelectedTicker(rows[Math.max(0,i<0?0:i-1)].original.ticker)}};window.addEventListener('keydown',fn);return()=>window.removeEventListener('keydown',fn)})
 
@@ -207,14 +240,14 @@ function DataScreener(){
 
       <section className="df-recipes">{recipeTabs.map(t=><button key={t} className={recipe===t?'active':''} onClick={()=>setRecipe(t)}>{t}<small>{t==='All'?universe.length:universe.filter(s=>tagsOf(s).includes(t)).length}</small></button>)}</section>
 
-      <section className="df-sortbar"><div className="df-presets"><span>SORT PRESET</span>{Object.entries(presets).map(([k,v])=><button key={k} onClick={()=>setSorting(v)}>{k}</button>)}<button onClick={()=>setSorting([])}>Clear</button></div><div className="df-sortstack"><span>MULTI-SORT</span>{sorting.length?sorting.map((s,i)=><div key={s.id} className="df-sortchip"><b>{i+1}</b><span>{table.getColumn(s.id)?.columnDef.header as string||s.id}</span><button onClick={()=>cycleSort(s.id)}>{s.desc?'↓':'↑'}</button><button disabled={i===0} onClick={()=>moveSort(s.id,-1)}>‹</button><button disabled={i===sorting.length-1} onClick={()=>moveSort(s.id,1)}>›</button><button onClick={()=>removeSort(s.id)}>×</button></div>):<em>Click any column header to build a priority stack</em>}</div></section>
+      <section className="df-sortbar"><div className="df-presets"><span>SORT PRESET</span>{Object.entries(presets).map(([k,v])=><button key={k} onClick={()=>setSorting(v)}>{k}</button>)}<button onClick={()=>setSorting([])}>Clear</button></div><div className="df-sortstack"><span>MULTI-SORT</span>{sorting.length?sorting.map((s,i)=><div key={s.id} className="df-sortchip"><b>{i+1}</b><span>{table.getColumn(s.id)?.columnDef.header as string||s.id}</span><button onClick={()=>cycleSort(s.id)}>{s.desc?'↓':'↑'}</button>{i>0&&<button title="Make priority #1" onClick={()=>makePrimary(s.id)}>#1</button>}<button disabled={i===0} onClick={()=>moveSort(s.id,-1)}>‹</button><button disabled={i===sorting.length-1} onClick={()=>moveSort(s.id,1)}>›</button><button onClick={()=>removeSort(s.id)}>×</button></div>):<em>No active sort · first clicked column becomes priority #1</em>}</div></section>
 
       <section className="df-toolbar"><button className={filtersOpen?'active':''} onClick={()=>setFiltersOpen(v=>!v)}>⚙ Filters</button><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Ticker or setup tag…"/><select value={pagination.pageSize} onChange={e=>setPagination({pageIndex:0,pageSize:Number(e.target.value)})}><option>50</option><option>100</option><option>250</option></select><button className={columnsOpen?'active':''} onClick={()=>setColumnsOpen(v=>!v)}>▦ Columns</button><button onClick={exportCsv}>⇩ CSV</button><strong>{filtered.length.toLocaleString()} matches</strong></section>
       {filtersOpen&&<div className="df-filtergrid"><label>Stage<select value={filters.stage} onChange={e=>setFilters(f=>({...f,stage:e.target.value}))}><option>All</option><option>1</option><option>2</option><option>3</option><option>4</option></select></label><label>Min opportunity<input type="number" value={filters.minOpportunity||''} onChange={e=>setFilters(f=>({...f,minOpportunity:Number(e.target.value)||0}))}/></label><label>Min RS rank<input type="number" value={filters.minRs||''} onChange={e=>setFilters(f=>({...f,minRs:Number(e.target.value)||0}))}/></label><label>Min confluence<input type="number" min="0" max="10" value={filters.minConfluence||''} onChange={e=>setFilters(f=>({...f,minConfluence:Number(e.target.value)||0}))}/></label><label>Max |10W ext|<input type="number" value={filters.maxExtension===999?'':filters.maxExtension} onChange={e=>setFilters(f=>({...f,maxExtension:e.target.value===''?999:Number(e.target.value)}))}/></label><label>Min $ volume (M)<input type="number" value={filters.minDollarVolume||''} onChange={e=>setFilters(f=>({...f,minDollarVolume:Number(e.target.value)||0}))}/></label><label>Fundamentals<select value={filters.fundamentals} onChange={e=>setFilters(f=>({...f,fundamentals:e.target.value as any}))}><option>All</option><option value="Support">Support only</option><option value="Available">Available</option></select></label><label className="df-check"><input type="checkbox" checked={filters.hideExtended} onChange={e=>setFilters(f=>({...f,hideExtended:e.target.checked}))}/> Hide extended</label><button onClick={()=>setFilters(defaultFilters)}>Reset</button></div>}
       {columnsOpen&&<div className="df-colpicker"><div><button onClick={()=>table.getAllLeafColumns().forEach(c=>c.toggleVisibility(true))}>Show all</button><button onClick={()=>setVisibility({structureScore:false,baseScore:false,triggerScore:false,neglectedScore:false,avgDollarVolume20:false,volumeDryUp:false,rsFromHigh:false,baseWeeks:false})}>Core columns</button></div>{table.getAllLeafColumns().filter(c=>c.id!=='watch').map(c=><label key={c.id}><input type="checkbox" checked={c.getIsVisible()} onChange={c.getToggleVisibilityHandler()}/>{String(c.columnDef.header||c.id)}</label>)}</div>}
 
       <main className={`df-work ${page==='Chart Review'?'chartonly':''}`}>
-        {page!=='Chart Review'&&<div className="df-tablebox"><div className="df-tablewrap"><table><thead>{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const si=sorting.findIndex(s=>s.id===h.column.id);const ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}</thead><tbody>{table.getRowModel().rows.map(r=><tr key={r.id} className={r.original.ticker===selected?.ticker?'selected':''} onClick={()=>setSelectedTicker(r.original.ticker)}>{r.getVisibleCells().map(c=><td key={c.id}>{flexRender(c.column.columnDef.cell,c.getContext())}</td>)}</tr>)}</tbody></table></div><footer><span>Click header: DESC → ASC → OFF · every new column joins the sort stack</span><div><button disabled={!table.getCanPreviousPage()} onClick={()=>table.previousPage()}>←</button><b>{pagination.pageIndex+1}/{Math.max(1,table.getPageCount())}</b><button disabled={!table.getCanNextPage()} onClick={()=>table.nextPage()}>→</button></div></footer></div>}
+        {page!=='Chart Review'&&<div className="df-tablebox"><div className="df-tablewrap"><table><thead>{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const si=sorting.findIndex(s=>s.id===h.column.id);const ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}</thead><tbody>{table.getRowModel().rows.map(r=><tr key={r.id} className={r.original.ticker===selected?.ticker?'selected':''} onClick={()=>setSelectedTicker(r.original.ticker)}>{r.getVisibleCells().map(c=><td key={c.id}>{flexRender(c.column.columnDef.cell,c.getContext())}</td>)}</tr>)}</tbody></table></div><footer><span>Deep multi-sort: first clicked column = #1 · next = #2 · next = #3 · click again DESC → ASC → OFF</span><div><button disabled={!table.getCanPreviousPage()} onClick={()=>table.previousPage()}>←</button><b>{pagination.pageIndex+1}/{Math.max(1,table.getPageCount())}</b><button disabled={!table.getCanNextPage()} onClick={()=>table.nextPage()}>→</button></div></footer></div>}
         {selected&&<Detail stock={selected} bars={bars} loading={chartLoading} interval={interval} setInterval={setInterval} range={range} setRange={setRange} mode={chartMode} setMode={setChartMode} watched={watchlist.includes(selected.ticker)} toggleWatch={()=>toggleWatch(selected.ticker)}/>} 
       </main>
     </>}
