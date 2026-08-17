@@ -1,3 +1,3 @@
-import DeepVueTerminal from './DeepVueTerminal'
+import Root from './Root'
 
-export default DeepVueTerminal
+export default Root
