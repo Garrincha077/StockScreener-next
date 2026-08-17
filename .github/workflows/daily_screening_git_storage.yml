@@ -22,14 +22,12 @@ jobs:
     timeout-minutes: 150
     permissions:
       contents: write
-      pages: write
-      id-token: write
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Get current date
         id: date
@@ -146,10 +144,30 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Push persistent outputs
+      - name: Sync persistent outputs to main
         if: steps.commit.outputs.has_changes == 'true'
+        continue-on-error: true
         shell: bash
-        run: git push origin HEAD:${{ github.ref_name }}
+        run: |
+          # A scan can take a long time, while frontend code may be updated in parallel.
+          # Rebase the data-only commit on the newest main before pushing so the scan
+          # result is not lost to a harmless non-fast-forward rejection.
+          git fetch origin "${GITHUB_REF_NAME}"
+          git rebase "origin/${GITHUB_REF_NAME}"
+          git push origin HEAD:"${GITHUB_REF_NAME}"
+
+      - name: Upload recovery artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: scan-state-${{ steps.date.outputs.date }}-${{ github.run_id }}
+          path: |
+            data/daily_scans/latest_optimized_scan.txt
+            data/daily_scans/latest_scan_meta.json
+            data/batch_results/batch_progress.pkl
+            frontend/public/data/latest.json
+          if-no-files-found: warn
+          retention-days: 14
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -169,10 +187,6 @@ jobs:
         with:
           path: frontend/dist
 
-      - name: Deploy live terminal to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
-
       - name: Upload full screening results
         if: always()
         uses: actions/upload-artifact@v4
@@ -181,7 +195,6 @@ jobs:
           path: |
             data/daily_scans/
             data/logs/
-            frontend/public/data/latest.json
           if-no-files-found: warn
           retention-days: 90
 
@@ -195,3 +208,17 @@ jobs:
             echo "Fundamental cache directory size: $CACHE_SIZE"
             echo "Total cache files: $CACHE_FILES"
           fi
+
+  deploy-pages:
+    needs: screen-stocks
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy live terminal to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
