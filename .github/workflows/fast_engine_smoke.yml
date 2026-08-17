@@ -1,0 +1,49 @@
+name: Fast Engine Smoke Test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'src/screening/fast_batch_processor.py'
+      - 'run_fast_scan.py'
+      - 'export_frontend_data_fast.py'
+      - '.github/workflows/fast_engine_smoke.yml'
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Compile fast engine
+        run: |
+          python -m py_compile src/screening/fast_batch_processor.py run_fast_scan.py export_frontend_data_fast.py
+      - name: Batch-price smoke test
+        run: |
+          python - <<'PY'
+          from src.screening.fast_batch_processor import FastOptimizedBatchProcessor
+
+          tickers = ['AAPL', 'MSFT', 'NVDA']
+          p = FastOptimizedBatchProcessor(max_workers=2, rate_limit_delay=1.0, use_git_storage=True)
+          p.prefetch_price_history(tickers)
+          assert p.fetch_spy_data(), 'SPY batch history unavailable'
+          assert all(t in p.price_history and len(p.price_history[t]) >= 200 for t in tickers), 'Ticker batch history incomplete'
+
+          analyzed = 0
+          for ticker in tickers:
+              result = p.analyze_single_stock(ticker, min_price=5, max_price=10000, min_volume=100000)
+              if result:
+                  analyzed += 1
+                  print(ticker, 'stage', result['phase_info']['phase'], 'rows', len(result['price_data']))
+          assert analyzed >= 2, f'Only {analyzed}/3 smoke tickers analyzed'
+          print('FAST ENGINE SMOKE PASS', analyzed, '/ 3')
+          PY
