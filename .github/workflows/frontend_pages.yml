@@ -5,12 +5,14 @@ on:
     branches: [main]
     paths:
       - 'frontend/src/**'
+      - 'frontend/public/data/latest.json'
       - 'frontend/index.html'
       - 'frontend/package.json'
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
       - 'hydrate_frontend_charts.py'
       - 'enhance_frontend_dataset.py'
+      - 'compute_daily_changes.py'
       - '.github/workflows/frontend_pages.yml'
   workflow_dispatch:
 
@@ -28,6 +30,20 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Preserve previous dataset when scan data changed
+        if: ${{ hashFiles('frontend/public/data/latest.json') != '' }}
+        shell: bash
+        run: |
+          mkdir -p data/batch_results
+          rm -f data/batch_results/previous_frontend.json
+          if git rev-parse HEAD^ >/dev/null 2>&1 && git diff --name-only HEAD^ HEAD -- frontend/public/data/latest.json | grep -q 'frontend/public/data/latest.json'; then
+            if git show HEAD^:frontend/public/data/latest.json > data/batch_results/previous_frontend.json 2>/dev/null; then
+              echo "Previous dataset recovered from Git history for daily diff"
+            fi
+          fi
 
       - name: Set up Python
         if: ${{ hashFiles('frontend/public/data/latest.json') != '' }}
@@ -42,6 +58,9 @@ jobs:
           pip install yfinance pandas
           python hydrate_frontend_charts.py
           python enhance_frontend_dataset.py
+          if [ -s data/batch_results/previous_frontend.json ]; then
+            python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
+          fi
           test -s frontend/public/data/latest.json
           echo "Feature coverage: $(python - <<'PY'
           import json
