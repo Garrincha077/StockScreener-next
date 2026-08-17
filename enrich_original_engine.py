@@ -20,6 +20,7 @@ from __future__ import annotations
 import json
 import math
 import pickle
+import re
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,7 @@ from src.screening.signal_engine import score_buy_signal, score_sell_signal
 ROOT = Path(__file__).resolve().parent
 PROGRESS = ROOT / "data" / "batch_results" / "batch_progress.pkl"
 PRICE_CACHE = ROOT / "data" / "batch_results" / "price_history_5y.pkl"
+REPORT = ROOT / "data" / "daily_scans" / "latest_optimized_scan.txt"
 OUT = ROOT / "frontend" / "public" / "data" / "latest.json"
 MODEL = "original-signal-engine-v1"
 
@@ -98,6 +100,39 @@ def compact_contractions(vcp: dict) -> list[dict]:
     return rows
 
 
+def _spy_from_report() -> dict[str, Any] | None:
+    """Recover the SPY phase recorded by the completed original scan.
+
+    Recovery artifacts intentionally do not carry the large 5Y price cache. The
+    text report does carry the benchmark classification produced during that run,
+    so using it is more faithful than fetching/reclassifying SPY later.
+    """
+    if not REPORT.exists():
+        return None
+    try:
+        text = REPORT.read_text(encoding="utf-8", errors="ignore")
+        match = re.search(
+            r"SPY Trend Classification:\s*.*?Phase:\s*(\d+)\s*-\s*([^\n]+)",
+            text,
+            re.I | re.S,
+        )
+        if not match:
+            return None
+        phase = int(match.group(1))
+        phase_name = match.group(2).strip()
+        trend = {1: "Consolidating", 2: "Bullish", 3: "Topping", 4: "Bearish"}.get(phase, "Unknown")
+        return {
+            "ticker": "SPY",
+            "phase": phase,
+            "phase_name": phase_name,
+            "trend": trend,
+            "confidence": None,
+            "source": "completed-scan-report",
+        }
+    except Exception:
+        return None
+
+
 def market_gate(analyses: list[dict]) -> dict:
     phase_results = [a.get("phase_info", {}) for a in analyses if a.get("phase_info")]
     breadth = calculate_market_breadth(phase_results)
@@ -107,6 +142,7 @@ def market_gate(analyses: list[dict]) -> dict:
         "phase_name": "Unknown",
         "trend": "Unknown",
         "confidence": 0,
+        "source": "unavailable",
     }
     if PRICE_CACHE.exists():
         try:
@@ -116,8 +152,14 @@ def market_gate(analyses: list[dict]) -> dict:
             if isinstance(spy, pd.DataFrame) and not spy.empty and "Close" in spy:
                 spy = spy.tail(252).copy()
                 spy_analysis = analyze_spy_trend(spy, float(spy["Close"].iloc[-1]))
+                spy_analysis["source"] = "scan-price-cache"
         except Exception as exc:
             print(f"Original engine: SPY cache unavailable for market gate ({exc})")
+
+    if int(spy_analysis.get("phase", 0) or 0) == 0:
+        report_spy = _spy_from_report()
+        if report_spy:
+            spy_analysis = report_spy
 
     gate = should_generate_signals(spy_analysis, breadth)
     return {
