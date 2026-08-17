@@ -1,0 +1,42 @@
+.ss-resizable{position:relative}
+.ss-resize-both{resize:both!important;overflow:auto!important}
+.ss-resize-vertical{resize:vertical!important;overflow:auto!important}
+.ss-resizable::after{content:'↘';position:absolute;right:3px;bottom:1px;z-index:20;color:#4a6786;font-size:11px;line-height:1;pointer-events:none;opacity:.7}
+.ss-resizable:hover::after{color:#79aee5;opacity:1}
+
+/* Main terminal split: resizing the detail pane changes the table/detail balance. */
+.dv-work{grid-template-columns:minmax(520px,1fr) auto!important;align-items:start}
+.dv-detail.ss-resize-both{width:clamp(470px,35vw,720px);min-width:360px;max-width:calc(100vw - 120px);min-height:480px}
+.dv-tablebox.ss-resize-vertical{min-height:360px}
+.dv-tablebox.ss-resize-vertical[style*="height"]{display:flex;flex-direction:column}
+.dv-tablebox.ss-resize-vertical[style*="height"] .dv-tablewrap{height:auto;min-height:280px;flex:1}
+
+/* Lightweight Charts auto-sizes to this container, so chart height follows the drag. */
+.dv-chartbox.ss-resize-vertical{height:380px;min-height:220px;max-height:1100px}
+.dv-chartbox.ss-resize-vertical .dv-chart,.dv-chartbox.ss-resize-vertical .dv-chartmsg{height:100%}
+
+.dv-gridview.ss-resize-both{min-width:620px;min-height:420px;max-width:calc(100vw - 18px)}
+.dv-market>section.ss-resize-both{min-width:260px;min-height:180px;max-width:calc(100vw - 24px)}
+
+/* Groups: resizing the right leader pane gives/takes width from the board. */
+.grp-layout{grid-template-columns:minmax(560px,1fr) auto!important;align-items:start}
+.grp-leaders.ss-resize-both{width:310px;min-width:240px;max-width:calc(100vw - 120px);min-height:300px}
+.grp-board.ss-resize-vertical{min-height:380px;max-height:1500px}
+.grp-hero>div.ss-resize-both{min-width:220px;min-height:100px;max-width:calc(100vw - 24px)}
+.grp-note.ss-resize-vertical{min-height:45px;max-height:500px}
+
+.ss-layout-reset{position:fixed;left:14px;bottom:14px;z-index:80;border:1px solid #29445f;background:rgba(8,20,32,.94);color:#94abc2;border-radius:7px;padding:7px 10px;font:700 10px system-ui;letter-spacing:.02em;cursor:pointer;box-shadow:0 8px 24px #0007;backdrop-filter:blur(10px)}
+.ss-layout-reset:hover{border-color:#4d86bd;color:#fff}
+
+@media(max-width:1200px){
+  .grp-layout{grid-template-columns:1fr!important}
+  .grp-leaders.ss-resize-both{width:auto!important;height:auto!important;max-width:none!important}
+}
+
+@media(max-width:1050px){
+  .ss-resizable{resize:none!important}
+  .ss-resizable::after,.ss-layout-reset{display:none}
+  .dv-work{grid-template-columns:1fr!important}
+  .dv-detail.ss-resize-both,.dv-tablebox.ss-resize-vertical,.dv-gridview.ss-resize-both,.dv-market>section.ss-resize-both,.grp-hero>div.ss-resize-both,.grp-note.ss-resize-vertical,.grp-board.ss-resize-vertical,.grp-leaders.ss-resize-both{width:auto!important;height:auto!important;min-width:0!important;max-width:none!important;max-height:none!important}
+  .dv-chartbox.ss-resize-vertical{width:auto!important;height:380px!important;min-height:220px!important;max-height:none!important}
+}
