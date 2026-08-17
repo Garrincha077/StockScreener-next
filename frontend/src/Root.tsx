@@ -1,4 +1,4 @@
-import {useRef,useState} from 'react'
+import {useRef,useState,type CSSProperties,type KeyboardEvent,type PointerEvent as ReactPointerEvent} from 'react'
 import DeepVueTerminal from './DeepVueTerminal'
 import GroupsPage from './GroupsPage'
 import OriginalEngineDock from './OriginalEngineDock'
@@ -22,40 +22,43 @@ export default function Root(){
   const[view,setView]=useState<'terminal'|'groups'>('terminal')
   const[engineOpen,setEngineOpen]=useState(false)
   const[engineWidth,setEngineWidth]=useState(initialEngineWidth)
-  const drag=useRef<{startX:number;startWidth:number;pointerId:number}|null>(null)
+  const drag=useRef<{startX:number;startWidth:number;currentWidth:number;pointerId:number}|null>(null)
   useResizablePanels()
 
   const openTicker=(ticker:string)=>{location.hash=ticker;setView('terminal')}
   const maxEngineWidth=()=>Math.min(MAX_ENGINE_WIDTH,Math.max(MIN_ENGINE_WIDTH,window.innerWidth-700))
+  const normalizedEngineWidth=(value:number)=>Math.round(clamp(value,MIN_ENGINE_WIDTH,maxEngineWidth()))
   const setAndPersistEngineWidth=(value:number)=>{
-    const next=Math.round(clamp(value,MIN_ENGINE_WIDTH,maxEngineWidth()))
+    const next=normalizedEngineWidth(value)
     setEngineWidth(next)
     try{localStorage.setItem(ENGINE_WIDTH_KEY,String(next))}catch{}
   }
-  const startEngineResize=(event:React.PointerEvent<HTMLDivElement>)=>{
+  const startEngineResize=(event:ReactPointerEvent<HTMLDivElement>)=>{
     if(window.innerWidth<=1200)return
-    drag.current={startX:event.clientX,startWidth:engineWidth,pointerId:event.pointerId}
+    drag.current={startX:event.clientX,startWidth:engineWidth,currentWidth:engineWidth,pointerId:event.pointerId}
     event.currentTarget.setPointerCapture?.(event.pointerId)
     document.body.classList.add('oe-is-resizing')
     const move=(e:PointerEvent)=>{
       if(!drag.current)return
-      const next=drag.current.startWidth+(drag.current.startX-e.clientX)
-      setEngineWidth(Math.round(clamp(next,MIN_ENGINE_WIDTH,maxEngineWidth())))
+      const next=normalizedEngineWidth(drag.current.startWidth+(drag.current.startX-e.clientX))
+      drag.current.currentWidth=next
+      setEngineWidth(next)
     }
     const finish=()=>{
-      if(drag.current)setAndPersistEngineWidth(engineWidth)
+      const finalWidth=drag.current?.currentWidth
       drag.current=null
       document.body.classList.remove('oe-is-resizing')
       window.removeEventListener('pointermove',move)
       window.removeEventListener('pointerup',finish)
       window.removeEventListener('pointercancel',finish)
+      if(finalWidth!=null)setAndPersistEngineWidth(finalWidth)
     }
     window.addEventListener('pointermove',move)
     window.addEventListener('pointerup',finish)
     window.addEventListener('pointercancel',finish)
     event.preventDefault()
   }
-  const resizeWithKeyboard=(event:React.KeyboardEvent<HTMLDivElement>)=>{
+  const resizeWithKeyboard=(event:KeyboardEvent<HTMLDivElement>)=>{
     if(!['ArrowLeft','ArrowRight','Home'].includes(event.key))return
     event.preventDefault()
     if(event.key==='Home'){setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH);return}
@@ -64,7 +67,7 @@ export default function Root(){
   }
 
   return <>
-    {view==='groups'?<GroupsPage onBack={()=>setView('terminal')} onOpenTicker={openTicker}/>:<div className={`ss-root-shell ${engineOpen?'oe-open':''}`} style={{'--oe-pane-width':`${engineWidth}px`} as React.CSSProperties}>
+    {view==='groups'?<GroupsPage onBack={()=>setView('terminal')} onOpenTicker={openTicker}/>:<div className={`ss-root-shell ${engineOpen?'oe-open':''}`} style={{'--oe-pane-width':`${engineWidth}px`} as CSSProperties}>
       <div className="ss-terminal-host"><DeepVueTerminal/></div>
       {engineOpen&&<div className="oe-pane-splitter" role="separator" aria-label="Resize Original Engine panel" aria-orientation="vertical" tabIndex={0} onPointerDown={startEngineResize} onKeyDown={resizeWithKeyboard} onDoubleClick={()=>setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)} title="Drag left/right to resize · double-click to reset"><span>↔</span></div>}
       <OriginalEngineDock open={engineOpen} onOpenChange={setEngineOpen} embedded={engineOpen}/>
