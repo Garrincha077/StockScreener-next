@@ -17,6 +17,12 @@ export type FieldDef={id:string;label:string;kind:'number'|'text'|'boolean';defa
 export const fieldDefs:FieldDef[]=[
   {id:'stage',label:'Stage',kind:'number',defaultOp:'='},
   {id:'opportunityScore',label:'Opportunity',kind:'number',defaultOp:'>='},
+  {id:'leadershipScore',label:'Leadership-adjusted score',kind:'number',defaultOp:'>='},
+  {id:'groupLeadership',label:'Group leadership',kind:'number',defaultOp:'>='},
+  {id:'sectorRank',label:'Sector proxy rank',kind:'number',defaultOp:'>='},
+  {id:'industryRank',label:'Industry proxy rank',kind:'number',defaultOp:'>='},
+  {id:'sectorProxy',label:'Sector proxy',kind:'text',defaultOp:'contains'},
+  {id:'industryProxy',label:'Industry proxy',kind:'text',defaultOp:'contains'},
   {id:'rsRank',label:'RS Rank',kind:'number',defaultOp:'>='},
   {id:'rsAcceleration',label:'RS Δ',kind:'number',defaultOp:'>'},
   {id:'confluence',label:'Confluence',kind:'number',defaultOp:'>='},
@@ -116,18 +122,26 @@ export const builtInScreens:ScreenState[]=[
     sorting:[{id:'freshnessScore',desc:true},{id:'rsRank',desc:true},{id:'rsAcceleration',desc:true},{id:'stage2AgeWeeks',desc:false}],
     groups:[
       group('ANY',[rule('stage','=','1'),rule('stage','=','2')]),
-      group('ALL',[rule('rsRank','>=','70'),rule('rsAcceleration','>','0'),rule('stage2AgeWeeks','<=','12'),rule('distance10w','between','-8,12')]),
+      group('ALL',[rule('rsRank','>=','70'),rule('rsAcceleration','>','0'),rule('stage2AgeWeeks','<=','12'),rule('distance10w','between','-8,10'),rule('extended','false')]),
+    ],
+  },
+  {
+    name:'Group-confirmed Early Leaders',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
+    sorting:[{id:'leadershipScore',desc:true},{id:'groupLeadership',desc:true},{id:'rsRank',desc:true},{id:'freshnessScore',desc:true}],
+    groups:[
+      group('ANY',[rule('stage','=','1'),rule('stage','=','2')]),
+      group('ALL',[rule('rsRank','>=','70'),rule('rsAcceleration','>','0'),rule('distance10w','between','-8,10'),rule('groupLeadership','>=','65'),rule('extended','false')]),
     ],
   },
   {
     name:'Neglected → Leader',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
     sorting:[{id:'neglectedScore',desc:true},{id:'rsAcceleration',desc:true},{id:'return3m',desc:true},{id:'volumeRatio',desc:true}],
-    groups:[group('ALL',[rule('prior9mReturn','<=','15'),rule('return3m','>=','5'),rule('rsRank','>=','70'),rule('rsAcceleration','>','0'),rule('distance10w','between','-8,12')])],
+    groups:[group('ALL',[rule('prior9mReturn','<=','15'),rule('return3m','>=','3'),rule('return3m','<=','30'),rule('rsRank','>=','70'),rule('rsAcceleration','>','0'),rule('distance10w','between','-8,10'),rule('extended','false')])],
   },
   {
     name:'Fresh Breakouts',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
     sorting:[{id:'volumeRatio',desc:true},{id:'rsRank',desc:true},{id:'freshnessScore',desc:true},{id:'breakoutPct',desc:true}],
-    groups:[group('ALL',[rule('breakoutPct','>=','-1.5'),rule('volumeRatio','>=','1.5'),rule('rsAcceleration','>','0'),rule('extended','false')])],
+    groups:[group('ALL',[rule('breakoutPct','between','-1.5,5'),rule('volumeRatio','>=','1.5'),rule('rsRank','>=','70'),rule('rsAcceleration','>','0'),rule('extended','false')])],
   },
   {
     name:'Tight Bases',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
