@@ -1,5 +1,6 @@
 name: StockScout Full Validation
 
+# Final gate for the calibrated early-leader model + behavioral Groups UI.
 on:
   push:
     paths:
