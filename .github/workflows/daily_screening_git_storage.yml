@@ -149,12 +149,24 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
-          # A scan can take a long time, while frontend code may be updated in parallel.
-          # Rebase the data-only commit on the newest main before pushing so the scan
-          # result is not lost to a harmless non-fast-forward rejection.
-          git fetch origin "${GITHUB_REF_NAME}"
-          git rebase "origin/${GITHUB_REF_NAME}"
-          git push origin HEAD:"${GITHUB_REF_NAME}"
+          # The scan can run for an hour while frontend commits advance main.
+          # Keep retrying the data-only commit on top of the newest main instead of
+          # losing a successful scan to a non-fast-forward race.
+          pushed=false
+          for attempt in 1 2 3; do
+            echo "Sync attempt $attempt/3"
+            git fetch origin "${GITHUB_REF_NAME}"
+            if git rebase "origin/${GITHUB_REF_NAME}" && git push origin HEAD:"${GITHUB_REF_NAME}"; then
+              pushed=true
+              break
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          if [ "$pushed" != true ]; then
+            echo "::warning::Canonical push failed after retries; recovery artifact and Pages deploy will still continue."
+            exit 1
+          fi
 
       - name: Upload recovery artifact
         if: always()
