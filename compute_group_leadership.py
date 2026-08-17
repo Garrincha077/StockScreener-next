@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """Add data-first sector/industry proxy leadership to the frontend dataset.
 
-This intentionally does not pretend to be an official GICS classifier. Stocks are
-mapped to liquid ETF proxies by correlation of SPY-relative daily returns over the
-recent six months. The ETF proxies themselves are ranked by 1M/3M/6M performance
-relative to SPY. The result is a fast market-behaviour group layer with no paid API.
+Stocks are mapped to liquid ETF proxies by correlation of SPY-relative daily
+returns over roughly six months. These are behavioural proxies, not official
+GICS classifications. Proxy ranks combine 1M/3M/6M performance relative to SPY.
 """
 from __future__ import annotations
 
@@ -69,14 +68,13 @@ def proxy_stats(price_history: Dict[str, pd.DataFrame], spy: pd.Series, mapping:
         r1 = relative_perf(close, spy, 20)
         r3 = relative_perf(close, spy, 63)
         r6 = relative_perf(close, spy, 126)
-        composite = r1 * 0.25 + r3 * 0.35 + r6 * 0.40
         stats[ticker] = {
             "ticker": ticker,
             "name": name,
             "rel1m": round(r1, 2),
             "rel3m": round(r3, 2),
             "rel6m": round(r6, 2),
-            "composite": composite,
+            "composite": r1 * 0.25 + r3 * 0.35 + r6 * 0.40,
             "residual": residual_returns(close, spy),
         }
     order = sorted(stats, key=lambda t: stats[t]["composite"])
@@ -86,22 +84,27 @@ def proxy_stats(price_history: Dict[str, pd.DataFrame], spy: pd.Series, mapping:
     return stats
 
 
-def best_proxy(stock_close: pd.Series, spy: pd.Series, stats: dict, min_corr: float):
-    stock_res = residual_returns(stock_close, spy)
-    if stock_res.empty:
+def proxy_matrix(stats: dict) -> pd.DataFrame:
+    series = {ticker: item["residual"] for ticker, item in stats.items() if not item["residual"].empty}
+    return pd.DataFrame(series).sort_index() if series else pd.DataFrame()
+
+
+def best_proxy(stock_close: pd.Series, spy: pd.Series, matrix: pd.DataFrame, min_corr: float):
+    stock = residual_returns(stock_close, spy)
+    if stock.empty or matrix.empty:
         return None, 0.0
-    best_ticker, best_corr = None, -2.0
-    for ticker, item in stats.items():
-        proxy_res = item.get("residual")
-        joined = pd.concat([stock_res, proxy_res.rename("proxy")], axis=1).dropna()
-        if len(joined) < 60:
-            continue
-        corr = finite(joined.iloc[:, 0].corr(joined.iloc[:, 1]), -2.0)
-        if corr > best_corr:
-            best_ticker, best_corr = ticker, corr
-    if best_ticker is None or best_corr < min_corr:
-        return None, best_corr if best_corr > -2 else 0.0
-    return best_ticker, best_corr
+    joined = matrix.join(stock.rename("__stock"), how="inner")
+    if len(joined) < 60:
+        return None, 0.0
+    cols = [c for c in matrix.columns if joined[[c, "__stock"]].dropna().shape[0] >= 60]
+    if not cols:
+        return None, 0.0
+    correlations = joined[cols].corrwith(joined["__stock"]).dropna()
+    if correlations.empty:
+        return None, 0.0
+    ticker = str(correlations.idxmax())
+    corr = finite(correlations.loc[ticker])
+    return (ticker, corr) if corr >= min_corr else (None, corr)
 
 
 def stock_early(row: dict) -> bool:
@@ -117,20 +120,19 @@ def stock_early(row: dict) -> bool:
 
 
 def summarize(mapping: Dict[str, str], stats: dict, rows: list[dict], ticker_field: str):
+    buckets = {ticker: [] for ticker in mapping}
+    for row in rows:
+        ticker = row.get(ticker_field)
+        if ticker in buckets:
+            buckets[ticker].append(row)
     out = []
     for ticker, name in mapping.items():
         item = stats.get(ticker)
         if not item:
             continue
-        members = [r for r in rows if r.get(ticker_field) == ticker]
+        members = buckets[ticker]
         opportunities = [finite(r.get("opportunityScore", r.get("score", 0))) for r in members]
-        stage2 = sum(int(finite(r.get("stage"))) == 2 for r in members)
-        leaders = sum(stock_early(r) for r in members)
-        top = sorted(
-            members,
-            key=lambda r: (finite(r.get("leadershipScore")), finite(r.get("opportunityScore")), finite(r.get("rsRank"))),
-            reverse=True,
-        )[:8]
+        top = sorted(members, key=lambda r: (finite(r.get("leadershipScore")), finite(r.get("opportunityScore")), finite(r.get("rsRank"))), reverse=True)[:8]
         out.append({
             "ticker": ticker,
             "name": name,
@@ -139,8 +141,8 @@ def summarize(mapping: Dict[str, str], stats: dict, rows: list[dict], ticker_fie
             "rel3m": item["rel3m"],
             "rel6m": item["rel6m"],
             "stocks": len(members),
-            "stage2Pct": round(stage2 / len(members) * 100.0, 1) if members else 0.0,
-            "earlyLeaders": leaders,
+            "stage2Pct": round(sum(int(finite(r.get("stage"))) == 2 for r in members) / len(members) * 100.0, 1) if members else 0.0,
+            "earlyLeaders": sum(stock_early(r) for r in members),
             "medianOpportunity": round(median(opportunities), 1) if opportunities else 0.0,
             "topTickers": [r.get("ticker") for r in top if r.get("ticker")],
         })
@@ -151,12 +153,10 @@ def main():
     if not DATA.exists() or not PRICE_CACHE.exists():
         print("Group leadership skipped: dataset or price cache missing")
         return
-
     payload = json.loads(DATA.read_text(encoding="utf-8"))
     rows = payload.get("universe") or []
     with PRICE_CACHE.open("rb") as fh:
         price_history: Dict[str, pd.DataFrame] = pickle.load(fh)
-
     spy = close_series(price_history.get("SPY"))
     if spy.empty:
         print("Group leadership skipped: SPY missing")
@@ -164,47 +164,34 @@ def main():
 
     sector_stats = proxy_stats(price_history, spy, SECTOR_PROXIES)
     industry_stats = proxy_stats(price_history, spy, INDUSTRY_PROXIES)
+    sectors_matrix = proxy_matrix(sector_stats)
+    industries_matrix = proxy_matrix(industry_stats)
 
-    sector_covered = 0
-    industry_covered = 0
+    sector_covered = industry_covered = 0
     for row in rows:
-        ticker = str(row.get("ticker", "")).upper()
-        close = close_series(price_history.get(ticker))
+        close = close_series(price_history.get(str(row.get("ticker", "")).upper()))
         if close.empty:
             continue
-
-        sector_ticker, sector_corr = best_proxy(close, spy, sector_stats, 0.10)
-        industry_ticker, industry_corr = best_proxy(close, spy, industry_stats, 0.12)
+        sector_ticker, sector_corr = best_proxy(close, spy, sectors_matrix, 0.10)
+        industry_ticker, industry_corr = best_proxy(close, spy, industries_matrix, 0.12)
 
         sector_rank = 50
-        industry_rank = 50
         if sector_ticker:
             item = sector_stats[sector_ticker]
-            row["sectorProxyTicker"] = sector_ticker
-            row["sectorProxy"] = item["name"]
-            row["sectorCorrelation"] = round(sector_corr, 3)
-            row["sectorRank"] = item["rank"]
+            row.update(sectorProxyTicker=sector_ticker, sectorProxy=item["name"], sectorCorrelation=round(sector_corr, 3), sectorRank=item["rank"])
             sector_rank = item["rank"]
             sector_covered += 1
         else:
-            row["sectorProxyTicker"] = None
-            row["sectorProxy"] = "Broad / Unclassified"
-            row["sectorCorrelation"] = round(sector_corr, 3)
-            row["sectorRank"] = 50
+            row.update(sectorProxyTicker=None, sectorProxy="Broad / Unclassified", sectorCorrelation=round(sector_corr, 3), sectorRank=50)
 
+        industry_rank = 50
         if industry_ticker:
             item = industry_stats[industry_ticker]
-            row["industryProxyTicker"] = industry_ticker
-            row["industryProxy"] = item["name"]
-            row["industryCorrelation"] = round(industry_corr, 3)
-            row["industryRank"] = item["rank"]
+            row.update(industryProxyTicker=industry_ticker, industryProxy=item["name"], industryCorrelation=round(industry_corr, 3), industryRank=item["rank"])
             industry_rank = item["rank"]
             industry_covered += 1
         else:
-            row["industryProxyTicker"] = None
-            row["industryProxy"] = "Broad / Unclassified"
-            row["industryCorrelation"] = round(industry_corr, 3)
-            row["industryRank"] = 50
+            row.update(industryProxyTicker=None, industryProxy="Broad / Unclassified", industryCorrelation=round(industry_corr, 3), industryRank=50)
 
         group_leadership = round(sector_rank * 0.45 + industry_rank * 0.55)
         row["groupLeadership"] = group_leadership
@@ -222,23 +209,14 @@ def main():
         "industries": industries,
     }
     market = payload.setdefault("market", {})
-    market["groupModel"] = "behavioral-proxy-v1"
-    market["sectorCoverage"] = sector_covered
-    market["industryCoverage"] = industry_covered
+    market.update(groupModel="behavioral-proxy-v1", sectorCoverage=sector_covered, industryCoverage=industry_covered)
     if sectors:
-        market["topSector"] = sectors[0]["name"]
-        market["topSectorRank"] = sectors[0]["rank"]
+        market.update(topSector=sectors[0]["name"], topSectorRank=sectors[0]["rank"])
     if industries:
-        market["topIndustry"] = industries[0]["name"]
-        market["topIndustryRank"] = industries[0]["rank"]
-
+        market.update(topIndustry=industries[0]["name"], topIndustryRank=industries[0]["rank"])
     payload["version"] = max(5, int(payload.get("version", 1) or 1))
     DATA.write_text(json.dumps(payload, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
-    print(
-        f"Group leadership: sectors {sector_covered:,}/{len(rows):,}, "
-        f"industries {industry_covered:,}/{len(rows):,}; "
-        f"top sector={market.get('topSector','—')}, top industry={market.get('topIndustry','—')}"
-    )
+    print(f"Group leadership: sectors {sector_covered:,}/{len(rows):,}, industries {industry_covered:,}/{len(rows):,}; top sector={market.get('topSector','—')}, top industry={market.get('topIndustry','—')}")
 
 
 if __name__ == "__main__":
