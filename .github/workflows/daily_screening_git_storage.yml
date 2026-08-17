@@ -68,10 +68,11 @@ jobs:
           CACHED_STOCKS: ${{ steps.cache-check.outputs.cached_stocks }}
         run: |
           echo "Starting post-market screening"
-          echo "Fresh price data: full universe"
+          echo "Engine: fast batched 5Y price prefetch"
+          echo "Fresh price data: full universe, one shared market-data pass"
           echo "Cached fundamentals: $CACHED_STOCKS stocks"
           mkdir -p data/daily_scans data/logs
-          python run_optimized_scan.py --conservative --git-storage
+          python run_fast_scan.py --conservative --git-storage
 
       - name: Verify latest report
         shell: bash
@@ -83,7 +84,7 @@ jobs:
       - name: Export live terminal dataset and 5Y charts
         shell: bash
         run: |
-          python export_frontend_data.py
+          python export_frontend_data_fast.py
           python enhance_frontend_dataset.py
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
@@ -115,6 +116,7 @@ jobs:
               "frontend_data": "frontend/public/data/latest.json",
               "chart_horizon": "5y",
               "feature_model": "data-first-v1",
+              "scan_engine": "fast-batched-5y-v1",
           }
           Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
           PY
