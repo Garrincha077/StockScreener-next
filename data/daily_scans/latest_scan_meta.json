@@ -1,11 +1,13 @@
 {
-  "generated_at_utc": "2026-08-17T20:58:30.692566+00:00",
-  "workflow_run_id": "32068001669",
+  "generated_at_utc": "2026-08-17T21:47:37.560563+00:00",
+  "workflow_run_id": "32072141123",
   "workflow_run_attempt": "1",
-  "source_commit": "92044d371d6cd134350d56430e88b5de1509d415",
+  "source_commit": "2c6b1650728b7adc546f273eed557f24e5a3fe6d",
   "report": "data/daily_scans/latest_optimized_scan.txt",
   "frontend_data": "frontend/public/data/latest.json",
   "chart_horizon": "5y",
-  "feature_model": "data-first-v1",
+  "feature_model": "data-first-v2-early-leader-groups",
+  "calibration_model": "early-leader-v2",
+  "group_model": "behavioral-proxy-v1",
   "scan_engine": "fast-batched-5y-v1"
 }
