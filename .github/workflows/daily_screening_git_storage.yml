@@ -2,10 +2,8 @@ name: Daily Stock Screening (Post-Market)
 
 on:
   schedule:
-    # Run at 22:30 Croatia time while CEST (UTC+2).
+    # 22:30 Croatia summer time (20:30 UTC). GitHub cron itself is UTC.
     - cron: '30 20 * * 1-5'
-
-  # Allow manual triggering from the Actions tab.
   workflow_dispatch:
     inputs:
       force_full_refresh:
@@ -14,7 +12,6 @@ on:
         type: boolean
         default: false
 
-# Prevent two full-market scans from running at the same time.
 concurrency:
   group: daily-stock-screening
   cancel-in-progress: false
@@ -23,7 +20,6 @@ jobs:
   screen-stocks:
     runs-on: ubuntu-latest
     timeout-minutes: 120
-
     permissions:
       contents: write
 
@@ -49,12 +45,6 @@ jobs:
             echo "Found existing fundamental cache"
             echo "cached_stocks=$CACHE_COUNT" >> "$GITHUB_OUTPUT"
             echo "Cached stocks: $CACHE_COUNT"
-
-            echo "Cache age distribution:"
-            find data/fundamentals_cache -name "*_fundamentals.json" -mtime -7 -type f | wc -l | xargs echo "  <7 days:"
-            find data/fundamentals_cache -name "*_fundamentals.json" -mtime +7 -mtime -30 -type f | wc -l | xargs echo "  7-30 days:"
-            find data/fundamentals_cache -name "*_fundamentals.json" -mtime +30 -mtime -90 -type f | wc -l | xargs echo "  30-90 days:"
-            find data/fundamentals_cache -name "*_fundamentals.json" -mtime +90 -type f | wc -l | xargs echo "  >90 days (stale):"
           else
             echo "No existing cache; creating it"
             mkdir -p data/fundamentals_cache
@@ -80,13 +70,7 @@ jobs:
           echo "Starting post-market screening"
           echo "Fresh price data: full universe"
           echo "Cached fundamentals: $CACHED_STOCKS stocks"
-          echo ""
-
-          mkdir -p data/daily_scans
-          mkdir -p data/logs
-
-          # Conservative mode prioritizes reliability over speed and reduces
-          # the risk of Yahoo Finance throttling during a 3,800+ stock scan.
+          mkdir -p data/daily_scans data/logs
           python run_optimized_scan.py --conservative --git-storage
 
       - name: Verify latest report
@@ -96,6 +80,13 @@ jobs:
           echo "Latest report created successfully"
           wc -l data/daily_scans/latest_optimized_scan.txt
 
+      - name: Export web terminal dataset
+        shell: bash
+        run: |
+          python export_frontend_data.py
+          test -s frontend/public/data/latest.json
+          ls -lh frontend/public/data/latest.json
+
       - name: Write run metadata
         env:
           RUN_ID: ${{ github.run_id }}
@@ -103,21 +94,18 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
         run: |
           python - <<'PY'
-          import json
-          import os
+          import json, os
           from datetime import datetime, timezone
           from pathlib import Path
-
           payload = {
               "generated_at_utc": datetime.now(timezone.utc).isoformat(),
               "workflow_run_id": os.environ["RUN_ID"],
               "workflow_run_attempt": os.environ["RUN_ATTEMPT"],
               "source_commit": os.environ["COMMIT_SHA"],
               "report": "data/daily_scans/latest_optimized_scan.txt",
+              "frontend_data": "frontend/public/data/latest.json",
           }
-
-          path = Path("data/daily_scans/latest_scan_meta.json")
-          path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+          Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
           PY
 
       - name: Add scan summary
@@ -133,46 +121,16 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
-      - name: Show fundamental refresh stats
-        if: always()
-        run: |
-          echo "=== Fundamental Cache Statistics ==="
-          if [ -f "data/fundamentals_cache/metadata.json" ]; then
-            python3 <<'PY'
-          import json
-          from datetime import datetime
-
-          try:
-              with open("data/fundamentals_cache/metadata.json", "r", encoding="utf-8") as f:
-                  metadata = json.load(f)
-
-              updates = [(ticker, data["last_updated"]) for ticker, data in metadata.items()]
-              updates.sort(key=lambda x: x[1], reverse=True)
-
-              print(f"Total tracked: {len(updates)} stocks")
-              print("Last 10 updates:")
-              for ticker, timestamp in updates[:10]:
-                  dt = datetime.fromisoformat(timestamp)
-                  print(f"  {ticker}: {dt.strftime('%Y-%m-%d %H:%M')}")
-          except Exception as exc:
-              print(f"Could not read metadata: {exc}")
-          PY
-          else
-            echo "No metadata file found"
-          fi
-
-      - name: Commit cache and latest report
+      - name: Commit cache and canonical outputs
         id: commit
         shell: bash
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-
-          # Persist only reusable cache + canonical latest outputs.
-          # Historical timestamped reports remain Actions artifacts and do not bloat Git.
           git add data/fundamentals_cache/
           git add -f data/daily_scans/latest_optimized_scan.txt
           git add -f data/daily_scans/latest_scan_meta.json
+          git add -f frontend/public/data/latest.json
 
           if git diff --staged --quiet; then
             echo "No persistent changes to commit"
@@ -196,6 +154,7 @@ jobs:
           path: |
             data/daily_scans/
             data/logs/
+            frontend/public/data/latest.json
           if-no-files-found: warn
           retention-days: 90
 
