@@ -1,0 +1,16 @@
+name: StockScout Full Validation
+
+on:
+  push:
+    paths:
+      - '.github/workflows/stockscout_full_validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  full-scan:
+    uses: ./.github/workflows/daily_screening_git_storage.yml
