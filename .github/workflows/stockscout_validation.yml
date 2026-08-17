@@ -6,6 +6,7 @@ on:
       - 'src/screening/fast_batch_processor.py'
       - 'tests/test_fast_batch_processor_regression.py'
       - 'enhance_frontend_dataset.py'
+      - 'calibrate_frontend_setups.py'
       - 'audit_frontend_dataset.py'
       - '.github/workflows/stockscout_validation.yml'
   workflow_dispatch:
@@ -31,6 +32,9 @@ jobs:
 
       - name: Regression test
         run: python -m pytest tests/test_fast_batch_processor_regression.py -q
+
+      - name: Apply current setup calibration in workspace
+        run: python calibrate_frontend_setups.py
 
       - name: Dataset calibration audit
         run: python audit_frontend_dataset.py
