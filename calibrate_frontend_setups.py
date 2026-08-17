@@ -5,6 +5,11 @@ The raw feature engine remains untouched. This pass only turns those transparent
 fields into stricter setup labels and an early-opportunity ranking. It is designed
 for the user's target profile: long-neglected/base-building stocks whose RS and
 volume are turning as a new long-term trend begins, not mature/extended leaders.
+
+IMPORTANT: this file is the CUSTOM DISCOVERY layer. After it finishes, the
+repository's original Minervini/Weinstein/O'Neil signal engine is exported by
+``enrich_original_engine.py`` into separate ``original*`` fields. The two models
+are intentionally not blended into one score.
 """
 from __future__ import annotations
 
@@ -282,6 +287,11 @@ def main():
         f"neglected={market['neglectedLeaders']}, transitions={market['transitions']}, "
         f"freshBreakouts={market['freshBreakouts']}, extended={market['extendedCount']}"
     )
+
+    # Keep the repository's source methodology distinct from our discovery score.
+    # This performs no market-data fetch; it reuses the completed scan analyses.
+    from enrich_original_engine import main as enrich_original_engine
+    enrich_original_engine()
 
 
 if __name__ == "__main__":
