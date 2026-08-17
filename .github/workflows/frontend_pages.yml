@@ -4,7 +4,11 @@ on:
   push:
     branches: [main]
     paths:
-      - 'frontend/**'
+      - 'frontend/src/**'
+      - 'frontend/index.html'
+      - 'frontend/package.json'
+      - 'frontend/tsconfig*.json'
+      - 'frontend/vite.config.ts'
       - '.github/workflows/frontend_pages.yml'
   workflow_dispatch:
 
