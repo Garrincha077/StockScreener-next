@@ -243,7 +243,8 @@ def calibrate(row: dict):
         "Neglected → Leader", "S1→S2 Transition", "Long Base Breakout",
         "Fresh Breakout", "RS Before Price", "Fresh Stage 2", "Volume Wake-Up",
     }
-    perfect = early_primary and opportunity >= 62 and confluence >= 7 and rs >= 75 and not extended
+    early_stage = stage == 1 or (stage == 2 and age <= 12)
+    perfect = early_primary and early_stage and opportunity >= 62 and confluence >= 7 and rs >= 75 and not extended
 
     row.update({
         "setupTags": tags,
