@@ -62,6 +62,18 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Preserve previous terminal snapshot
+        shell: bash
+        run: |
+          mkdir -p data/batch_results
+          if [ -s frontend/public/data/latest.json ]; then
+            cp frontend/public/data/latest.json data/batch_results/previous_frontend.json
+            echo "Previous canonical dataset preserved for daily diff"
+          else
+            rm -f data/batch_results/previous_frontend.json
+            echo "No previous canonical dataset available"
+          fi
+
       - name: Run optimized stock screening
         env:
           FORCE_FULL_REFRESH: ${{ github.event.inputs.force_full_refresh || 'false' }}
@@ -86,6 +98,7 @@ jobs:
         run: |
           python export_frontend_data_fast.py
           python enhance_frontend_dataset.py
+          python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
           echo "Chart shards: $(find frontend/public/data/charts -name '*.json' | wc -l)"
@@ -94,6 +107,7 @@ jobs:
           p=json.load(open('frontend/public/data/latest.json'))
           print('Feature coverage:', p.get('market',{}).get('featureCoverage',0))
           print('Feature model:', p.get('featureModel'))
+          print('Daily changes:', p.get('market',{}).get('dailyChanges',{}))
           PY
           du -sh frontend/public/data
 
@@ -115,7 +129,7 @@ jobs:
               "report": "data/daily_scans/latest_optimized_scan.txt",
               "frontend_data": "frontend/public/data/latest.json",
               "chart_horizon": "5y",
-              "feature_model": "data-first-v1",
+              "feature_model": "data-first-v2-daily-diff",
               "scan_engine": "fast-batched-5y-v1",
           }
           Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -184,6 +198,7 @@ jobs:
             data/daily_scans/latest_optimized_scan.txt
             data/daily_scans/latest_scan_meta.json
             data/batch_results/batch_progress.pkl
+            data/batch_results/previous_frontend.json
             frontend/public/data/latest.json
           if-no-files-found: warn
           retention-days: 14
