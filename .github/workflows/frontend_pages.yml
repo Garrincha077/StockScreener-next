@@ -1,4 +1,4 @@
-name: Validate StockScout Terminal
+name: Deploy StockScout Terminal
 
 on:
   push:
@@ -9,6 +9,7 @@ on:
       - 'frontend/package.json'
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
+      - 'hydrate_frontend_charts.py'
       - '.github/workflows/frontend_pages.yml'
   workflow_dispatch:
 
@@ -16,7 +17,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: frontend-validation
+  group: frontend-pages
   cancel-in-progress: true
 
 jobs:
@@ -24,6 +25,23 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Hydrate canonical 5Y chart shards
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install yfinance pandas
+          test -s frontend/public/data/latest.json
+          python hydrate_frontend_charts.py
+          test -d frontend/public/data/charts
+          echo "Chart shards: $(find frontend/public/data/charts -name '*.json' | wc -l)"
+          du -sh frontend/public/data
 
       - uses: actions/setup-node@v4
         with:
@@ -37,7 +55,21 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: Explain deployment ownership
-        run: |
-          echo "Frontend source validated successfully."
-          echo "Live GitHub Pages deployment is owned by the stock-scan workflow so UI, latest.json and 5Y chart shards are deployed atomically."
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+  deploy-pages:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy hydrated terminal to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
