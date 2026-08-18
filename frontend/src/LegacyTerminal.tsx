@@ -1,0 +1,77 @@
+import {useEffect,useMemo,useState} from 'react'
+import './legacy-terminal.css'
+
+type Row={ticker:string;price?:number;stage?:number;stageName?:string;originalBuyScore?:number;originalMarketQualifiedBuy?:boolean;originalRR?:number;originalStopLoss?:number;originalRiskPct?:number;originalRewardTarget?:number;originalEntryQuality?:string;originalTTScore?:number;originalTTPasses?:number;originalVcpQuality?:number;originalAdVolumeRatio?:number;originalBreakoutType?:string|null;originalBreakoutLevel?:number|null;originalBreakoutVolumeConfirmed?:boolean;originalSellScore?:number;originalSell?:boolean;originalSellSeverity?:string;phaseConfidence?:number;originalEngine?:any;richData?:any}
+type Payload={generatedAt?:string;market?:any;universe?:Row[];layers?:any}
+type Screen='ALL'|'BUY ≥70'|'QUALIFIED'|'TT 7+'|'VCP'|'SELL'
+type SortKey='originalBuyScore'|'originalRR'|'originalTTPasses'|'originalVcpQuality'|'originalAdVolumeRatio'|'originalSellScore'|'ticker'
+
+const fmt=(v:any,d=1)=>typeof v==='number'&&Number.isFinite(v)?v.toFixed(d):'—'
+const money=(v:any)=>typeof v==='number'&&Number.isFinite(v)?`$${v.toFixed(2)}`:'—'
+const pct=(v:any)=>typeof v==='number'&&Number.isFinite(v)?`${v.toFixed(1)}%`:'—'
+const screens:Screen[]=['ALL','BUY ≥70','QUALIFIED','TT 7+','VCP','SELL']
+const criteriaLabels:Record<string,string>={price_above_150_200:'Price > 150 & 200 DMA',sma_150_above_200:'150 DMA > 200 DMA',sma_200_rising:'200 DMA rising',sma_50_above_150:'50 DMA > 150 DMA',price_above_50:'Price > 50 DMA',price_30pct_above_52w_low:'≥30% above 52W low',price_near_52w_high:'Within 25% of 52W high',confirmed_stage_2:'Confirmed Stage 2'}
+
+export default function LegacyTerminal(){
+  const[payload,setPayload]=useState<Payload|null>(null)
+  const[error,setError]=useState('')
+  const[query,setQuery]=useState('')
+  const[screen,setScreen]=useState<Screen>('ALL')
+  const[sort,setSort]=useState<SortKey>('originalBuyScore')
+  const[desc,setDesc]=useState(true)
+  const[selected,setSelected]=useState(()=>location.hash.replace('#','').toUpperCase())
+
+  const load=()=>fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}).then((p:Payload)=>{setPayload(p);setError('');if(!selected&&p.universe?.length)setSelected(p.universe[0].ticker)}).catch(e=>setError(String(e)))
+  useEffect(()=>{load()},[])
+  useEffect(()=>{if(selected){history.replaceState(null,'',`${location.pathname}${location.search}#${selected}`)}},[selected])
+
+  const rows=payload?.universe||[]
+  const filtered=useMemo(()=>rows.filter(r=>{
+    if(query.trim()&&!r.ticker.includes(query.trim().toUpperCase()))return false
+    const e=r.originalEngine
+    if(screen==='BUY ≥70'&&(r.originalBuyScore||0)<70)return false
+    if(screen==='QUALIFIED'&&!r.originalMarketQualifiedBuy)return false
+    if(screen==='TT 7+'&&(r.originalTTPasses||0)<7)return false
+    if(screen==='VCP'&&!e?.vcp?.isVcp&&(r.originalVcpQuality||0)<=0)return false
+    if(screen==='SELL'&&!r.originalSell&&(r.originalSellScore||0)<=0)return false
+    return true
+  }).sort((a,b)=>{
+    const av=(a as any)[sort],bv=(b as any)[sort]
+    if(sort==='ticker')return desc?String(bv||'').localeCompare(String(av||'')):String(av||'').localeCompare(String(bv||''))
+    const an=typeof av==='number'?av:-Infinity,bn=typeof bv==='number'?bv:-Infinity
+    return desc?bn-an:an-bn
+  }),[rows,query,screen,sort,desc])
+  const row=rows.find(r=>r.ticker===selected)||filtered[0]||rows[0]
+  const e=row?.originalEngine
+  const components=e?.buy?.components||{}
+  const criteria=e?.minervini?.criteria||{}
+  const contractions=e?.vcp?.contractions||[]
+  const gate=payload?.market?.originalSignalGate?.gate
+  const baseline=payload?.layers?.legacy?.upstreamCommit||'2fce788b7c95e595bdbb012bd35d3a92fcc49e5a'
+  const sortBy=(key:SortKey)=>{if(sort===key)setDesc(x=>!x);else{setSort(key);setDesc(key!=='ticker')}}
+
+  if(!payload)return <div className="lg-loading">{error||'Loading LEGACY layer…'}</div>
+  return <div className="lg-app">
+    <header className="lg-head"><div><small>FROZEN SOURCE METHODOLOGY</small><h1>LEGACY</h1><span>RyanJHamby/stock-screener @ {baseline.slice(0,8)}</span></div><div className="lg-market"><b className={gate?.should_generate_buys?'good':'warn'}>BUY GATE {gate?.should_generate_buys?'ON':'OFF'}</b><span>{rows.length.toLocaleString()} stocks</span><button onClick={load}>↻</button></div></header>
+    <section className="lg-toolbar"><div>{screens.map(s=><button key={s} className={screen===s?'active':''} onClick={()=>setScreen(s)}>{s}</button>)}</div><input value={query} onChange={x=>setQuery(x.target.value)} placeholder="Ticker…"/><span>{filtered.length.toLocaleString()} matches</span></section>
+    <main className="lg-work">
+      <section className="lg-tablebox"><div className="lg-note">Only upstream/original setups, scores and qualifications. StockScout Opportunity, custom tags and calibration do not participate in this ranking.</div><div className="lg-tablewrap"><table><thead><tr>
+        <H label="Ticker" k="ticker" sort={sort} desc={desc} click={sortBy}/><th>Phase</th><H label="Buy /125" k="originalBuyScore" sort={sort} desc={desc} click={sortBy}/><th>Signal</th><H label="TT" k="originalTTPasses" sort={sort} desc={desc} click={sortBy}/><H label="VCP" k="originalVcpQuality" sort={sort} desc={desc} click={sortBy}/><H label="R/R" k="originalRR" sort={sort} desc={desc} click={sortBy}/><th>Entry</th><H label="A/D vol" k="originalAdVolumeRatio" sort={sort} desc={desc} click={sortBy}/><th>Breakout</th><H label="Sell" k="originalSellScore" sort={sort} desc={desc} click={sortBy}/>
+      </tr></thead><tbody>{filtered.map(r=><tr key={r.ticker} className={r.ticker===row?.ticker?'selected':''} onClick={()=>setSelected(r.ticker)}><td><b>{r.ticker}</b><small>{money(r.price)}</small></td><td>{r.originalEngine?.phase??r.stage??'—'}</td><td><strong>{fmt(r.originalBuyScore,0)}</strong></td><td>{r.originalMarketQualifiedBuy?<span className="pill good">QUALIFIED</span>:r.originalEngine?.buy?.isBuy?<span className="pill">BUY</span>:'—'}</td><td>{fmt(r.originalTTPasses,0)}/8</td><td>{fmt(r.originalVcpQuality,0)}</td><td>{fmt(r.originalRR,1)}:1</td><td>{r.originalEntryQuality||'—'}</td><td>{fmt(r.originalAdVolumeRatio,2)}x</td><td>{r.originalBreakoutType||'—'}</td><td className={r.originalSell?'bad':''}>{fmt(r.originalSellScore,0)}</td></tr>)}</tbody></table></div></section>
+      <aside className="lg-detail">{!e?<div className="lg-empty">This snapshot does not contain LEGACY enrichment yet. The next nightly run will populate it.</div>:<>
+        <header><div><h2>{row?.ticker}</h2><span>Phase {e.phase} · confidence {pct(e.phaseConfidence)}</span></div><strong>{fmt(e.buy?.score,0)}<small>/125</small></strong></header>
+        <div className="lg-kpis"><K l="Market" v={e.buy?.marketQualified?'QUALIFIED':e.buy?.isBuy?'BUY':'NO BUY'} good={e.buy?.marketQualified}/><K l="TT" v={`${fmt(e.minervini?.passed,0)}/8`} good={e.minervini?.passes}/><K l="VCP" v={fmt(e.vcp?.quality,0)}/><K l="R/R" v={`${fmt(e.buy?.riskReward,1)}:1`} good={(e.buy?.riskReward||0)>=2}/><K l="Stop" v={money(e.buy?.stopLoss)}/><K l="Risk" v={pct(e.buy?.riskPct)}/><K l="Target" v={money(e.buy?.rewardTarget)}/><K l="Entry" v={e.buy?.entryQuality||'—'}/></div>
+        <section><h3>SOURCE SCORE ANATOMY</h3><div className="lg-components"><K l="Trend" v={`${fmt(components.trend,1)}/40`}/><K l="Fundamental" v={`${fmt(components.fundamental,1)}/40`}/><K l="R/R" v={`${fmt(components.riskReward,1)}/15`}/><K l="RS" v={`${fmt(components.relativeStrength,1)}/10`}/><K l="Volume" v={`${fmt(components.volume,1)}/10`}/><K l="Entry" v={`${fmt(components.entry,1)}/5`}/><K l="VCP bonus" v={`${fmt(components.vcpBonus,1)}/5`}/></div></section>
+        <section><h3>MINERVINI 8-POINT TEMPLATE</h3><div className="lg-checks">{Object.entries(criteriaLabels).map(([k,label])=><span key={k} className={criteria[k]?'pass':'fail'}><i>{criteria[k]?'✓':'×'}</i>{label}</span>)}</div></section>
+        <section><h3>BREAKOUT / VOLUME</h3><div className="lg-components"><K l="Type" v={e.breakout?.breakout_type||'—'}/><K l="Level" v={money(e.breakout?.breakout_level)}/><K l="Volume" v={e.breakout?.volume_confirmed?'CONFIRMED':'not confirmed'} good={e.breakout?.volume_confirmed}/><K l="A/D vol" v={`${fmt(e.buy?.adVolumeRatio,2)}x`}/></div></section>
+        <section><h3>VCP ANATOMY</h3><p>{e.vcp?.pattern||'No source VCP pattern description.'}</p>{contractions.length>0&&<div className="lg-contract">{contractions.map((c:any,i:number)=><span key={i}><b>C{i+1}</b>{pct(c.drawdownPct)}<small>{c.durationDays||0}d · vol {fmt(c.volumeRatio,2)}x</small></span>)}</div>}</section>
+        <section><h3>ORIGINAL REASONS</h3><ul>{(e.buy?.reasons||[]).map((r:string,i:number)=><li key={i}>{r}</li>)}</ul></section>
+        {(e.sell?.score||0)>0&&<section className="lg-sell"><h3>SELL / RISK ENGINE</h3><b>{fmt(e.sell?.score,0)} · {String(e.sell?.severity||'none').toUpperCase()}</b><ul>{(e.sell?.reasons||[]).map((r:string,i:number)=><li key={i}>{r}</li>)}</ul></section>}
+        <footer>LEGACY is immutable. Shared richData may add evidence, but never changes these source rules or scores.</footer>
+      </>}</aside>
+    </main>
+  </div>
+}
+
+function H({label,k,sort,desc,click}:{label:string;k:SortKey;sort:SortKey;desc:boolean;click:(k:SortKey)=>void}){return <th onClick={()=>click(k)} className={sort===k?'sorted':''}>{label}{sort===k?<b>{desc?'↓':'↑'}</b>:''}</th>}
+function K({l,v,good=false}:{l:string;v:string;good?:boolean}){return <span className={good?'good':''}><small>{l}</small><b>{v}</b></span>}
