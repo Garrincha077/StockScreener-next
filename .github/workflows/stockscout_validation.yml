@@ -28,6 +28,8 @@ on:
       - 'compute_group_leadership.py'
       - 'audit_group_leadership.py'
       - 'audit_frontend_dataset.py'
+      - 'frontend/src/GroupsPage.tsx'
+      - 'frontend/src/deepvue/filterEngine.ts'
       - '.github/workflows/stockscout_validation.yml'
   workflow_dispatch:
 
@@ -71,3 +73,14 @@ jobs:
 
       - name: Dataset calibration audit
         run: python audit_frontend_dataset.py
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Frontend TypeScript and Vite build
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
