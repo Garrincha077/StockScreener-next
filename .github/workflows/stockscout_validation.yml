@@ -19,6 +19,7 @@ on:
       - 'tests/test_setup_calibration.py'
       - 'tests/test_emerging_leader.py'
       - 'tests/test_ma_cluster_breakout.py'
+      - 'tests/test_scout_tiers.py'
       - 'tests/test_fundamental_evidence.py'
       - 'tests/test_group_leadership.py'
       - 'tests/test_lateral_base.py'
@@ -26,6 +27,7 @@ on:
       - 'audit_emerging_leader.py'
       - 'compute_ma_cluster_breakout.py'
       - 'audit_ma_cluster_breakout.py'
+      - 'audit_scout_tiers.py'
       - 'fundamental_evidence.py'
       - 'apply_fundamental_evidence.py'
       - 'audit_fundamental_evidence.py'
@@ -119,12 +121,13 @@ jobs:
             tests/test_setup_calibration.py \
             tests/test_emerging_leader.py \
             tests/test_ma_cluster_breakout.py \
+            tests/test_scout_tiers.py \
             tests/test_fundamental_evidence.py \
             tests/test_group_leadership.py \
             tests/test_lateral_base.py -q
 
       - name: Syntax-check enrichment engines
-        run: python -m py_compile emerging_leader.py audit_emerging_leader.py compute_ma_cluster_breakout.py audit_ma_cluster_breakout.py lateral_base.py compute_lateral_base.py audit_lateral_base.py compute_group_leadership.py audit_group_leadership.py export_frontend_data_fast.py calibrate_frontend_setups.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py
+        run: python -m py_compile emerging_leader.py audit_emerging_leader.py compute_ma_cluster_breakout.py audit_ma_cluster_breakout.py audit_scout_tiers.py lateral_base.py compute_lateral_base.py audit_lateral_base.py compute_group_leadership.py audit_group_leadership.py export_frontend_data_fast.py calibrate_frontend_setups.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py
 
       - name: Apply current setup calibration in workspace
         run: python calibrate_frontend_setups.py
@@ -136,6 +139,9 @@ jobs:
         env:
           MA_CLUSTER_REQUIRE_COVERAGE: ${{ github.event_name == 'pull_request' && '1' || '0' }}
         run: python audit_ma_cluster_breakout.py
+
+      - name: Scout Tier audit
+        run: python audit_scout_tiers.py
 
       - name: Print branch candidate summary
         if: github.event_name == 'pull_request'
@@ -150,12 +156,13 @@ jobs:
           print('Emerging:',m.get('emergingLeaderCandidates'),'A+:',m.get('aPlusEmergingSetups'))
           print('MA coverage:',m.get('maClusterCoverage'))
           print('WATCH / READY / ENTRY:',m.get('maClusterWatchCount'),m.get('maClusterReadyCount'),m.get('maClusterEntryCount'))
-          print('Tiers:',m.get('maClusterTierCounts'))
-          phase_order={'ENTRY':3,'READY':2,'WATCH':1}
-          active=[r for r in rows if r.get('maClusterPhase') in phase_order]
-          active.sort(key=lambda r:(r.get('maClusterTierRank') or 0,phase_order.get(r.get('maClusterPhase'),0),r.get('maClusterScore') or 0,r.get('emergingLeaderScore') or 0),reverse=True)
-          for r in active[:50]:
-              print(f"{r.get('ticker'):5s} {r.get('maClusterTierLabel','—'):10s} timing={r.get('maClusterScore',0):5.1f} spread={r.get('maClusterSpreadPct',0):4.1f}% price={r.get('maClusterPricePct',0):+5.1f}% vol={r.get('maClusterVolumePace',0):4.2f}x emerging={r.get('emergingLeaderScore',0):5.1f} RS={r.get('rsRank',0)}")
+          print('Timing tiers:',m.get('maClusterTierCounts'))
+          print('Scout tiers:',m.get('scoutTierCounts'))
+          priority=[r for r in rows if r.get('scoutTier') in {'A','B'}]
+          priority.sort(key=lambda r:(r.get('scoutTierRank') or 0,r.get('maClusterPhase')=='ENTRY',r.get('emergingLeaderScore') or 0,r.get('rsRank') or 0),reverse=True)
+          print('\nScout A/B:')
+          for r in priority[:30]:
+              print(f"{r.get('ticker'):5s} Scout={r.get('scoutTierLabel')} timing={r.get('maClusterTierLabel')} E={r.get('emergingLeaderScore',0):5.1f} RS={r.get('rsRank',0):2} accel={r.get('rsAcceleration',0):+.3f} spread={r.get('maClusterSpreadPct',0):4.1f}% vol={r.get('maClusterVolumePace',0):4.2f}x")
           PY
 
       - name: Set up Node
