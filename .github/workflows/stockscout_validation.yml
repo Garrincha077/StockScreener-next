@@ -19,9 +19,13 @@ on:
       - 'tests/test_setup_calibration.py'
       - 'tests/test_fundamental_evidence.py'
       - 'tests/test_group_leadership.py'
+      - 'tests/test_lateral_base.py'
       - 'fundamental_evidence.py'
       - 'apply_fundamental_evidence.py'
       - 'audit_fundamental_evidence.py'
+      - 'lateral_base.py'
+      - 'compute_lateral_base.py'
+      - 'audit_lateral_base.py'
       - 'export_frontend_data_fast.py'
       - 'enhance_frontend_dataset.py'
       - 'calibrate_frontend_setups.py'
@@ -64,10 +68,11 @@ jobs:
             tests/test_legacy_fast_differential.py \
             tests/test_setup_calibration.py \
             tests/test_fundamental_evidence.py \
-            tests/test_group_leadership.py -q
+            tests/test_group_leadership.py \
+            tests/test_lateral_base.py -q
 
       - name: Syntax-check enrichment engines
-        run: python -m py_compile compute_group_leadership.py audit_group_leadership.py export_frontend_data_fast.py calibrate_frontend_setups.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py
+        run: python -m py_compile lateral_base.py compute_lateral_base.py audit_lateral_base.py compute_group_leadership.py audit_group_leadership.py export_frontend_data_fast.py calibrate_frontend_setups.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py
 
       - name: Apply current setup calibration in workspace
         run: python calibrate_frontend_setups.py
