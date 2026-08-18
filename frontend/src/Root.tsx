@@ -1,14 +1,18 @@
-import {useRef,useState,type CSSProperties,type KeyboardEvent,type PointerEvent as ReactPointerEvent} from 'react'
+import {useEffect,useRef,useState,type CSSProperties,type KeyboardEvent,type PointerEvent as ReactPointerEvent} from 'react'
 import DeepVueTerminal from './DeepVueTerminal'
+import LegacyTerminal from './LegacyTerminal'
 import GroupsPage from './GroupsPage'
 import OriginalEngineDock from './OriginalEngineDock'
 import {resetPanelSizes,useResizablePanels} from './useResizablePanels'
 import './resizable-panels.css'
 
 const ENGINE_WIDTH_KEY='stockscout-original-pane-width-v1'
+const LAYER_KEY='stockscout-active-layer-v1'
 const DEFAULT_ENGINE_WIDTH=420
 const MIN_ENGINE_WIDTH=330
 const MAX_ENGINE_WIDTH=650
+
+type Layer='stockscout'|'legacy'
 
 function initialEngineWidth(){
   try{
@@ -16,16 +20,20 @@ function initialEngineWidth(){
     return Number.isFinite(value)&&value>=MIN_ENGINE_WIDTH?value:DEFAULT_ENGINE_WIDTH
   }catch{return DEFAULT_ENGINE_WIDTH}
 }
+function initialLayer():Layer{try{return localStorage.getItem(LAYER_KEY)==='legacy'?'legacy':'stockscout'}catch{return'stockscout'}}
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value))}
 
 export default function Root(){
   const[view,setView]=useState<'terminal'|'groups'>('terminal')
+  const[layer,setLayer]=useState<Layer>(initialLayer)
   const[engineOpen,setEngineOpen]=useState(false)
   const[engineWidth,setEngineWidth]=useState(initialEngineWidth)
   const drag=useRef<{startX:number;startWidth:number;currentWidth:number;pointerId:number}|null>(null)
   useResizablePanels()
+  useEffect(()=>{try{localStorage.setItem(LAYER_KEY,layer)}catch{}},[layer])
 
-  const openTicker=(ticker:string)=>{location.hash=ticker;setView('terminal')}
+  const chooseLayer=(next:Layer)=>{setLayer(next);setView('terminal');if(next==='legacy')setEngineOpen(false)}
+  const openTicker=(ticker:string)=>{location.hash=ticker;setLayer('stockscout');setView('terminal')}
   const maxEngineWidth=()=>Math.min(MAX_ENGINE_WIDTH,Math.max(MIN_ENGINE_WIDTH,window.innerWidth-700))
   const normalizedEngineWidth=(value:number)=>Math.round(clamp(value,MIN_ENGINE_WIDTH,maxEngineWidth()))
   const setAndPersistEngineWidth=(value:number)=>{
@@ -66,13 +74,19 @@ export default function Root(){
     setAndPersistEngineWidth(engineWidth+(event.key==='ArrowLeft'?step:-step))
   }
 
+  const stockscout=view==='groups'?<GroupsPage onBack={()=>setView('terminal')} onOpenTicker={openTicker}/>:<div className={`ss-root-shell ${engineOpen?'oe-open':''}`} style={{'--oe-pane-width':`${engineWidth}px`} as CSSProperties}>
+    <div className="ss-terminal-host"><DeepVueTerminal/></div>
+    {engineOpen&&<div className="oe-pane-splitter" role="separator" aria-label="Resize LEGACY source inspector" aria-orientation="vertical" tabIndex={0} onPointerDown={startEngineResize} onKeyDown={resizeWithKeyboard} onDoubleClick={()=>setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)} title="Drag left/right to resize · double-click to reset"><span>↔</span></div>}
+    <OriginalEngineDock open={engineOpen} onOpenChange={setEngineOpen} embedded={engineOpen}/>
+    <button className="dv-groups-launch" onClick={()=>setView('groups')}>◎ Groups</button>
+  </div>
+
   return <>
-    {view==='groups'?<GroupsPage onBack={()=>setView('terminal')} onOpenTicker={openTicker}/>:<div className={`ss-root-shell ${engineOpen?'oe-open':''}`} style={{'--oe-pane-width':`${engineWidth}px`} as CSSProperties}>
-      <div className="ss-terminal-host"><DeepVueTerminal/></div>
-      {engineOpen&&<div className="oe-pane-splitter" role="separator" aria-label="Resize Original Engine panel" aria-orientation="vertical" tabIndex={0} onPointerDown={startEngineResize} onKeyDown={resizeWithKeyboard} onDoubleClick={()=>setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)} title="Drag left/right to resize · double-click to reset"><span>↔</span></div>}
-      <OriginalEngineDock open={engineOpen} onOpenChange={setEngineOpen} embedded={engineOpen}/>
-      <button className="dv-groups-launch" onClick={()=>setView('groups')}>◎ Groups</button>
-    </div>}
+    <div className="ss-layer-switch" aria-label="Signal layer">
+      <button className={layer==='stockscout'?'active':''} onClick={()=>chooseLayer('stockscout')}>STOCKSCOUT</button>
+      <button className={`legacy ${layer==='legacy'?'active':''}`} onClick={()=>chooseLayer('legacy')}>LEGACY</button>
+    </div>
+    {layer==='legacy'?<LegacyTerminal/>:stockscout}
     <button className="ss-layout-reset" onClick={()=>{resetPanelSizes();setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)}} title="Reset all resized panels to their default size">↺ Reset layout</button>
   </>
 }
