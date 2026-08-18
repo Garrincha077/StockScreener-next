@@ -10,6 +10,7 @@ from statistics import median
 DATA = Path("frontend/public/data/latest.json")
 GROUP_V2_MODEL = "behavioral-proxy-v2-confidence"
 LATERAL_BASE_MODEL = "lateral-base-v1-observational"
+EMERGING_MODEL = "neglected-emerging-leader-v1"
 
 
 def num(row, key, default=0.0):
@@ -43,6 +44,7 @@ def main():
     rows = payload.get("universe") or []
     print(f"ROWS {len(rows)}")
     print(f"FEATURE_MODEL {payload.get('featureModel')}")
+    print(f"EMERGING_MODEL {payload.get('emergingLeaderModel')}")
 
     primary = Counter(str(r.get("primarySetup") or r.get("setup") or "Unknown") for r in rows)
     tags = Counter(t for r in rows for t in (r.get("setupTags") or []))
@@ -56,24 +58,31 @@ def main():
 
     scored = [r for r in rows if "opportunityScore" in r]
     opp = [num(r, "opportunityScore") for r in scored]
-    print("\nOPPORTUNITY", fmt(opp))
+    label = "EMERGING SCORE" if payload.get("emergingLeaderModel") == EMERGING_MODEL else "OPPORTUNITY"
+    print(f"\n{label}", fmt(opp))
     print(f"  >=80: {sum(v >= 80 for v in opp)}")
     print(f"  >=70: {sum(v >= 70 for v in opp)}")
     print(f"  >=60: {sum(v >= 60 for v in opp)}")
 
-    ranked = sorted(scored, key=lambda r: (num(r, "opportunityScore"), num(r, "confluence")), reverse=True)
+    ranked = sorted(
+        scored,
+        key=lambda r: (num(r, "opportunityScore"), num(r, "emergingEvidenceCount", num(r, "confluence"))),
+        reverse=True,
+    )
     for n in (25, 50, 100):
         top = ranked[:n]
         if not top:
             continue
         extended = sum(bool(r.get("extended")) for r in top)
         too_far = sum(num(r, "distance10w") > 12 for r in top)
-        weak_rs = sum(num(r, "rsRank") < 70 for r in top)
+        weak_rs = sum(num(r, "rsRank") < 60 for r in top)
         mature_s2 = sum(int(num(r, "stage")) == 2 and num(r, "stage2AgeWeeks") > 12 for r in top)
         no_accel = sum(num(r, "rsAcceleration") <= 0 for r in top)
+        young_base = sum(num(r, "baseWeeks") < 8 for r in top)
         print(
             f"TOP{n} quality: extended={extended}/{n} dist10w>12={too_far}/{n} "
-            f"RS<70={weak_rs}/{n} matureS2={mature_s2}/{n} RSaccel<=0={no_accel}/{n}"
+            f"RS<60={weak_rs}/{n} matureS2={mature_s2}/{n} "
+            f"RSaccel<=0={no_accel}/{n} base<8w={young_base}/{n}"
         )
 
     grouped = defaultdict(list)
@@ -94,33 +103,28 @@ def main():
         opps = [num(r, "opportunityScore") for r in group]
         extended = sum(bool(r.get("extended")) for r in group)
         print(
-            f"  {name}: n={len(group)} oppMed={median(opps):.0f} "
+            f"  {name}: n={len(group)} scoreMed={median(opps):.0f} "
             f"RSmed={median(rsrank):.0f} accelMed={median(accel):.3f} "
             f"volMed={median(volume):.2f} |10W|med={median(ext):.1f}% "
             f"prior9mMed={median(prior):.1f}% extended={extended}"
         )
 
-    print("\nEARLY-LEADER PROFILE")
-    early = [
-        r for r in scored
-        if int(num(r, "stage")) in (1, 2)
-        and num(r, "rsRank") >= 70
-        and num(r, "rsAcceleration") > 0
-        and -8 <= num(r, "distance10w") <= 10
-        and num(r, "volumeRatio", 1) >= 1.2
-        and not bool(r.get("extended"))
-        and (int(num(r, "stage")) == 1 or num(r, "stage2AgeWeeks") <= 12)
-    ]
-    early.sort(key=lambda r: (num(r, "opportunityScore"), num(r, "confluence")), reverse=True)
-    print(f"  count={len(early)}")
-    for r in early[:20]:
-        print(
-            f"  {r.get('ticker'):5s} opp={num(r,'opportunityScore'):3.0f} "
-            f"S{int(num(r,'stage'))} age={num(r,'stage2AgeWeeks'):4.1f}w "
-            f"RS={num(r,'rsRank'):2.0f} accel={num(r,'rsAcceleration'):+.3f} "
-            f"vol={num(r,'volumeRatio',1):.2f} d10w={num(r,'distance10w'):+.1f}% "
-            f"prior9={num(r,'prior9mReturn'):+.1f}% {r.get('primarySetup')}"
-        )
+    candidates = [r for r in rows if r.get("emergingLeaderCandidate")]
+    candidates.sort(
+        key=lambda r: (num(r, "emergingLeaderScore"), num(r, "emergingEvidenceCount"), num(r, "rsRank")),
+        reverse=True,
+    )
+    if payload.get("emergingLeaderModel") == EMERGING_MODEL:
+        print("\nNEGLECTED → EMERGING LEADER")
+        print(f"  candidates={len(candidates)} A+={sum(bool(r.get('aPlusEmergingSetup')) for r in candidates)}")
+        for r in candidates[:20]:
+            print(
+                f"  {r.get('ticker'):5s} score={num(r,'emergingLeaderScore'):4.1f} "
+                f"ev={int(num(r,'emergingEvidenceCount'))}/5 S{int(num(r,'stage'))} "
+                f"age={num(r,'stage2AgeWeeks'):4.1f}w base={num(r,'baseWeeks'):3.0f}w "
+                f"RS={num(r,'rsRank'):2.0f} accel={num(r,'rsAcceleration'):+.3f} "
+                f"trigger={num(r,'triggerReadinessScore'):4.0f} neglect={num(r,'neglectHistoryScore'):4.0f}"
+            )
 
     group_model = (payload.get("market") or {}).get("groupModel")
     if group_model == GROUP_V2_MODEL:
@@ -141,6 +145,16 @@ def main():
             raise SystemExit(status)
     else:
         print(f"\nLATERAL BASE V1 GUARDRAIL skipped for stored model={lateral_model or 'none'}")
+
+    emerging_model = payload.get("emergingLeaderModel")
+    if emerging_model == EMERGING_MODEL:
+        print("\nEMERGING LEADER V1 GUARDRAIL")
+        from audit_emerging_leader import main as audit_emerging_leader
+        status = audit_emerging_leader()
+        if status:
+            raise SystemExit(status)
+    else:
+        print(f"\nEMERGING LEADER V1 GUARDRAIL skipped for stored model={emerging_model or 'none'}")
 
 
 if __name__ == "__main__":
