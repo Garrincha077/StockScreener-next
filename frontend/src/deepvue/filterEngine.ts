@@ -42,6 +42,9 @@ export const fieldDefs:FieldDef[]=[
   {id:'avgDollarVolume20',label:'Avg $ Volume',kind:'number',defaultOp:'>='},
   {id:'setupTags',label:'Setup tag',kind:'text',defaultOp:'contains'},
   {id:'fundamentalSupport',label:'Fundamental support',kind:'boolean',defaultOp:'true'},
+  {id:'fundamentalEvidenceScore',label:'Fundamental Evidence 0-100',kind:'number',defaultOp:'>='},
+  {id:'fundamentalEvidenceConfidence',label:'Fundamental confidence %',kind:'number',defaultOp:'>='},
+  {id:'fundamentalEvidenceCoverage',label:'Fundamental coverage %',kind:'number',defaultOp:'>='},
   {id:'extended',label:'Extended',kind:'boolean',defaultOp:'false'},
   {id:'changedToday',label:'Changed since last scan',kind:'boolean',defaultOp:'true'},
   {id:'stageChanged',label:'Stage changed',kind:'boolean',defaultOp:'true'},
@@ -155,6 +158,14 @@ export const builtInScreens:ScreenState[]=[
     groups:[
       group('ANY',[rule('stage','=','1'),rule('stage','=','2')]),
       group('ALL',[rule('rsRank','>=','70'),rule('rsAcceleration','>','0'),rule('stage2AgeWeeks','<=','12'),rule('distance10w','between','-8,10'),rule('extended','false')]),
+    ],
+  },
+  {
+    name:'Fundamental Confirmed Leaders',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{fundamentalEvidenceScore:true,fundamentalEvidenceConfidence:true},
+    sorting:[{id:'fundamentalEvidenceScore',desc:true},{id:'fundamentalEvidenceConfidence',desc:true},{id:'rsRank',desc:true},{id:'freshnessScore',desc:true}],
+    groups:[
+      group('ANY',[rule('stage','=','1'),rule('stage','=','2')]),
+      group('ALL',[rule('fundamentalEvidenceScore','>=','65'),rule('fundamentalEvidenceConfidence','>=','50'),rule('rsRank','>=','70'),rule('extended','false')]),
     ],
   },
   {
