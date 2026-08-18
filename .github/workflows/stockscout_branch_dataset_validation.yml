@@ -1,0 +1,154 @@
+name: StockScout Branch Dataset Validation
+
+# Safe feature-branch integration gate. It reuses a previously validated post-market
+# GitHub Pages artifact so we can test new scoring/timing against real 5Y chart shards
+# without fetching intraday data, writing to main, or deploying production.
+on:
+  push:
+    branches:
+      - agent/neglected-emerging-leader-v1
+    paths:
+      - '.github/workflows/stockscout_branch_dataset_validation.yml'
+      - 'compute_ma_cluster_breakout.py'
+      - 'audit_ma_cluster_breakout.py'
+      - 'emerging_leader.py'
+      - 'audit_emerging_leader.py'
+      - 'calibrate_frontend_setups.py'
+      - 'frontend/src/deepvue/filterEngine.ts'
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: 'Validated production workflow run containing github-pages artifact'
+        required: false
+        default: '32131202986'
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  validate-real-snapshot:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      DEFAULT_SOURCE_RUN_ID: '32131202986'
+    steps:
+      - name: Checkout feature branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Download validated production Pages artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: /tmp/stockscout-pages
+          repository: Garrincha077/stock-screener2
+          run-id: ${{ github.event.inputs.source_run_id || env.DEFAULT_SOURCE_RUN_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Restore canonical data and 5Y chart shards
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/stockscout-site
+          if [ -f /tmp/stockscout-pages/artifact.tar ]; then
+            tar -xf /tmp/stockscout-pages/artifact.tar -C /tmp/stockscout-site
+          else
+            # upload-pages-artifact may already be unpacked by download-artifact.
+            cp -a /tmp/stockscout-pages/. /tmp/stockscout-site/
+          fi
+          test -s /tmp/stockscout-site/data/latest.json
+          test -d /tmp/stockscout-site/data/charts
+          CHARTS=$(find /tmp/stockscout-site/data/charts -name '*.json' -type f | wc -l | tr -d ' ')
+          test "$CHARTS" -gt 0
+          rm -rf frontend/public/data
+          cp -a /tmp/stockscout-site/data frontend/public/data
+          echo "Restored $CHARTS chart shards from validated production run"
+          python - <<'PY'
+          import json
+          p=json.load(open('frontend/public/data/latest.json'))
+          print('Source generatedAt:', p.get('generatedAt'))
+          print('Source rows:', len(p.get('universe') or []))
+          print('Source fiveYearCharts:', (p.get('market') or {}).get('fiveYearCharts'))
+          PY
+
+      - name: Verify frozen LEGACY baseline
+        run: python verify_legacy_baseline.py
+
+      - name: Run feature-branch regression tests
+        run: |
+          python -m pytest \
+            tests/test_setup_calibration.py \
+            tests/test_emerging_leader.py \
+            tests/test_ma_cluster_breakout.py \
+            tests/test_group_leadership.py \
+            tests/test_lateral_base.py \
+            tests/test_fundamental_evidence.py -q
+
+      - name: Apply Emerging + MA Cluster calibration to real snapshot
+        run: python calibrate_frontend_setups.py
+
+      - name: Require real MA Cluster chart coverage
+        env:
+          MA_CLUSTER_REQUIRE_COVERAGE: '1'
+        run: python audit_ma_cluster_breakout.py | tee /tmp/ma-cluster-audit.txt
+
+      - name: Run canonical enrichment audits
+        run: |
+          python audit_frontend_dataset.py | tee /tmp/frontend-audit.txt
+          python audit_fundamental_evidence.py
+          python verify_legacy_baseline.py
+
+      - name: Print candidate and tier summary
+        shell: bash
+        run: |
+          python - <<'PY' | tee /tmp/branch-summary.txt
+          import json
+          p=json.load(open('frontend/public/data/latest.json'))
+          rows=p.get('universe') or []
+          m=p.get('market') or {}
+          print('=== BRANCH REAL-SNAPSHOT SUMMARY ===')
+          print('Rows:', len(rows))
+          print('Emerging:', m.get('emergingLeaderCandidates'), 'A+:', m.get('aPlusEmergingSetups'))
+          print('MA coverage:', m.get('maClusterCoverage'))
+          print('MA WATCH/READY/ENTRY:', m.get('maClusterWatchCount'), m.get('maClusterReadyCount'), m.get('maClusterEntryCount'))
+          print('MA tiers:', m.get('maClusterTierCounts'))
+          active=[r for r in rows if r.get('maClusterPhase') in {'WATCH','READY','ENTRY'}]
+          active.sort(key=lambda r:(r.get('maClusterTierRank') or 0,r.get('maClusterPhase')=='ENTRY',r.get('maClusterScore') or 0,r.get('emergingLeaderScore') or 0),reverse=True)
+          print('\nTop active MA Cluster timing:')
+          for r in active[:40]:
+              print(f"{r.get('ticker'):5s} {r.get('maClusterTierLabel','—'):10s} timing={r.get('maClusterScore',0):5.1f} spread={r.get('maClusterSpreadPct',0):4.1f}% p={r.get('maClusterPricePct',0):+5.1f}% vol={r.get('maClusterVolumePace',0):4.2f}x E={r.get('emergingLeaderScore',0):5.1f} RS={r.get('rsRank',0)}")
+          PY
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build frontend against branch-calibrated snapshot
+        working-directory: frontend
+        run: |
+          npm install
+          npm run build
+
+      - name: Upload branch validation artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: branch-emerging-ma-cluster-${{ github.run_id }}
+          path: |
+            frontend/public/data/latest.json
+            /tmp/ma-cluster-audit.txt
+            /tmp/frontend-audit.txt
+            /tmp/branch-summary.txt
+          if-no-files-found: error
+          retention-days: 14
