@@ -7,6 +7,8 @@ from collections import Counter, defaultdict
 from pathlib import Path
 from statistics import median
 
+from audit_group_leadership import main as audit_group_leadership
+
 DATA = Path("frontend/public/data/latest.json")
 
 
@@ -119,6 +121,11 @@ def main():
             f"vol={num(r,'volumeRatio',1):.2f} d10w={num(r,'distance10w'):+.1f}% "
             f"prior9={num(r,'prior9mReturn'):+.1f}% {r.get('primarySetup')}"
         )
+
+    print("\nGROUP LEADERSHIP V2 GUARDRAIL")
+    group_status = audit_group_leadership()
+    if group_status:
+        raise SystemExit(group_status)
 
 
 if __name__ == "__main__":
