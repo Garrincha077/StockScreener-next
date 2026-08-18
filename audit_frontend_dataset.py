@@ -10,7 +10,7 @@ from statistics import median
 DATA = Path("frontend/public/data/latest.json")
 GROUP_V2_MODEL = "behavioral-proxy-v2-confidence"
 LATERAL_BASE_MODEL = "lateral-base-v1-observational"
-EMERGING_MODEL = "neglected-emerging-leader-v1"
+EMERGING_MODEL = "emerging-leader-v1-dual-archetype"
 
 
 def num(row, key, default=0.0):
@@ -100,10 +100,10 @@ def main():
         accel = [num(r, "rsAcceleration") for r in group]
         volume = [num(r, "volumeRatio", 1) for r in group]
         prior = [num(r, "prior9mReturn") for r in group]
-        opps = [num(r, "opportunityScore") for r in group]
+        scores = [num(r, "opportunityScore") for r in group]
         extended = sum(bool(r.get("extended")) for r in group)
         print(
-            f"  {name}: n={len(group)} scoreMed={median(opps):.0f} "
+            f"  {name}: n={len(group)} scoreMed={median(scores):.0f} "
             f"RSmed={median(rsrank):.0f} accelMed={median(accel):.3f} "
             f"volMed={median(volume):.2f} |10W|med={median(ext):.1f}% "
             f"prior9mMed={median(prior):.1f}% extended={extended}"
@@ -115,15 +115,15 @@ def main():
         reverse=True,
     )
     if payload.get("emergingLeaderModel") == EMERGING_MODEL:
-        print("\nNEGLECTED → EMERGING LEADER")
+        print("\nEMERGING LEADER CANDIDATES")
         print(f"  candidates={len(candidates)} A+={sum(bool(r.get('aPlusEmergingSetup')) for r in candidates)}")
-        for r in candidates[:20]:
+        for r in candidates[:25]:
             print(
                 f"  {r.get('ticker'):5s} score={num(r,'emergingLeaderScore'):4.1f} "
-                f"ev={int(num(r,'emergingEvidenceCount'))}/5 S{int(num(r,'stage'))} "
-                f"age={num(r,'stage2AgeWeeks'):4.1f}w base={num(r,'baseWeeks'):3.0f}w "
-                f"RS={num(r,'rsRank'):2.0f} accel={num(r,'rsAcceleration'):+.3f} "
-                f"trigger={num(r,'triggerReadinessScore'):4.0f} neglect={num(r,'neglectHistoryScore'):4.0f}"
+                f"ev={int(num(r,'emergingEvidenceCount'))}/5 {r.get('emergingArchetype')} "
+                f"S{int(num(r,'stage'))} age={num(r,'stage2AgeWeeks'):4.1f}w "
+                f"base={num(r,'baseWeeks'):3.0f}w RS={num(r,'rsRank'):2.0f} "
+                f"accel={num(r,'rsAcceleration'):+.3f} vol={num(r,'volumeRatio',1):.2f}"
             )
 
     group_model = (payload.get("market") or {}).get("groupModel")
