@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import os
 from pathlib import Path
 
 DATA = Path("frontend/public/data/latest.json")
@@ -119,15 +120,22 @@ def main():
         if int(tier_counts.get(tier, -1)) != actual:
             errors.append(f"Market Tier {tier} count mismatch")
 
+    scored = [r for r in rows if finite(r.get("maClusterSpreadPct")) is not None]
+    coverage = len(scored) / max(1, len(rows)) * 100.0
+    reported_coverage = int(market.get("maClusterCoverage", 0) or 0)
+    if reported_coverage != len(scored):
+        errors.append(f"MA Cluster coverage count mismatch ({reported_coverage} vs {len(scored)})")
+    if os.getenv("MA_CLUSTER_REQUIRE_COVERAGE", "0") == "1" and coverage < 95.0:
+        errors.append(f"MA Cluster full-data coverage too low: {coverage:.1f}%")
+
     print(
-        f"MA Cluster audit: rows={len(rows)} WATCH={phase_counts['WATCH']} "
-        f"READY={phase_counts['READY']} ENTRY={phase_counts['ENTRY']} "
+        f"MA Cluster audit: rows={len(rows)} coverage={len(scored)}/{len(rows)} ({coverage:.1f}%) "
+        f"WATCH={phase_counts['WATCH']} READY={phase_counts['READY']} ENTRY={phase_counts['ENTRY']} "
         f"tiers={tier_counts} errors={len(errors)}"
     )
 
     # Calibration diagnostics: show the closest real-world near misses even when
     # no stock currently passes the hard phase gates.
-    scored = [r for r in rows if finite(r.get("maClusterSpreadPct")) is not None]
     by_score = sorted(
         scored,
         key=lambda r: (
