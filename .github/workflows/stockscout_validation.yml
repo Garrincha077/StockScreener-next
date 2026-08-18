@@ -42,6 +42,8 @@ on:
       - 'frontend/src/GroupsPage.tsx'
       - 'frontend/src/deepvue/filterEngine.ts'
       - '.github/workflows/stockscout_validation.yml'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
 
 jobs:
