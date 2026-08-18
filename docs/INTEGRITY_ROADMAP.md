@@ -27,12 +27,18 @@ Principle: data integrity before scoring/model tuning.
 - [x] Fundamental Evidence v1: expose rich fundamentals as a transparent 0-100 evidence score with separate coverage/confidence, Growth/Margins/Inventory components, nightly audit, filters and a dedicated confirmation screen. Evidence does not alter Opportunity/Confluence.
 - [x] Rename user-facing `Today Δ` semantics to `Since last scan`; underlying compatibility field names remain unchanged for stored snapshots.
 - [ ] Confidence-weight behavioral sector/industry proxy leadership; later add true GICS metadata.
-  - Implementation candidate: `behavioral-proxy-v2-confidence` on `agent/group-leadership-v2`.
+  - Implementation candidate `behavioral-proxy-v2-confidence` is now on `main`; rollback snapshot is preserved before the merge.
   - Proxy strength, recent/prior persistence, stability and usable-history coverage produce explicit confidence.
   - Low-confidence proxy ranks are pulled toward neutral 50; Group Rank / Group RS / Group Confidence are exposed separately.
   - `leadershipScore` is a separate bounded confirmation rank (about ±5 points around individual Opportunity); Opportunity/Confluence remain unchanged.
-  - Mark complete only after regression/frontend validation and one full post-market dataset audit pass.
+  - Mark complete only after one full post-market v2 canonical dataset passes the Group Leadership audit.
 - [ ] Replace the loose long-base approximation with lateral-base/contraction logic.
+  - Implementation candidate `lateral-base-v1-observational` is now on `main` behind the existing calibration pass.
+  - Emits `lateralBaseScore`, `contractionQuality`, `launchReadiness`, `neglectedLaunchScore`, `lateralBaseCandidate` and transparent reason labels.
+  - Uses existing transparent features: base duration/depth, 20D/60D tightness, ATR/VCP/contraction, volume dry-up, RS level/acceleration/new-high proximity, breakout proximity and MA position.
+  - Extended stocks receive a strong launch penalty and cannot qualify as candidates.
+  - This layer is observational only: it does not alter Opportunity, Confluence, Perfect Setup or LEGACY.
+  - Regression tests and a canonical dataset audit are in place. Mark complete only after the first full post-market distribution/coverage audit is reviewed.
 
 ## P3 — guardrails / polish
 
@@ -41,4 +47,4 @@ Principle: data integrity before scoring/model tuning.
 
 ## Operational verification gate
 
-P0/P1 passed the first full production nightly. Fundamental Evidence v1 is implemented as an observational StockScout layer and must remain outside Opportunity/Confluence while we collect distribution/correlation evidence. Continue P2 in this order: (1) validate Fundamental Evidence behavior on live snapshots, (2) confidence-weight group leadership, (3) real lateral-base model, then reconsider Opportunity/setup calibration.
+P0/P1 passed the first full production nightly. Fundamental Evidence v1 is implemented as an observational StockScout layer and must remain outside Opportunity/Confluence while we collect distribution/correlation evidence. Current P2 gate: validate Group Leadership v2 and Lateral Base v1 together on the next full post-market canonical snapshot. Only after both audits are healthy should we create the stricter Neglected → Emerging Leader screen and then reconsider Opportunity/setup calibration.
