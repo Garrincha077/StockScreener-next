@@ -1,7 +1,14 @@
 #!/usr/bin/env python3
-"""Fail closed when the nightly price cache is not a completed, coherent US session."""
+"""Fail closed when the nightly price cache is not a completed, coherent US session.
+
+Scheduled/normal publishes require >=16:30 ET. The dedicated StockScout Full
+Validation caller is allowed to re-run the latest already-completed US session
+before the current session closes. That exception is intentionally narrow and
+still requires the same freshness/coherence checks below.
+"""
 from __future__ import annotations
 
+import os
 import pickle
 from collections import Counter
 from datetime import datetime, timezone
@@ -28,11 +35,22 @@ def last_date(frame: pd.DataFrame | None):
         return None
 
 
+def manual_backfill_allowed() -> bool:
+    event = os.getenv("GITHUB_EVENT_NAME", "").lower()
+    workflow = os.getenv("GITHUB_WORKFLOW", "").lower()
+    workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "").lower()
+    return event == "push" and (
+        workflow == "stockscout full validation"
+        or "stockscout_full_validation.yml" in workflow_ref
+    )
+
+
 def main() -> None:
     now_utc = datetime.now(timezone.utc)
     now_et = now_utc.astimezone(ZoneInfo("America/New_York"))
     minutes_et = now_et.hour * 60 + now_et.minute
-    if minutes_et < EARLIEST_PUBLISH_MINUTES_ET:
+    backfill = manual_backfill_allowed()
+    if minutes_et < EARLIEST_PUBLISH_MINUTES_ET and not backfill:
         raise SystemExit(
             f"Refusing publish before completed regular US session: now {now_et.isoformat()}, require >=16:30 ET"
         )
@@ -50,6 +68,11 @@ def main() -> None:
     if age < 0 or age > MAX_STALE_CALENDAR_DAYS:
         raise SystemExit(f"SPY session is stale/inconsistent: {spy_date}, age={age} calendar days")
 
+    if backfill and minutes_et < EARLIEST_PUBLISH_MINUTES_ET and spy_date >= now_et.date():
+        raise SystemExit(
+            f"Manual pre-close validation may only publish a prior completed session; SPY={spy_date}, today={now_et.date()}"
+        )
+
     dates = [d for ticker, frame in price_history.items() if ticker != "SPY" for d in [last_date(frame)] if d is not None]
     if not dates:
         raise SystemExit("No stock session dates in canonical price cache")
@@ -62,8 +85,9 @@ def main() -> None:
             f"Price cache session coherence too low: {mode_count}/{len(dates)} ({coherent:.1%}) on {mode_date}"
         )
 
+    mode = "manual prior-session backfill" if backfill and minutes_et < EARLIEST_PUBLISH_MINUTES_ET else "normal post-market"
     print(
-        f"US session invariant OK: SPY={spy_date}; now={now_et.strftime('%Y-%m-%d %H:%M %Z')}; "
+        f"US session invariant OK ({mode}): SPY={spy_date}; now={now_et.strftime('%Y-%m-%d %H:%M %Z')}; "
         f"universe coherence={mode_count}/{len(dates)} ({coherent:.1%})"
     )
 
