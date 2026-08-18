@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "APPF",
-    "fetch_date": "2026-08-10T13:28:31.851601",
+    "fetch_date": "2026-08-18T22:00:53.837994",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
@@ -29,5 +29,5 @@
     "operating_margin": 18.84,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-10T13:28:31.852789"
+  "fetched_at": "2026-08-18T22:00:53.839452"
 }

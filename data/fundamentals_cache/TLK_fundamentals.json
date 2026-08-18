@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "TLK",
-    "fetch_date": "2026-08-10T14:20:01.353230",
+    "fetch_date": "2026-08-18T22:02:15.675746",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 36365000000000.0,
@@ -38,5 +38,5 @@
     "inventory_to_sales_ratio": 0.02,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-10T14:20:01.354708"
+  "fetched_at": "2026-08-18T22:02:15.677588"
 }

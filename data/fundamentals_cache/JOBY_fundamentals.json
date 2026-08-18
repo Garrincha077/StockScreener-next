@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "JOBY",
-    "fetch_date": "2026-08-10T13:55:07.043699",
+    "fetch_date": "2026-08-18T22:01:41.191999",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 15000.0,
       "2025-09-30 00:00:00": 22574000.0,
@@ -25,5 +25,5 @@
     "operating_margin": -675.18,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-10T13:55:07.044885"
+  "fetched_at": "2026-08-18T22:01:41.193362"
 }

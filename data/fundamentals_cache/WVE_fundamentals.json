@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "WVE",
-    "fetch_date": "2026-08-10T14:26:09.308646",
+    "fetch_date": "2026-08-18T22:02:26.677726",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
@@ -27,5 +27,5 @@
     "operating_margin": -3248.33,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-10T14:26:09.309586"
+  "fetched_at": "2026-08-18T22:02:26.678790"
 }

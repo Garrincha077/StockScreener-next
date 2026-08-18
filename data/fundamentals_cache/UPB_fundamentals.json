@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "UPB",
-    "fetch_date": "2026-08-10T14:22:38.222705",
+    "fetch_date": "2026-08-18T22:02:21.610141",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": 566000.0,
@@ -25,5 +25,5 @@
     "operating_margin": -4218.09,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-10T14:22:38.223613"
+  "fetched_at": "2026-08-18T22:02:21.611208"
 }
