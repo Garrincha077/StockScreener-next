@@ -65,6 +65,10 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Validate rich-pipeline Python syntax
+        run: |
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py hydrate_rich_fundamentals.py enrich_scan_layers.py
+
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
 
@@ -102,6 +106,14 @@ jobs:
           test -s data/daily_scans/latest_optimized_scan.txt
           echo "Latest report created successfully"
           wc -l data/daily_scans/latest_optimized_scan.txt
+
+      - name: Hydrate rich fundamentals for all analyzed stocks
+        env:
+          RICH_FUNDAMENTALS_MAX_AGE_DAYS: '7'
+          RICH_FUNDAMENTALS_REQUEST_DELAY: '0.35'
+        run: |
+          echo "Hydrating fundamentals across every analyzed stage"
+          python hydrate_rich_fundamentals.py
 
       - name: Export rich LEGACY + STOCKSCOUT terminal dataset and 5Y charts
         shell: bash
@@ -178,6 +190,7 @@ jobs:
               "group_model": "behavioral-proxy-v1",
               "scan_engine": "fast-batched-5y-v1",
               "data_model": "rich-scan-layers-v1",
+              "fundamentals_policy": "full-analyzed-universe-max-7d",
               "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
               "layers": ["LEGACY", "STOCKSCOUT"],
           }
@@ -193,6 +206,8 @@ jobs:
             echo "**Run:** ${{ steps.date.outputs.date }} ${{ steps.date.outputs.time }} UTC"
             echo ""
             echo "**Layers:** LEGACY (frozen upstream) + STOCKSCOUT (custom discovery)"
+            echo ""
+            echo "**Fundamentals:** full analyzed universe, target cache age <=7 days"
             echo ""
             echo '```text'
             head -n 80 data/daily_scans/latest_optimized_scan.txt
