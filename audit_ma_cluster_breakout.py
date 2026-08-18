@@ -124,6 +124,47 @@ def main():
         f"READY={phase_counts['READY']} ENTRY={phase_counts['ENTRY']} "
         f"tiers={tier_counts} errors={len(errors)}"
     )
+
+    # Calibration diagnostics: show the closest real-world near misses even when
+    # no stock currently passes the hard phase gates.
+    scored = [r for r in rows if finite(r.get("maClusterSpreadPct")) is not None]
+    by_score = sorted(
+        scored,
+        key=lambda r: (
+            finite(r.get("maClusterScore")) or 0.0,
+            -(finite(r.get("maClusterSpreadPct")) or 999.0),
+        ),
+        reverse=True,
+    )[:15]
+    print("MA Cluster top timing scores:")
+    for r in by_score:
+        print(
+            f"  {str(r.get('ticker') or '?'):5s} score={finite(r.get('maClusterScore')) or 0:4.1f} "
+            f"spread={finite(r.get('maClusterSpreadPct')) or 0:4.1f}% "
+            f"p={finite(r.get('maClusterPricePct')) or 0:+5.1f}% "
+            f"s10={finite(r.get('ma10wSlope4w')) or 0:+5.1f}% "
+            f"s30={finite(r.get('ma30wSlope4w')) or 0:+5.1f}% "
+            f"vol={finite(r.get('maClusterVolumePace')) or 0:4.2f}x "
+            f"phase={r.get('maClusterPhase')} tier={r.get('maClusterTier')}"
+        )
+
+    nearest = sorted(
+        scored,
+        key=lambda r: (
+            finite(r.get("maClusterSpreadPct")) or 999.0,
+            abs(finite(r.get("maClusterPricePct")) or 999.0),
+        ),
+    )[:15]
+    print("MA Cluster narrowest 10W/30W spreads:")
+    for r in nearest:
+        print(
+            f"  {str(r.get('ticker') or '?'):5s} spread={finite(r.get('maClusterSpreadPct')) or 0:4.1f}% "
+            f"p={finite(r.get('maClusterPricePct')) or 0:+5.1f}% "
+            f"s10={finite(r.get('ma10wSlope4w')) or 0:+5.1f}% "
+            f"s30={finite(r.get('ma30wSlope4w')) or 0:+5.1f}% "
+            f"vol={finite(r.get('maClusterVolumePace')) or 0:4.2f}x"
+        )
+
     for error in errors[:30]:
         print(f"  ERROR {error}")
     return 1 if errors else 0
