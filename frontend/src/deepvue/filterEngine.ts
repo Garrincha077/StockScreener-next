@@ -50,20 +50,48 @@ export const fieldDefs:FieldDef[]=[
   {id:'opportunityDelta',label:'Δ Opportunity',kind:'number',defaultOp:'>='},
   {id:'rsRankDelta',label:'Δ RS Rank',kind:'number',defaultOp:'>='},
 
-  // Repository SOURCE methodology. These fields come directly from
-  // src/screening/signal_engine.py / phase_indicators.py via enrich_original_engine.py.
-  {id:'originalMarketQualifiedBuy',label:'ORIGINAL market-qualified BUY',kind:'boolean',defaultOp:'true'},
-  {id:'originalBuyScore',label:'ORIGINAL Buy Score /125',kind:'number',defaultOp:'>='},
-  {id:'originalRR',label:'ORIGINAL Risk/Reward',kind:'number',defaultOp:'>='},
-  {id:'originalRiskPct',label:'ORIGINAL stop risk %',kind:'number',defaultOp:'<='},
-  {id:'originalTTPasses',label:'ORIGINAL Minervini TT /8',kind:'number',defaultOp:'>='},
-  {id:'originalTTScore',label:'ORIGINAL TT score /100',kind:'number',defaultOp:'>='},
-  {id:'originalVcpQuality',label:'ORIGINAL VCP quality',kind:'number',defaultOp:'>='},
-  {id:'originalAdVolumeRatio',label:'ORIGINAL A/D volume ratio',kind:'number',defaultOp:'>='},
-  {id:'originalBreakoutVolumeConfirmed',label:'ORIGINAL breakout volume confirmed',kind:'boolean',defaultOp:'true'},
-  {id:'originalBreakoutType',label:'ORIGINAL breakout type',kind:'text',defaultOp:'contains'},
-  {id:'originalSell',label:'ORIGINAL sell signal',kind:'boolean',defaultOp:'true'},
-  {id:'originalSellScore',label:'ORIGINAL Sell Score',kind:'number',defaultOp:'>='},
+  // Rich shared evidence generated after the nightly scan from the same 5Y cache.
+  {id:'return1w',label:'RICH return 1W %',kind:'number',defaultOp:'>='},
+  {id:'return1m',label:'RICH return 1M %',kind:'number',defaultOp:'>='},
+  {id:'return2y',label:'RICH return 2Y %',kind:'number',defaultOp:'>='},
+  {id:'return3y',label:'RICH return 3Y %',kind:'number',defaultOp:'>='},
+  {id:'return5y',label:'RICH return 5Y %',kind:'number',defaultOp:'>='},
+  {id:'distance20',label:'RICH distance 20DMA %',kind:'number',defaultOp:'between',placeholder:'-5,10'},
+  {id:'distance100',label:'RICH distance 100DMA %',kind:'number',defaultOp:'between',placeholder:'-10,20'},
+  {id:'distance150',label:'RICH distance 150DMA %',kind:'number',defaultOp:'between',placeholder:'-10,25'},
+  {id:'atr14Pct',label:'RICH ATR14 %',kind:'number',defaultOp:'<='},
+  {id:'realizedVol20',label:'RICH realized vol 20D %',kind:'number',defaultOp:'<='},
+  {id:'realizedVol60',label:'RICH realized vol 60D %',kind:'number',defaultOp:'<='},
+  {id:'avgDollarVolume50',label:'RICH avg $ volume 50D',kind:'number',defaultOp:'>='},
+  {id:'upDownVolume20',label:'RICH up/down volume 20D',kind:'number',defaultOp:'>='},
+  {id:'upDownVolume50',label:'RICH up/down volume 50D',kind:'number',defaultOp:'>='},
+  {id:'rs1m',label:'RICH relative strength 1M %',kind:'number',defaultOp:'>='},
+  {id:'richRs3m',label:'RICH relative strength 3M %',kind:'number',defaultOp:'>='},
+  {id:'richRs6m',label:'RICH relative strength 6M %',kind:'number',defaultOp:'>='},
+  {id:'richRs12m',label:'RICH relative strength 12M %',kind:'number',defaultOp:'>='},
+  {id:'distance2yHigh',label:'RICH distance 2Y high %',kind:'number',defaultOp:'>='},
+  {id:'maxDrawdown1y',label:'RICH max drawdown 1Y %',kind:'number',defaultOp:'>='},
+  {id:'revenueQoQ',label:'RICH revenue QoQ %',kind:'number',defaultOp:'>='},
+  {id:'epsQoQ',label:'RICH EPS QoQ %',kind:'number',defaultOp:'>='},
+  {id:'operatingMargin',label:'RICH operating margin %',kind:'number',defaultOp:'>='},
+  {id:'inventoryQoQ',label:'RICH inventory QoQ %',kind:'number',defaultOp:'<='},
+  {id:'inventoryToSales',label:'RICH inventory / sales',kind:'number',defaultOp:'<='},
+  {id:'fundamentalsAgeDays',label:'RICH fundamentals age days',kind:'number',defaultOp:'<='},
+
+  // Frozen repository source methodology. These fields are populated by
+  // enrich_original_engine.py and protected by verify_legacy_baseline.py.
+  {id:'originalMarketQualifiedBuy',label:'LEGACY market-qualified BUY',kind:'boolean',defaultOp:'true'},
+  {id:'originalBuyScore',label:'LEGACY Buy Score /125',kind:'number',defaultOp:'>='},
+  {id:'originalRR',label:'LEGACY Risk/Reward',kind:'number',defaultOp:'>='},
+  {id:'originalRiskPct',label:'LEGACY stop risk %',kind:'number',defaultOp:'<='},
+  {id:'originalTTPasses',label:'LEGACY Minervini TT /8',kind:'number',defaultOp:'>='},
+  {id:'originalTTScore',label:'LEGACY TT score /100',kind:'number',defaultOp:'>='},
+  {id:'originalVcpQuality',label:'LEGACY VCP quality',kind:'number',defaultOp:'>='},
+  {id:'originalAdVolumeRatio',label:'LEGACY A/D volume ratio',kind:'number',defaultOp:'>='},
+  {id:'originalBreakoutVolumeConfirmed',label:'LEGACY breakout volume confirmed',kind:'boolean',defaultOp:'true'},
+  {id:'originalBreakoutType',label:'LEGACY breakout type',kind:'text',defaultOp:'contains'},
+  {id:'originalSell',label:'LEGACY sell signal',kind:'boolean',defaultOp:'true'},
+  {id:'originalSellScore',label:'LEGACY Sell Score',kind:'number',defaultOp:'>='},
 ]
 
 export const opsByKind={
@@ -125,12 +153,12 @@ const group=(logic:Logic,rules:Rule[]):RuleGroup=>({id:uid(),logic,rules})
 
 export const builtInScreens:ScreenState[]=[
   {
-    name:'Original Engine — Source Rank',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
+    name:'LEGACY — Source Rank',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
     sorting:[{id:'originalBuyScore',desc:true}],
     groups:[group('ALL',[rule('originalMarketQualifiedBuy','true')])],
   },
   {
-    name:'Original Engine — Balanced Mix',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
+    name:'LEGACY — Balanced Mix',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
     sorting:[{id:'originalBuyScore',desc:true},{id:'originalRR',desc:true},{id:'originalTTPasses',desc:true},{id:'originalVcpQuality',desc:true},{id:'originalAdVolumeRatio',desc:true}],
     groups:[group('ALL',[rule('originalMarketQualifiedBuy','true')])],
   },
