@@ -27,6 +27,11 @@ Principle: data integrity before scoring/model tuning.
 - [x] Fundamental Evidence v1: expose rich fundamentals as a transparent 0-100 evidence score with separate coverage/confidence, Growth/Margins/Inventory components, nightly audit, filters and a dedicated confirmation screen. Evidence does not alter Opportunity/Confluence.
 - [x] Rename user-facing `Today Δ` semantics to `Since last scan`; underlying compatibility field names remain unchanged for stored snapshots.
 - [ ] Confidence-weight behavioral sector/industry proxy leadership; later add true GICS metadata.
+  - Implementation candidate: `behavioral-proxy-v2-confidence` on `agent/group-leadership-v2`.
+  - Proxy strength, recent/prior persistence, stability and usable-history coverage produce explicit confidence.
+  - Low-confidence proxy ranks are pulled toward neutral 50; Group Rank / Group RS / Group Confidence are exposed separately.
+  - `leadershipScore` is a separate bounded confirmation rank (about ±5 points around individual Opportunity); Opportunity/Confluence remain unchanged.
+  - Mark complete only after regression/frontend validation and one full post-market dataset audit pass.
 - [ ] Replace the loose long-base approximation with lateral-base/contraction logic.
 
 ## P3 — guardrails / polish
