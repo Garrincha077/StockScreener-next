@@ -1,17 +1,11 @@
 #!/usr/bin/env python3
-"""Build the canonical two-layer StockScout dataset and attach rich post-market data.
+"""Build the canonical two-layer dataset and attach rich post-market evidence.
 
-This is deliberately a post-scan enrichment pass.  It does not alter LEGACY source
-rules and does not redownload the 5Y market history.  It consumes the fast scanner's
-price cache plus the repository fundamental cache and makes more of that information
-available to the terminal.
-
-Canonical layer contract:
-- LEGACY     -> row.originalEngine (frozen upstream source methodology)
-- STOCKSCOUT -> row.stockscout     (custom discovery methodology)
-- richData   -> shared evidence/raw derived metrics available to either layer
-
-Flat fields remain for backward compatibility with the existing DeepVue terminal.
+LEGACY is the frozen upstream source methodology under ``row.originalEngine``.
+STOCKSCOUT is the custom discovery methodology under ``row.stockscout``.
+``row.richData`` contains shared evidence derived from the completed scan's 5Y
+price cache plus the hydrated fundamental cache. No market-data redownload occurs
+in this step and no LEGACY scoring rule is changed.
 """
 from __future__ import annotations
 
@@ -49,13 +43,13 @@ def rounded(value: Any, digits: int = 2) -> float | None:
 def clean_json(value: Any) -> Any:
     if value is None:
         return None
-    if isinstance(value, (np.bool_,)):
+    if isinstance(value, np.bool_):
         return bool(value)
-    if isinstance(value, (np.integer,)):
+    if isinstance(value, np.integer):
         return int(value)
     if isinstance(value, (np.floating, float)):
-        v = float(value)
-        return round(v, 6) if math.isfinite(v) else None
+        value = float(value)
+        return round(value, 6) if math.isfinite(value) else None
     if isinstance(value, pd.Timestamp):
         return value.isoformat()
     if isinstance(value, dict):
@@ -76,8 +70,19 @@ def pct_change(series: pd.Series, periods: int) -> float | None:
     s = pd.to_numeric(series, errors="coerce").dropna()
     if len(s) <= periods:
         return None
-    old = finite(s.iloc[-periods - 1])
-    now = finite(s.iloc[-1])
+    old, now = finite(s.iloc[-periods - 1]), finite(s.iloc[-1])
+    if old in (None, 0) or now is None:
+        return None
+    return (now / old - 1.0) * 100.0
+
+
+def long_horizon_change(series: pd.Series, target_periods: int, min_periods: int) -> float | None:
+    """Return long-horizon change without losing 5Y data to holiday-count variance."""
+    s = pd.to_numeric(series, errors="coerce").dropna()
+    if len(s) <= min_periods:
+        return None
+    periods = min(target_periods, len(s) - 1)
+    old, now = finite(s.iloc[-periods - 1]), finite(s.iloc[-1])
     if old in (None, 0) or now is None:
         return None
     return (now / old - 1.0) * 100.0
@@ -107,7 +112,7 @@ def slope_pct(series: pd.Series, periods: int) -> float | None:
     return float(np.polyfit(x, s.to_numpy(dtype=float), 1)[0] / avg * 100.0)
 
 
-def atr(frame: pd.DataFrame, periods: int = 14) -> float | None:
+def atr(frame: pd.DataFrame, periods: int) -> float | None:
     if not {"High", "Low", "Close"}.issubset(frame.columns):
         return None
     high = pd.to_numeric(frame["High"], errors="coerce")
@@ -115,17 +120,15 @@ def atr(frame: pd.DataFrame, periods: int = 14) -> float | None:
     close = pd.to_numeric(frame["Close"], errors="coerce")
     prev = close.shift(1)
     tr = pd.concat([(high - low).abs(), (high - prev).abs(), (low - prev).abs()], axis=1).max(axis=1)
-    value = finite(tr.dropna().tail(periods).mean())
-    return value
+    return finite(tr.dropna().tail(periods).mean())
 
 
 def max_drawdown(close: pd.Series, periods: int) -> float | None:
     s = pd.to_numeric(close, errors="coerce").dropna().tail(periods)
     if len(s) < 2:
         return None
-    peaks = s.cummax()
-    drawdowns = s / peaks - 1.0
-    return float(drawdowns.min() * 100.0)
+    drawdown = s / s.cummax() - 1.0
+    return float(drawdown.min() * 100.0)
 
 
 def up_down_volume_ratio(frame: pd.DataFrame, periods: int) -> float | None:
@@ -165,29 +168,25 @@ def technical_snapshot(frame: pd.DataFrame, spy: pd.DataFrame | None) -> dict[st
         ma_distances[f"distanceSma{n}"] = rounded(distance(price, ma))
 
     ema21 = finite(close.ewm(span=21, adjust=False).mean().iloc[-1]) if len(close) >= 21 else None
-    a14 = atr(frame, 14)
-    a20 = atr(frame, 20)
+    a14, a20 = atr(frame, 14), atr(frame, 20)
+    avg_vol5 = finite(volume.tail(5).mean())
     avg_vol20 = finite(volume.tail(20).mean())
     avg_vol50 = finite(volume.tail(50).mean())
     today_vol = finite(volume.iloc[-1]) if len(volume) else None
     avg_dollar20 = avg_vol20 * price if avg_vol20 is not None else None
     avg_dollar50 = avg_vol50 * price if avg_vol50 is not None else None
 
-    high20 = finite(high.tail(20).max())
-    high63 = finite(high.tail(63).max())
-    high126 = finite(high.tail(126).max())
-    high252 = finite(high.tail(252).max())
-    high504 = finite(high.tail(504).max())
-    low20 = finite(low.tail(20).min())
-    low63 = finite(low.tail(63).min())
-    low126 = finite(low.tail(126).min())
-    low252 = finite(low.tail(252).min())
+    high20, high63 = finite(high.tail(20).max()), finite(high.tail(63).max())
+    high126, high252, high504 = finite(high.tail(126).max()), finite(high.tail(252).max()), finite(high.tail(504).max())
+    low20, low63 = finite(low.tail(20).min()), finite(low.tail(63).min())
+    low126, low252 = finite(low.tail(126).min()), finite(low.tail(252).min())
 
     relative: dict[str, Any] = {}
     if isinstance(spy, pd.DataFrame) and not spy.empty and "Close" in spy.columns:
-        stock_close = close.copy()
-        spy_close = pd.to_numeric(spy["Close"], errors="coerce")
-        joined = pd.concat([stock_close.rename("stock"), spy_close.rename("spy")], axis=1).dropna()
+        joined = pd.concat([
+            close.rename("stock"),
+            pd.to_numeric(spy["Close"], errors="coerce").rename("spy"),
+        ], axis=1).dropna()
         if len(joined) > 20:
             rs = joined["stock"] / joined["spy"] * 100.0
             relative = {
@@ -201,10 +200,7 @@ def technical_snapshot(frame: pd.DataFrame, spy: pd.DataFrame | None) -> dict[st
             }
 
     last_date = frame.index[-1]
-    if isinstance(last_date, pd.Timestamp):
-        last_date = last_date.date().isoformat()
-    else:
-        last_date = str(last_date)[:10]
+    last_date = last_date.date().isoformat() if isinstance(last_date, pd.Timestamp) else str(last_date)[:10]
 
     return clean_json({
         "price": rounded(price),
@@ -216,11 +212,16 @@ def technical_snapshot(frame: pd.DataFrame, spy: pd.DataFrame | None) -> dict[st
             "3m": rounded(pct_change(close, 63)),
             "6m": rounded(pct_change(close, 126)),
             "1y": rounded(pct_change(close, 252)),
-            "2y": rounded(pct_change(close, 504)),
-            "3y": rounded(pct_change(close, 756)),
-            "5y": rounded(pct_change(close, 1260)),
+            "2y": rounded(long_horizon_change(close, 504, 450)),
+            "3y": rounded(long_horizon_change(close, 756, 700)),
+            "5y": rounded(long_horizon_change(close, 1260, 1100)),
         },
-        "movingAverages": {**mas, "ema21": rounded(ema21), **ma_distances, "distanceEma21": rounded(distance(price, ema21))},
+        "movingAverages": {
+            **mas,
+            "ema21": rounded(ema21),
+            **ma_distances,
+            "distanceEma21": rounded(distance(price, ema21)),
+        },
         "trend": {
             "closeSlope20": rounded(slope_pct(close, 20), 4),
             "closeSlope60": rounded(slope_pct(close, 60), 4),
@@ -257,7 +258,7 @@ def technical_snapshot(frame: pd.DataFrame, spy: pd.DataFrame | None) -> dict[st
             "avg20": int(avg_vol20) if avg_vol20 is not None else None,
             "avg50": int(avg_vol50) if avg_vol50 is not None else None,
             "todayVs20": rounded(today_vol / avg_vol20) if today_vol is not None and avg_vol20 else None,
-            "avg5Vs50": rounded(finite(volume.tail(5).mean()) / avg_vol50) if avg_vol50 else None,
+            "avg5Vs50": rounded(avg_vol5 / avg_vol50) if avg_vol5 is not None and avg_vol50 else None,
             "avgDollar20": int(avg_dollar20) if avg_dollar20 is not None else None,
             "avgDollar50": int(avg_dollar50) if avg_dollar50 is not None else None,
             "upDown20": rounded(up_down_volume_ratio(frame, 20)),
@@ -315,8 +316,8 @@ def stockscout_projection(row: dict[str, Any]) -> dict[str, Any]:
         "trendTemplatePasses": row.get("trendTemplatePasses"),
         "extended": row.get("extended"),
         "group": {
-            "sector": row.get("sector"),
-            "industry": row.get("industry"),
+            "sector": row.get("sectorProxy") or row.get("sector"),
+            "industry": row.get("industryProxy") or row.get("industry"),
             "sectorRank": row.get("sectorRank"),
             "industryRank": row.get("industryRank"),
             "groupLeadership": row.get("groupLeadership"),
@@ -386,9 +387,7 @@ def main() -> None:
     legacy = json.loads(LEGACY_MANIFEST.read_text(encoding="utf-8"))
     spy = cache.get("SPY")
     universe = payload.get("universe") or []
-    technical_coverage = 0
-    fundamental_coverage = 0
-    legacy_coverage = 0
+    technical_coverage = fundamental_coverage = legacy_coverage = 0
 
     for row in universe:
         ticker = str(row.get("ticker", "")).upper()
