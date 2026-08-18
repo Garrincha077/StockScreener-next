@@ -12,6 +12,8 @@ import json
 import math
 from pathlib import Path
 
+from lateral_base import MODEL as LATERAL_BASE_MODEL, score_row as score_lateral_base
+
 DATA = Path("frontend/public/data/latest.json")
 
 
@@ -264,6 +266,7 @@ def main():
     rows = payload.get("universe") or []
     for row in rows:
         calibrate(row)
+        row.update(score_lateral_base(row))
     market = payload.setdefault("market", {})
     market["perfectSetups"] = sum(bool(r.get("perfect")) for r in rows)
     market["neglectedLeaders"] = sum("Neglected → Leader" in (r.get("setupTags") or []) for r in rows)
@@ -271,14 +274,26 @@ def main():
     market["freshBreakouts"] = sum("Fresh Breakout" in (r.get("setupTags") or []) for r in rows)
     market["highConfluence"] = sum(int(r.get("confluence", 0) or 0) >= 7 for r in rows)
     market["extendedCount"] = sum(bool(r.get("extended")) for r in rows)
+    lateral_candidates = [r for r in rows if r.get("lateralBaseCandidate")]
+    market["lateralBaseCandidates"] = len(lateral_candidates)
+    market["lateralBaseAvgScore"] = round(sum(n(r, "lateralBaseScore") for r in rows) / max(1, len(rows)), 1)
+    market["lateralBaseTop"] = [
+        r.get("ticker") for r in sorted(
+            lateral_candidates,
+            key=lambda r: (n(r, "neglectedLaunchScore"), n(r, "launchReadiness"), n(r, "lateralBaseScore")),
+            reverse=True,
+        )[:10]
+    ]
     payload["calibrationModel"] = "early-leader-v2"
     payload["featureModel"] = "data-first-v2-early-leader"
-    payload["version"] = max(5, int(payload.get("version", 1) or 1))
+    payload["lateralBaseModel"] = LATERAL_BASE_MODEL
+    payload["version"] = max(7, int(payload.get("version", 1) or 1))
     DATA.write_text(json.dumps(payload, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     print(
         f"Calibrated {len(rows):,} rows: perfect={market['perfectSetups']}, "
         f"neglected={market['neglectedLeaders']}, transitions={market['transitions']}, "
-        f"freshBreakouts={market['freshBreakouts']}, extended={market['extendedCount']}"
+        f"freshBreakouts={market['freshBreakouts']}, extended={market['extendedCount']}, "
+        f"lateralBaseCandidates={market['lateralBaseCandidates']}"
     )
 
 
