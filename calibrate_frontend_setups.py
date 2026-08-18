@@ -11,6 +11,7 @@ import json
 import math
 from pathlib import Path
 
+from compute_ma_cluster_breakout import apply_to_payload as apply_ma_cluster
 from emerging_leader import MODEL as EMERGING_MODEL, score_row as score_emerging_leader
 from lateral_base import MODEL as LATERAL_BASE_MODEL, score_row as score_lateral_base
 
@@ -52,6 +53,8 @@ def calibrate(row: dict):
     volume_dry = n(row, "volumeDryUp", 1)
     slope150 = n(row, "slope150")
     base_weeks = n(row, "baseWeeks")
+    cluster_entry = bool(row.get("maClusterEntrySignal"))
+    cluster_ready = bool(row.get("maClusterReady")) and not cluster_entry
 
     extended = d10 > 12 or d30 > 22
     row["extended"] = bool(extended)
@@ -141,6 +144,10 @@ def calibrate(row: dict):
         and not extended
     )
 
+    if cluster_entry:
+        tags.append("MA Cluster ENTRY")
+    elif cluster_ready:
+        tags.append("MA Cluster Ready")
     if neglected:
         tags.append("Neglected → Leader")
     if transition:
@@ -165,6 +172,8 @@ def calibrate(row: dict):
         tags.append("⚠ Extended")
 
     order = [
+        "MA Cluster ENTRY",
+        "MA Cluster Ready",
         "Neglected → Leader",
         "S1→S2 Transition",
         "Long Base Breakout",
@@ -200,12 +209,7 @@ def calibrate(row: dict):
 
 
 def refresh_leadership_alias(row: dict):
-    """Keep stored Group v2 confirmation aligned during calibration-only validation.
-
-    The nightly pipeline recomputes Group Leadership after calibration. CI instead
-    starts from the stored group rank, so refresh the simple bounded derived score
-    here to avoid comparing a new individual score with yesterday's derived value.
-    """
+    """Keep stored Group v2 confirmation aligned during calibration-only validation."""
     if row.get("groupRank") is None:
         return
     individual = n(row, "opportunityScore", n(row, "score"))
@@ -219,6 +223,9 @@ def main():
         return
 
     payload = json.loads(DATA.read_text(encoding="utf-8"))
+    # Exact weekly 10W/30W timing is derived from existing 5Y chart shards before
+    # labels and emerging-leader scoring are assigned.
+    apply_ma_cluster(payload)
     rows = payload.get("universe") or []
 
     for row in rows:
@@ -234,7 +241,14 @@ def main():
                 tags.insert(0, discovery_tag)
             row["setupTags"] = tags
             row["setupMatchCount"] = len([t for t in tags if not str(t).startswith("⚠")])
-            row["primarySetup"] = discovery_tag
+            # A live MA-cluster timing signal remains primary because it is the
+            # user's concrete entry trigger; discovery archetype is secondary.
+            if row.get("maClusterEntrySignal"):
+                row["primarySetup"] = "MA Cluster ENTRY"
+            elif row.get("maClusterReady"):
+                row["primarySetup"] = "MA Cluster Ready"
+            else:
+                row["primarySetup"] = discovery_tag
 
     market = payload.setdefault("market", {})
     emerging = [r for r in rows if r.get("emergingLeaderCandidate")]
@@ -282,7 +296,8 @@ def main():
     print(
         f"Calibrated {len(rows):,} rows: emerging={len(emerging)} "
         f"(neglected={len(neglected_emerging)}, reawakening={len(reawakening)}), "
-        f"A+={len(a_plus)}, evidence4+={market['highEvidence']}, "
+        f"A+={len(a_plus)}, MA-ready={market.get('maClusterReadyCount',0)}, "
+        f"MA-entry={market.get('maClusterEntryCount',0)}, evidence4+={market['highEvidence']}, "
         f"extended={market['extendedCount']}"
     )
 
