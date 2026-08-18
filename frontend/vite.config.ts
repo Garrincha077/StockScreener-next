@@ -65,6 +65,12 @@ const originalColumns = `
     helper.accessor('originalRiskPct' as any,{id:'originalRiskPct',header:'Orig Risk',cell:i=>\`\${fmt(i.getValue(),1)}%\`}),
     helper.accessor('originalSellScore' as any,{id:'originalSellScore',header:'Orig Sell',cell:i=><b className={num(i.getValue())>=60?'dv-bad':''}>{fmt(i.getValue(),0)}</b>}),`
 
+const staleChartCache = `const shard=payload.chartShards?.[ticker];if(!shard)return[]\n    if(!shardPromises.current[shard])shardPromises.current[shard]=fetch(\`./data/charts/\${shard}\`).then(r=>{if(!r.ok)throw new Error(\`chart \${r.status}\`);return r.json()})\n    try{const data=await shardPromises.current[shard],rows=data[ticker]||[];return rows.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4],volume:r[5],rs:r[6]}))}catch{return[]}`
+const snapshotChartCache = `const shard=payload.chartShards?.[ticker];if(!shard)return[]\n    const snapshot=payload.generatedAt||'snapshot',cacheKey=\`\${snapshot}:\${shard}\`\n    if(!shardPromises.current[cacheKey])shardPromises.current[cacheKey]=fetch(\`./data/charts/\${shard}?v=\${encodeURIComponent(snapshot)}\`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(\`chart \${r.status}\`);return r.json()})\n    try{const data=await shardPromises.current[cacheKey],rows=data[ticker]||[];return rows.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4],volume:r[5],rs:r[6]}))}catch{return[]}`
+
+const sortedDataAnchor = `const sortedData=useMemo(()=>applyMultiSort(filtered,sorting),[filtered,sorting])`
+const sortedDataSynced = `${sortedDataAnchor}\n  useEffect(()=>{if(filtered.length&&selectedTicker&&!filtered.some(s=>s.ticker===selectedTicker))setSelectedTicker(filtered[0].ticker)},[filtered,selectedTicker])`
+
 function balancedMixPlugin(): Plugin {
   return {
     name: 'stockscout-balanced-multisort',
@@ -87,6 +93,10 @@ function balancedMixPlugin(): Plugin {
         'const defaultVisibility:VisibilityState={',
         "const defaultVisibility:VisibilityState={originalTTPasses:false,originalVcpQuality:false,originalAdVolumeRatio:false,originalRiskPct:false,originalSellScore:false,"
       )
+      if (next.includes(staleChartCache)) next = next.replace(staleChartCache, snapshotChartCache)
+      else this.warn('Snapshot-aware chart cache patch target was not found.')
+      if (next.includes(sortedDataAnchor)) next = next.replace(sortedDataAnchor, sortedDataSynced)
+      else this.warn('Filtered ticker synchronization patch target was not found.')
       return { code: next, map: null }
     },
   }
