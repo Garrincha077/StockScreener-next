@@ -5,6 +5,7 @@ import './styles.css'
 import './terminal.css'
 import './datafirst.css'
 import './deepvue.css'
+import './mobile-tradingview.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
