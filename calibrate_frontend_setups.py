@@ -208,25 +208,31 @@ def main():
         row.update(score_lateral_base(row))
         row.update(score_emerging_leader(row))
         if row.get("emergingLeaderCandidate"):
+            archetype = str(row.get("emergingArchetype") or "Neglected Emerging")
+            discovery_tag = "Reset → Reawakening" if archetype == "Reset Reawakening" else "Neglected → Emerging Leader"
             tags = list(row.get("setupTags") or [])
-            if "Neglected → Emerging Leader" not in tags:
-                tags.insert(0, "Neglected → Emerging Leader")
+            if discovery_tag not in tags:
+                tags.insert(0, discovery_tag)
             row["setupTags"] = tags
             row["setupMatchCount"] = len([t for t in tags if not str(t).startswith("⚠")])
-            row["primarySetup"] = "Neglected → Emerging Leader"
+            row["primarySetup"] = discovery_tag
 
     market = payload.setdefault("market", {})
     emerging = [r for r in rows if r.get("emergingLeaderCandidate")]
+    neglected_emerging = [r for r in emerging if r.get("emergingArchetype") == "Neglected Emerging"]
+    reawakening = [r for r in emerging if r.get("emergingArchetype") == "Reset Reawakening"]
     a_plus = [r for r in rows if r.get("aPlusEmergingSetup")]
 
-    market["perfectSetups"] = len(a_plus)  # compatibility
+    market["perfectSetups"] = len(a_plus)
     market["aPlusEmergingSetups"] = len(a_plus)
     market["emergingLeaderCandidates"] = len(emerging)
-    market["neglectedLeaders"] = len(emerging)  # compatibility
+    market["neglectedEmergingCandidates"] = len(neglected_emerging)
+    market["resetReawakeningCandidates"] = len(reawakening)
+    market["neglectedLeaders"] = len(neglected_emerging)
     market["transitions"] = sum("S1→S2 Transition" in (r.get("setupTags") or []) for r in rows)
     market["freshBreakouts"] = sum("Fresh Breakout" in (r.get("setupTags") or []) for r in rows)
     market["highEvidence"] = sum(int(r.get("emergingEvidenceCount", 0) or 0) >= 4 for r in rows)
-    market["highConfluence"] = market["highEvidence"]  # compatibility alias
+    market["highConfluence"] = market["highEvidence"]
     market["extendedCount"] = sum(bool(r.get("extended")) for r in rows)
 
     lateral_candidates = [r for r in rows if r.get("lateralBaseCandidate")]
@@ -255,9 +261,10 @@ def main():
 
     DATA.write_text(json.dumps(payload, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
     print(
-        f"Calibrated {len(rows):,} rows: emerging={len(emerging)}, A+={len(a_plus)}, "
-        f"evidence4+={market['highEvidence']}, extended={market['extendedCount']}, "
-        f"lateralBaseCandidates={market['lateralBaseCandidates']}"
+        f"Calibrated {len(rows):,} rows: emerging={len(emerging)} "
+        f"(neglected={len(neglected_emerging)}, reawakening={len(reawakening)}), "
+        f"A+={len(a_plus)}, evidence4+={market['highEvidence']}, "
+        f"extended={market['extendedCount']}"
     )
 
 
