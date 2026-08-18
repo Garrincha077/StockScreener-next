@@ -65,7 +65,7 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py validate_scan_session.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
@@ -155,6 +155,9 @@ jobs:
           PY
           du -sh frontend/public/data
 
+      - name: Validate canonical dataset invariants
+        run: python validate_canonical_dataset.py
+
       - name: Setup calibration audit
         run: python audit_frontend_dataset.py
 
@@ -205,6 +208,8 @@ jobs:
             echo "**Session:** guarded after completed US regular session"
             echo ""
             echo "**Price convention:** adjusted OHLCV end-to-end"
+            echo ""
+            echo "**Canonical dataset:** hard invariants passed before publish"
             echo ""
             echo "**Layers:** LEGACY (frozen upstream) + STOCKSCOUT (custom discovery)"
             echo ""
