@@ -16,6 +16,22 @@ export type FieldDef={id:string;label:string;kind:'number'|'text'|'boolean';defa
 
 export const fieldDefs:FieldDef[]=[
   {id:'stage',label:'Stage',kind:'number',defaultOp:'='},
+  {id:'maClusterPhase',label:'MA Cluster phase',kind:'text',defaultOp:'='},
+  {id:'maClusterTier',label:'MA Cluster tier',kind:'text',defaultOp:'='},
+  {id:'maClusterTierRank',label:'MA Cluster tier rank',kind:'number',defaultOp:'>='},
+  {id:'maClusterTierLabel',label:'MA Cluster tier / phase',kind:'text',defaultOp:'contains'},
+  {id:'maClusterWatch',label:'MA Cluster WATCH',kind:'boolean',defaultOp:'true'},
+  {id:'maClusterReady',label:'MA Cluster READY',kind:'boolean',defaultOp:'true'},
+  {id:'maClusterEntrySignal',label:'MA Cluster ENTRY',kind:'boolean',defaultOp:'true'},
+  {id:'maClusterScore',label:'MA Cluster timing 0-100',kind:'number',defaultOp:'>='},
+  {id:'maClusterSpreadPct',label:'10W/30W spread %',kind:'number',defaultOp:'<=',placeholder:'3.5'},
+  {id:'ma10wSlope4w',label:'10W slope 4W %',kind:'number',defaultOp:'>='},
+  {id:'ma30wSlope4w',label:'30W slope 4W %',kind:'number',defaultOp:'>='},
+  {id:'maClusterTurnCount',label:'Rising MAs 0-2',kind:'number',defaultOp:'>='},
+  {id:'maClusterPricePct',label:'Price vs MA cluster %',kind:'number',defaultOp:'between',placeholder:'-3,5'},
+  {id:'maClusterVolumePace',label:'Weekly volume pace x',kind:'number',defaultOp:'>='},
+  {id:'maClusterVeryTight',label:'Very tight 10W/30W',kind:'boolean',defaultOp:'true'},
+  {id:'maClusterReasons',label:'MA Cluster reason',kind:'text',defaultOp:'contains'},
   {id:'opportunityScore',label:'Emerging Score',kind:'number',defaultOp:'>='},
   {id:'emergingArchetype',label:'Emerging archetype',kind:'text',defaultOp:'contains'},
   {id:'emergingEvidenceCount',label:'Evidence 0-5',kind:'number',defaultOp:'>='},
@@ -173,6 +189,30 @@ const rule=(field:string,op:RuleOp,value=''):Rule=>({id:uid(),field,op,value})
 const group=(logic:Logic,rules:Rule[]):RuleGroup=>({id:uid(),logic,rules})
 
 export const builtInScreens:ScreenState[]=[
+  {
+    name:'MA Cluster ENTRY',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
+    visibility:{maClusterTier:true,maClusterPhase:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,ma10wSlope4w:true,ma30wSlope4w:true,emergingArchetype:true,emergingEvidenceCount:true},
+    sorting:[{id:'maClusterTierRank',desc:true},{id:'maClusterScore',desc:true},{id:'maClusterVolumePace',desc:true},{id:'opportunityScore',desc:true}],
+    groups:[group('ALL',[rule('maClusterPhase','=','ENTRY')])],
+  },
+  {
+    name:'MA Cluster Ready',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
+    visibility:{maClusterTier:true,maClusterPhase:true,maClusterScore:true,maClusterSpreadPct:true,maClusterPricePct:true,ma10wSlope4w:true,ma30wSlope4w:true,opportunityScore:true,emergingArchetype:true},
+    sorting:[{id:'maClusterTierRank',desc:true},{id:'maClusterScore',desc:true},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}],
+    groups:[group('ALL',[rule('maClusterPhase','=','READY')])],
+  },
+  {
+    name:'MA Cluster Watch',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
+    visibility:{maClusterTier:true,maClusterPhase:true,maClusterScore:true,maClusterSpreadPct:true,maClusterPricePct:true,ma10wSlope4w:true,ma30wSlope4w:true,opportunityScore:true},
+    sorting:[{id:'maClusterScore',desc:true},{id:'maClusterSpreadPct',desc:false},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}],
+    groups:[group('ALL',[rule('maClusterPhase','=','WATCH')])],
+  },
+  {
+    name:'Tier A Cluster Timing',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
+    visibility:{maClusterTier:true,maClusterPhase:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,maClusterPricePct:true,opportunityScore:true,emergingEvidenceCount:true},
+    sorting:[{id:'maClusterPhase',desc:true},{id:'maClusterScore',desc:true},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}],
+    groups:[group('ALL',[rule('maClusterTier','=','A')])],
+  },
   {
     name:'A+ Emerging',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
     visibility:{emergingArchetype:true,emergingEvidenceCount:true,neglectedEmergingScore:true,resetReawakeningScore:true},
