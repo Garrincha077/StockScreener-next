@@ -9,6 +9,7 @@ from statistics import median
 
 DATA = Path("frontend/public/data/latest.json")
 GROUP_V2_MODEL = "behavioral-proxy-v2-confidence"
+LATERAL_BASE_MODEL = "lateral-base-v1-observational"
 
 
 def num(row, key, default=0.0):
@@ -130,6 +131,16 @@ def main():
             raise SystemExit(status)
     else:
         print(f"\nGROUP LEADERSHIP V2 GUARDRAIL skipped for stored model={group_model or 'none'}")
+
+    lateral_model = payload.get("lateralBaseModel")
+    if lateral_model == LATERAL_BASE_MODEL:
+        print("\nLATERAL BASE V1 GUARDRAIL")
+        from audit_lateral_base import main as audit_lateral_base
+        status = audit_lateral_base()
+        if status:
+            raise SystemExit(status)
+    else:
+        print(f"\nLATERAL BASE V1 GUARDRAIL skipped for stored model={lateral_model or 'none'}")
 
 
 if __name__ == "__main__":
