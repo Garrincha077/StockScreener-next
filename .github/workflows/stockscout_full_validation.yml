@@ -1,7 +1,7 @@
 name: StockScout Full Validation
 
 # Final gate for the calibrated early-leader model + behavioral Groups UI.
-# Manual full-run trigger: 2026-08-18 fundamental-evidence-v1
+# Manual full-run trigger: 2026-08-18 fundamental-evidence-v1 audit-fix
 on:
   push:
     paths:
