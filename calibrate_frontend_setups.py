@@ -26,6 +26,10 @@ def n(row, key, default=0.0):
         return float(default)
 
 
+def clamp(value, lo=0.0, hi=100.0):
+    return max(lo, min(hi, float(value)))
+
+
 def calibrate(row: dict):
     """Assign transparent setup labels only; scoring happens after Lateral Base."""
     stage = int(n(row, "stage"))
@@ -195,6 +199,20 @@ def calibrate(row: dict):
     })
 
 
+def refresh_leadership_alias(row: dict):
+    """Keep stored Group v2 confirmation aligned during calibration-only validation.
+
+    The nightly pipeline recomputes Group Leadership after calibration. CI instead
+    starts from the stored group rank, so refresh the simple bounded derived score
+    here to avoid comparing a new individual score with yesterday's derived value.
+    """
+    if row.get("groupRank") is None:
+        return
+    individual = n(row, "opportunityScore", n(row, "score"))
+    group_rank = n(row, "groupRank", 50.0)
+    row["leadershipScore"] = int(round(clamp(individual + (group_rank - 50.0) * 0.10)))
+
+
 def main():
     if not DATA.exists():
         print("Setup calibration skipped: latest.json missing")
@@ -207,6 +225,7 @@ def main():
         calibrate(row)
         row.update(score_lateral_base(row))
         row.update(score_emerging_leader(row))
+        refresh_leadership_alias(row)
         if row.get("emergingLeaderCandidate"):
             archetype = str(row.get("emergingArchetype") or "Neglected Emerging")
             discovery_tag = "Reset → Reawakening" if archetype == "Reset Reawakening" else "Neglected → Emerging Leader"
