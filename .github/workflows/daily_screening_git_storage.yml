@@ -20,7 +20,9 @@ concurrency:
 jobs:
   screen-stocks:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    # Post-market quality/coverage is more important than runtime. Leave enough
+    # headroom for conservative Yahoo retries plus rich enrichment.
+    timeout-minutes: 300
     permissions:
       contents: write
 
@@ -63,6 +65,9 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Verify frozen LEGACY source baseline
+        run: python verify_legacy_baseline.py
+
       - name: Fast-engine regression test
         run: python -m pytest tests/test_fast_batch_processor_regression.py -q
 
@@ -85,6 +90,7 @@ jobs:
         run: |
           echo "Starting post-market screening"
           echo "Engine: fast batched 5Y price prefetch"
+          echo "Priority: maximum useful coverage; runtime is secondary"
           echo "Fresh price data: full universe, one shared market-data pass"
           echo "Cached fundamentals: $CACHED_STOCKS stocks"
           mkdir -p data/daily_scans data/logs
@@ -97,14 +103,27 @@ jobs:
           echo "Latest report created successfully"
           wc -l data/daily_scans/latest_optimized_scan.txt
 
-      - name: Export live terminal dataset and 5Y charts
+      - name: Export rich LEGACY + STOCKSCOUT terminal dataset and 5Y charts
         shell: bash
         run: |
+          # Base canonical rows/charts from the completed scan.
           python export_frontend_data_fast.py
+
+          # STOCKSCOUT custom discovery layer.
           python enhance_frontend_dataset.py
           python calibrate_frontend_setups.py
           python compute_group_leadership.py
+
+          # LEGACY layer: call the frozen source functions on the same completed scan.
+          python enrich_original_engine.py
+
+          # Compare StockScout discovery state with the previous nightly snapshot.
           python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
+
+          # Shared rich evidence + explicit two-layer schema. This runs last so the
+          # nested StockScout projection also contains today's change state.
+          python enrich_scan_layers.py
+
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
           echo "Chart shards: $(find frontend/public/data/charts -name '*.json' | wc -l)"
@@ -116,6 +135,14 @@ jobs:
           print('Feature model:', p.get('featureModel'))
           print('Calibration:', p.get('calibrationModel'))
           print('Group model:', m.get('groupModel'))
+          print('Data model:', p.get('dataModel'))
+          print('Layers:', list((p.get('layers') or {}).keys()))
+          print('LEGACY coverage:', m.get('legacyLayerCoverage',0))
+          print('STOCKSCOUT coverage:', m.get('stockscoutLayerCoverage',0))
+          print('Rich technical coverage:', m.get('richTechnicalCoverage',0))
+          print('Rich fundamental coverage:', m.get('richFundamentalCoverage',0))
+          print('Original qualified buys:', m.get('originalQualifiedBuys',0))
+          print('Original sells:', m.get('originalSells',0))
           print('Top sector:', m.get('topSector'))
           print('Top industry:', m.get('topIndustry'))
           print('Daily changes:', m.get('dailyChanges',{}))
@@ -124,6 +151,9 @@ jobs:
 
       - name: Setup calibration audit
         run: python audit_frontend_dataset.py
+
+      - name: Verify LEGACY source still frozen after enrichment
+        run: python verify_legacy_baseline.py
 
       - name: Write run metadata
         env:
@@ -147,6 +177,9 @@ jobs:
               "calibration_model": "early-leader-v2",
               "group_model": "behavioral-proxy-v1",
               "scan_engine": "fast-batched-5y-v1",
+              "data_model": "rich-scan-layers-v1",
+              "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
+              "layers": ["LEGACY", "STOCKSCOUT"],
           }
           Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
           PY
@@ -158,6 +191,8 @@ jobs:
             echo "## Daily stock screening"
             echo ""
             echo "**Run:** ${{ steps.date.outputs.date }} ${{ steps.date.outputs.time }} UTC"
+            echo ""
+            echo "**Layers:** LEGACY (frozen upstream) + STOCKSCOUT (custom discovery)"
             echo ""
             echo '```text'
             head -n 80 data/daily_scans/latest_optimized_scan.txt
