@@ -1,3 +1,6 @@
+import pandas as pd
+
+from audit_fundamental_evidence import spearman_rank_corr
 from fundamental_evidence import score_fundamentals
 
 
@@ -66,3 +69,21 @@ def test_inventory_growth_faster_than_revenue_is_penalized():
     }, age_days=1)
     assert good["groupScores"]["inventory"] > bad["groupScores"]["inventory"]
     assert good["score"] > bad["score"]
+
+
+def test_spearman_audit_does_not_require_scipy():
+    frame = pd.DataFrame({
+        "fund": [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
+        "opportunity": [1, 2, 4, 3, 5, 7, 6, 8, 9, 10],
+    })
+    corr = spearman_rank_corr(frame, "fund", "opportunity")
+    assert corr is not None
+    assert 0.9 < corr <= 1.0
+
+
+def test_spearman_audit_returns_none_for_constant_series():
+    frame = pd.DataFrame({
+        "fund": list(range(10)),
+        "opportunity": [5] * 10,
+    })
+    assert spearman_rank_corr(frame, "fund", "opportunity") is None
