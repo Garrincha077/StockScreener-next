@@ -3,9 +3,21 @@ name: StockScout Validation
 on:
   push:
     paths:
+      - 'run_optimized_scan.py'
+      - 'run_fast_scan.py'
       - 'src/screening/fast_batch_processor.py'
+      - 'src/screening/optimized_batch_processor.py'
+      - 'src/screening/signal_engine.py'
+      - 'src/screening/phase_indicators.py'
+      - 'src/screening/benchmark.py'
+      - 'src/data/**'
+      - 'config/legacy_baseline.json'
+      - 'verify_legacy_baseline.py'
       - 'tests/test_fast_batch_processor_regression.py'
+      - 'tests/test_vcp_mapping.py'
+      - 'tests/test_legacy_fast_differential.py'
       - 'tests/test_setup_calibration.py'
+      - 'export_frontend_data_fast.py'
       - 'enhance_frontend_dataset.py'
       - 'calibrate_frontend_setups.py'
       - 'compute_group_leadership.py'
@@ -32,11 +44,19 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_setup_calibration.py -q
+      - name: Verify frozen LEGACY execution graph
+        run: python verify_legacy_baseline.py
 
-      - name: Syntax-check group engine
-        run: python -m py_compile compute_group_leadership.py
+      - name: Regression and differential tests
+        run: |
+          python -m pytest \
+            tests/test_fast_batch_processor_regression.py \
+            tests/test_vcp_mapping.py \
+            tests/test_legacy_fast_differential.py \
+            tests/test_setup_calibration.py -q
+
+      - name: Syntax-check enrichment engines
+        run: python -m py_compile compute_group_leadership.py export_frontend_data_fast.py calibrate_frontend_setups.py
 
       - name: Apply current setup calibration in workspace
         run: python calibrate_frontend_setups.py
