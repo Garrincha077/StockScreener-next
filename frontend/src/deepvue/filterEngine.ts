@@ -16,10 +16,15 @@ export type FieldDef={id:string;label:string;kind:'number'|'text'|'boolean';defa
 
 export const fieldDefs:FieldDef[]=[
   {id:'stage',label:'Stage',kind:'number',defaultOp:'='},
+  {id:'scoutTier',label:'Scout Tier',kind:'text',defaultOp:'='},
+  {id:'scoutTierRank',label:'Scout Tier rank',kind:'number',defaultOp:'>='},
+  {id:'scoutTierLabel',label:'Scout Tier / phase',kind:'text',defaultOp:'contains'},
+  {id:'scoutQualityConfirmed',label:'Scout quality confirmed',kind:'boolean',defaultOp:'true'},
+  {id:'scoutTierReasons',label:'Scout Tier reason',kind:'text',defaultOp:'contains'},
   {id:'maClusterPhase',label:'MA Cluster phase',kind:'text',defaultOp:'='},
-  {id:'maClusterTier',label:'MA Cluster tier',kind:'text',defaultOp:'='},
-  {id:'maClusterTierRank',label:'MA Cluster tier rank',kind:'number',defaultOp:'>='},
-  {id:'maClusterTierLabel',label:'MA Cluster tier / phase',kind:'text',defaultOp:'contains'},
+  {id:'maClusterTier',label:'Timing Tier',kind:'text',defaultOp:'='},
+  {id:'maClusterTierRank',label:'Timing Tier rank',kind:'number',defaultOp:'>='},
+  {id:'maClusterTierLabel',label:'Timing Tier / phase',kind:'text',defaultOp:'contains'},
   {id:'maClusterWatch',label:'MA Cluster WATCH',kind:'boolean',defaultOp:'true'},
   {id:'maClusterReady',label:'MA Cluster READY',kind:'boolean',defaultOp:'true'},
   {id:'maClusterEntrySignal',label:'MA Cluster ENTRY',kind:'boolean',defaultOp:'true'},
@@ -190,27 +195,39 @@ const group=(logic:Logic,rules:Rule[]):RuleGroup=>({id:uid(),logic,rules})
 
 export const builtInScreens:ScreenState[]=[
   {
+    name:'Scout Tier A',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
+    visibility:{scoutTierLabel:true,maClusterTierLabel:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,opportunityScore:true,emergingArchetype:true,emergingEvidenceCount:true},
+    sorting:[{id:'scoutTierRank',desc:true},{id:'maClusterEntrySignal',desc:true},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true},{id:'maClusterScore',desc:true}],
+    groups:[group('ALL',[rule('scoutTier','=','A')])],
+  },
+  {
+    name:'Scout Tier A+B',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
+    visibility:{scoutTierLabel:true,maClusterTierLabel:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,opportunityScore:true,emergingArchetype:true,emergingEvidenceCount:true},
+    sorting:[{id:'scoutTierRank',desc:true},{id:'maClusterEntrySignal',desc:true},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true},{id:'maClusterScore',desc:true}],
+    groups:[group('ALL',[rule('scoutTierRank','>=','2')])],
+  },
+  {
     name:'MA Cluster ENTRY',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
-    visibility:{maClusterTier:true,maClusterPhase:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,ma10wSlope4w:true,ma30wSlope4w:true,emergingArchetype:true,emergingEvidenceCount:true},
-    sorting:[{id:'maClusterTierRank',desc:true},{id:'maClusterScore',desc:true},{id:'maClusterVolumePace',desc:true},{id:'opportunityScore',desc:true}],
+    visibility:{scoutTierLabel:true,maClusterTierLabel:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,ma10wSlope4w:true,ma30wSlope4w:true,emergingArchetype:true,emergingEvidenceCount:true},
+    sorting:[{id:'scoutTierRank',desc:true},{id:'maClusterTierRank',desc:true},{id:'maClusterScore',desc:true},{id:'opportunityScore',desc:true}],
     groups:[group('ALL',[rule('maClusterPhase','=','ENTRY')])],
   },
   {
     name:'MA Cluster Ready',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
-    visibility:{maClusterTier:true,maClusterPhase:true,maClusterScore:true,maClusterSpreadPct:true,maClusterPricePct:true,ma10wSlope4w:true,ma30wSlope4w:true,opportunityScore:true,emergingArchetype:true},
-    sorting:[{id:'maClusterTierRank',desc:true},{id:'maClusterScore',desc:true},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}],
+    visibility:{scoutTierLabel:true,maClusterTierLabel:true,maClusterScore:true,maClusterSpreadPct:true,maClusterPricePct:true,ma10wSlope4w:true,ma30wSlope4w:true,opportunityScore:true,emergingArchetype:true},
+    sorting:[{id:'scoutTierRank',desc:true},{id:'maClusterTierRank',desc:true},{id:'opportunityScore',desc:true},{id:'maClusterScore',desc:true},{id:'rsRank',desc:true}],
     groups:[group('ALL',[rule('maClusterPhase','=','READY')])],
   },
   {
     name:'MA Cluster Watch',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
-    visibility:{maClusterTier:true,maClusterPhase:true,maClusterScore:true,maClusterSpreadPct:true,maClusterPricePct:true,ma10wSlope4w:true,ma30wSlope4w:true,opportunityScore:true},
-    sorting:[{id:'maClusterScore',desc:true},{id:'maClusterSpreadPct',desc:false},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}],
+    visibility:{scoutTierLabel:true,maClusterTierLabel:true,maClusterScore:true,maClusterSpreadPct:true,maClusterPricePct:true,ma10wSlope4w:true,ma30wSlope4w:true,opportunityScore:true},
+    sorting:[{id:'scoutTierRank',desc:true},{id:'maClusterScore',desc:true},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}],
     groups:[group('ALL',[rule('maClusterPhase','=','WATCH')])],
   },
   {
     name:'Tier A Cluster Timing',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
-    visibility:{maClusterTier:true,maClusterPhase:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,maClusterPricePct:true,opportunityScore:true,emergingEvidenceCount:true},
-    sorting:[{id:'maClusterPhase',desc:true},{id:'maClusterScore',desc:true},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}],
+    visibility:{scoutTierLabel:true,maClusterTierLabel:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,maClusterPricePct:true,opportunityScore:true,emergingEvidenceCount:true},
+    sorting:[{id:'scoutTierRank',desc:true},{id:'maClusterScore',desc:true},{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}],
     groups:[group('ALL',[rule('maClusterTier','=','A')])],
   },
   {
