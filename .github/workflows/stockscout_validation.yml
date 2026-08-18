@@ -18,6 +18,7 @@ on:
       - 'tests/test_legacy_fast_differential.py'
       - 'tests/test_setup_calibration.py'
       - 'tests/test_fundamental_evidence.py'
+      - 'tests/test_group_leadership.py'
       - 'fundamental_evidence.py'
       - 'apply_fundamental_evidence.py'
       - 'audit_fundamental_evidence.py'
@@ -25,6 +26,7 @@ on:
       - 'enhance_frontend_dataset.py'
       - 'calibrate_frontend_setups.py'
       - 'compute_group_leadership.py'
+      - 'audit_group_leadership.py'
       - 'audit_frontend_dataset.py'
       - '.github/workflows/stockscout_validation.yml'
   workflow_dispatch:
@@ -58,10 +60,11 @@ jobs:
             tests/test_vcp_mapping.py \
             tests/test_legacy_fast_differential.py \
             tests/test_setup_calibration.py \
-            tests/test_fundamental_evidence.py -q
+            tests/test_fundamental_evidence.py \
+            tests/test_group_leadership.py -q
 
       - name: Syntax-check enrichment engines
-        run: python -m py_compile compute_group_leadership.py export_frontend_data_fast.py calibrate_frontend_setups.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py
+        run: python -m py_compile compute_group_leadership.py audit_group_leadership.py export_frontend_data_fast.py calibrate_frontend_setups.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py
 
       - name: Apply current setup calibration in workspace
         run: python calibrate_frontend_setups.py
