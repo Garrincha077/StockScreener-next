@@ -46,10 +46,16 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   validate:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
+    env:
+      VALIDATED_SOURCE_RUN_ID: '32131202986'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -64,6 +70,42 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Restore validated 5Y production snapshot for PR calibration
+        if: github.event_name == 'pull_request'
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: /tmp/stockscout-pages
+          repository: Garrincha077/stock-screener2
+          run-id: ${{ env.VALIDATED_SOURCE_RUN_ID }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install production data + chart shards in PR workspace
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p /tmp/stockscout-site
+          if [ -f /tmp/stockscout-pages/artifact.tar ]; then
+            tar -xf /tmp/stockscout-pages/artifact.tar -C /tmp/stockscout-site
+          else
+            cp -a /tmp/stockscout-pages/. /tmp/stockscout-site/
+          fi
+          test -s /tmp/stockscout-site/data/latest.json
+          test -d /tmp/stockscout-site/data/charts
+          CHARTS=$(find /tmp/stockscout-site/data/charts -name '*.json' -type f | wc -l | tr -d ' ')
+          test "$CHARTS" -gt 0
+          rm -rf frontend/public/data
+          cp -a /tmp/stockscout-site/data frontend/public/data
+          echo "PR calibration restored $CHARTS real 5Y chart shards"
+          python - <<'PY'
+          import json
+          p=json.load(open('frontend/public/data/latest.json'))
+          print('Source generatedAt:',p.get('generatedAt'))
+          print('Rows:',len(p.get('universe') or []))
+          print('5Y charts:',(p.get('market') or {}).get('fiveYearCharts'))
+          PY
 
       - name: Verify frozen LEGACY execution graph
         run: python verify_legacy_baseline.py
@@ -91,7 +133,30 @@ jobs:
         run: python audit_frontend_dataset.py
 
       - name: MA Cluster timing audit
+        env:
+          MA_CLUSTER_REQUIRE_COVERAGE: ${{ github.event_name == 'pull_request' && '1' || '0' }}
         run: python audit_ma_cluster_breakout.py
+
+      - name: Print branch candidate summary
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          p=json.load(open('frontend/public/data/latest.json'))
+          rows=p.get('universe') or []
+          m=p.get('market') or {}
+          print('=== REAL 5Y BRANCH CALIBRATION ===')
+          print('Emerging:',m.get('emergingLeaderCandidates'),'A+:',m.get('aPlusEmergingSetups'))
+          print('MA coverage:',m.get('maClusterCoverage'))
+          print('WATCH / READY / ENTRY:',m.get('maClusterWatchCount'),m.get('maClusterReadyCount'),m.get('maClusterEntryCount'))
+          print('Tiers:',m.get('maClusterTierCounts'))
+          phase_order={'ENTRY':3,'READY':2,'WATCH':1}
+          active=[r for r in rows if r.get('maClusterPhase') in phase_order]
+          active.sort(key=lambda r:(r.get('maClusterTierRank') or 0,phase_order.get(r.get('maClusterPhase'),0),r.get('maClusterScore') or 0,r.get('emergingLeaderScore') or 0),reverse=True)
+          for r in active[:50]:
+              print(f"{r.get('ticker'):5s} {r.get('maClusterTierLabel','—'):10s} timing={r.get('maClusterScore',0):5.1f} spread={r.get('maClusterSpreadPct',0):4.1f}% price={r.get('maClusterPricePct',0):+5.1f}% vol={r.get('maClusterVolumePace',0):4.2f}x emerging={r.get('emergingLeaderScore',0):5.1f} RS={r.get('rsRank',0)}")
+          PY
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -103,3 +168,12 @@ jobs:
         run: |
           npm install
           npm run build
+
+      - name: Upload PR-calibrated dataset
+        if: github.event_name == 'pull_request'
+        uses: actions/upload-artifact@v4
+        with:
+          name: stockscout-pr-calibration-${{ github.run_id }}
+          path: frontend/public/data/latest.json
+          if-no-files-found: error
+          retention-days: 14
