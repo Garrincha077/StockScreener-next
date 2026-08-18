@@ -2,8 +2,8 @@ name: Daily Stock Screening (Post-Market)
 
 on:
   schedule:
-    # 22:30 Croatia summer time (20:30 UTC). GitHub cron itself is UTC.
-    - cron: '30 20 * * 1-5'
+    # 21:45 UTC is safely after the 16:00 ET regular close in both US DST regimes.
+    - cron: '45 21 * * 1-5'
   workflow_dispatch:
     inputs:
       force_full_refresh:
@@ -67,13 +67,13 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py validate_scan_session.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
 
-      - name: Fast-engine regression test
-        run: python -m pytest tests/test_fast_batch_processor_regression.py -q
+      - name: Fast-engine regression tests
+        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py -q
 
       - name: Preserve previous terminal snapshot
         shell: bash
@@ -106,6 +106,9 @@ jobs:
           test -s data/daily_scans/latest_optimized_scan.txt
           echo "Latest report created successfully"
           wc -l data/daily_scans/latest_optimized_scan.txt
+
+      - name: Validate completed US market session
+        run: python validate_scan_session.py
 
       - name: Hydrate rich fundamentals for all analyzed stocks
         env:
@@ -190,6 +193,8 @@ jobs:
               "report": "data/daily_scans/latest_optimized_scan.txt",
               "frontend_data": "frontend/public/data/latest.json",
               "chart_horizon": "5y",
+              "price_convention": "adjusted-ohlcv",
+              "session_guard": "completed-us-session-v1",
               "feature_model": "data-first-v2-early-leader-groups",
               "calibration_model": "early-leader-v2",
               "group_model": "behavioral-proxy-v1",
@@ -210,6 +215,10 @@ jobs:
             echo "## Daily stock screening"
             echo ""
             echo "**Run:** ${{ steps.date.outputs.date }} ${{ steps.date.outputs.time }} UTC"
+            echo ""
+            echo "**Session:** guarded after completed US regular session"
+            echo ""
+            echo "**Price convention:** adjusted OHLCV end-to-end"
             echo ""
             echo "**Layers:** LEGACY (frozen upstream) + STOCKSCOUT (custom discovery)"
             echo ""
