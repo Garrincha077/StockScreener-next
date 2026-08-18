@@ -10,6 +10,8 @@ from src.screening.optimized_batch_processor import OptimizedBatchProcessor
 from src.screening.phase_indicators import calculate_sma, detect_breakout, validate_minervini_trend_template
 from src.screening.signal_engine import score_buy_signal, score_sell_signal
 
+TEST_DELAY = 0.001
+
 
 def make_ohlcv(kind: str, periods: int = 360, seed: int = 7) -> pd.DataFrame:
     rng = np.random.default_rng(seed)
@@ -88,13 +90,13 @@ def test_fast_path_matches_frozen_processor_on_identical_inputs(monkeypatch, kin
     spy = spy_long.tail(252).copy()
     fundamentals = make_fundamentals()
 
-    legacy = OptimizedBatchProcessor(max_workers=1, rate_limit_delay=0.0, use_git_storage=False)
+    legacy = OptimizedBatchProcessor(max_workers=1, rate_limit_delay=TEST_DELAY, use_git_storage=False)
     legacy.spy_data = spy
     legacy.spy_price = float(spy["Close"].iloc[-1])
     monkeypatch.setattr(legacy.fetcher, "fetch_price_history", lambda symbol, period="5y": long_hist.copy())
     monkeypatch.setattr(legacy_module, "fetch_quarterly_financials", lambda symbol: dict(fundamentals))
 
-    fast = FastOptimizedBatchProcessor(max_workers=1, rate_limit_delay=0.0, use_git_storage=False)
+    fast = FastOptimizedBatchProcessor(max_workers=1, rate_limit_delay=TEST_DELAY, use_git_storage=False)
     fast.spy_data = spy
     fast.spy_price = float(spy["Close"].iloc[-1])
     fast.price_history[ticker] = long_hist.copy()
@@ -126,7 +128,7 @@ def test_market_gate_is_stable_for_fixture_phase_set(monkeypatch):
     for index, kind in enumerate(kinds):
         ticker = f"F{index}"
         hist = make_ohlcv(kind, seed=20 + index)
-        processor = FastOptimizedBatchProcessor(max_workers=1, rate_limit_delay=0.0, use_git_storage=False)
+        processor = FastOptimizedBatchProcessor(max_workers=1, rate_limit_delay=TEST_DELAY, use_git_storage=False)
         processor.spy_data = spy
         processor.spy_price = float(spy["Close"].iloc[-1])
         processor.price_history[ticker] = hist
