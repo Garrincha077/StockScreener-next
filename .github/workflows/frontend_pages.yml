@@ -9,7 +9,7 @@ on:
       - 'frontend/package.json'
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
-      - 'hydrate_frontend_charts.py'
+      - 'hydrate_frontend_charts_readonly.py'
       - '.github/workflows/frontend_pages.yml'
   workflow_dispatch:
 
@@ -32,14 +32,18 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Hydrate canonical 5Y chart shards
+      - name: Build read-only adjusted 5Y chart shards
         shell: bash
         run: |
           python -m pip install --upgrade pip
           pip install yfinance pandas
           test -s frontend/public/data/latest.json
-          python hydrate_frontend_charts.py
+          BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          python hydrate_frontend_charts_readonly.py
+          AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          test "$BEFORE" = "$AFTER"
           test -d frontend/public/data/charts
+          echo "Canonical latest.json unchanged: $AFTER"
           echo "Chart shards: $(find frontend/public/data/charts -name '*.json' | wc -l)"
           du -sh frontend/public/data
 
@@ -70,6 +74,6 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Deploy hydrated terminal to GitHub Pages
+      - name: Deploy read-only terminal build to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
