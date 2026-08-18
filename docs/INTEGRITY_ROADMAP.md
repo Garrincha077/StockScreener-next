@@ -24,7 +24,7 @@ Principle: data integrity before scoring/model tuning.
 
 ## P2 — model/data usefulness
 
-- [ ] Expose rich fundamentals as a transparent evidence score before deciding whether they should affect Opportunity ranking.
+- [x] Fundamental Evidence v1: expose rich fundamentals as a transparent 0-100 evidence score with separate coverage/confidence, Growth/Margins/Inventory components, nightly audit, filters and a dedicated confirmation screen. Evidence does not alter Opportunity/Confluence.
 - [x] Rename user-facing `Today Δ` semantics to `Since last scan`; underlying compatibility field names remain unchanged for stored snapshots.
 - [ ] Confidence-weight behavioral sector/industry proxy leadership; later add true GICS metadata.
 - [ ] Replace the loose long-base approximation with lateral-base/contraction logic.
@@ -36,4 +36,4 @@ Principle: data integrity before scoring/model tuning.
 
 ## Operational verification gate
 
-Code-level P0/P1 integrity work is complete. Do not materially retune Opportunity weights, setup thresholds or ranking calibration until the first validation/nightly run confirms the new VCP mapping, differential tests, canonical invariants and frontend build together. After that gate, continue P2 in this order: (1) transparent fundamental evidence score, (2) confidence-weight group leadership, (3) real lateral-base model.
+P0/P1 passed the first full production nightly. Fundamental Evidence v1 is implemented as an observational StockScout layer and must remain outside Opportunity/Confluence while we collect distribution/correlation evidence. Continue P2 in this order: (1) validate Fundamental Evidence behavior on live snapshots, (2) confidence-weight group leadership, (3) real lateral-base model, then reconsider Opportunity/setup calibration.
