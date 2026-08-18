@@ -1,13 +1,23 @@
 {
-  "generated_at_utc": "2026-08-17T21:58:33.194986+00:00",
-  "workflow_run_id": "32073103635",
+  "generated_at_utc": "2026-08-18T07:26:52.386273+00:00",
+  "workflow_run_id": "32110340169",
   "workflow_run_attempt": "1",
-  "source_commit": "8e9a75b1528c2221c1c1f4366bbbb008c4c2c3be",
+  "source_commit": "442f6d5f9b40da5a1b0fdf490981d3fae6eb833e",
   "report": "data/daily_scans/latest_optimized_scan.txt",
   "frontend_data": "frontend/public/data/latest.json",
   "chart_horizon": "5y",
+  "price_convention": "adjusted-ohlcv",
+  "session_guard": "completed-us-session-v1",
   "feature_model": "data-first-v2-early-leader-groups",
   "calibration_model": "early-leader-v2",
   "group_model": "behavioral-proxy-v1",
-  "scan_engine": "fast-batched-5y-v1"
+  "scan_engine": "fast-batched-5y-v1",
+  "data_model": "rich-scan-layers-v1",
+  "fundamentals_policy": "full-analyzed-universe-max-7d",
+  "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
+  "legacy_capture_model": "legacy-complete-source-capture-v1",
+  "layers": [
+    "LEGACY",
+    "STOCKSCOUT"
+  ]
 }

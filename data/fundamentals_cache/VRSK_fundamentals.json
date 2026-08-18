@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "VRSK",
-    "fetch_date": "2026-08-07T14:18:54.237188",
+    "fetch_date": "2026-08-18T07:23:15.524959",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
@@ -29,5 +29,5 @@
     "operating_margin": 45.11,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-08-07T14:18:54.238445"
+  "fetched_at": "2026-08-18T07:23:15.526231"
 }

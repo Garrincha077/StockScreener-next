@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "LAND",
-    "fetch_date": "2026-07-28T14:59:12.585771",
+    "fetch_date": "2026-08-18T07:20:59.845784",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": 16804000.0,
@@ -37,5 +37,5 @@
     "inventory_to_sales_ratio": 0.261,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-07-28T14:59:12.587203"
+  "fetched_at": "2026-08-18T07:20:59.847315"
 }

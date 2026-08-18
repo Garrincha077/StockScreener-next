@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "TKC",
-    "fetch_date": "2026-07-16T15:06:01.766203",
+    "fetch_date": "2026-08-18T07:22:48.496250",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": 52079203000.0,
       "2025-03-31 00:00:00": 62766529000.0,
@@ -34,5 +34,5 @@
     "inventory_to_sales_ratio": 0.012,
     "inventory_breakdown_available": false
   },
-  "fetched_at": "2026-07-16T15:06:01.767749"
+  "fetched_at": "2026-08-18T07:22:48.497855"
 }
