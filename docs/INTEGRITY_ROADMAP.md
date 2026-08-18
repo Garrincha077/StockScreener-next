@@ -6,20 +6,20 @@ Principle: data integrity before scoring/model tuning.
 
 ## P0 — fix first
 
-- [ ] Frontend-only deploy must be read-only toward canonical market data. UI/CSS commits must never recalculate `latest.json` market fields.
-- [ ] Fix StockScout VCP field mapping: canonical source key is `vcp_quality`; add regression coverage.
-- [ ] Use one canonical adjusted OHLCV convention across scan, derived metrics and chart rendering.
-- [ ] Make scheduled scan reliably post-market year-round and validate completed US session before publishing.
-- [ ] Invalidate frontend chart-shard cache when canonical snapshot changes/reloads.
-- [ ] Keep selected ticker synchronized with the active filtered/screened result set.
+- [x] Frontend-only deploy is read-only toward canonical market data. UI/CSS commits rebuild chart shards without recalculating `latest.json` market fields.
+- [x] Fix StockScout VCP field mapping: canonical source key is `vcp_quality`; regression coverage added.
+- [x] Use one canonical adjusted OHLCV convention across the nightly scan, derived metrics and chart rendering/recovery paths.
+- [x] Make scheduled scan reliably post-market year-round and validate completed US session before publishing.
+- [x] Invalidate frontend chart-shard cache when canonical snapshot changes/reloads.
+- [x] Keep selected ticker synchronized with the active filtered/screened result set.
 
 ## P1 — correctness / reproducibility
 
-- [ ] Remove Vite build-time string patching of business logic; move Balanced Mix and extra columns into normal TypeScript source.
-- [ ] Expand LEGACY freeze/verification from three core scoring files to the full upstream execution graph used by the reproduced runtime.
+- [ ] Remove Vite build-time string patching of business logic; move Balanced Mix, source columns and temporary state fixes into normal TypeScript source.
+- [x] Expand LEGACY freeze/verification from three core scoring files to the full upstream execution graph used by the reproduced runtime (11 protected files).
 - [ ] Add real differential LEGACY tests: original vs fast path on identical fixtures for phase, VCP, Minervini, BUY, SELL and market gating.
-- [ ] Make `force_full_refresh` actually bypass fundamental cache freshness rules.
-- [ ] Remove the hidden `enrich_original_engine()` side effect from StockScout calibration and keep LEGACY enrichment in orchestration only.
+- [x] Make `force_full_refresh` actually bypass fundamental cache freshness rules in scan scoring and full-universe hydration.
+- [x] Remove the hidden `enrich_original_engine()` side effect from StockScout calibration and keep LEGACY enrichment in orchestration only.
 
 ## P2 — model/data usefulness
 
@@ -31,8 +31,8 @@ Principle: data integrity before scoring/model tuning.
 ## P3 — guardrails / polish
 
 - [ ] Treat blank numeric filter values as inactive rules, never implicit zero.
-- [ ] Add hard canonical dataset validation that fails publishing on stale/mismatched sessions, duplicate tickers, NaN/Inf, implausible VCP coverage, chart/data mismatch, insufficient layer coverage, or inconsistent snapshot metadata.
+- [x] Add hard canonical dataset validation that fails publishing on stale/mismatched sessions, duplicate tickers, NaN/Inf, VCP mapping divergence, chart/data mismatch or insufficient layer/chart coverage.
 
 ## Rule for future work
 
-Do not tune Opportunity weights, setup thresholds or ranking calibration while any P0 integrity item remains open. Every completed item should get a regression/invariant test where practical.
+P0 integrity is now closed in code. Do not materially retune Opportunity weights, setup thresholds or ranking calibration until the remaining P1 reproducibility work is complete. Every completed item should get a regression/invariant test where practical.
