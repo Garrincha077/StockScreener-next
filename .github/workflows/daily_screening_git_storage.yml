@@ -65,13 +65,13 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
 
       - name: Fast-engine regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py -q
+        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py -q
 
       - name: Preserve previous terminal snapshot
         shell: bash
@@ -128,6 +128,7 @@ jobs:
           python complete_legacy_capture.py
           python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
           python enrich_scan_layers.py
+          python apply_fundamental_evidence.py
 
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
@@ -147,6 +148,7 @@ jobs:
           print('STOCKSCOUT coverage:', m.get('stockscoutLayerCoverage',0))
           print('Rich technical coverage:', m.get('richTechnicalCoverage',0))
           print('Rich fundamental coverage:', m.get('richFundamentalCoverage',0))
+          print('Fundamental Evidence:', m.get('fundamentalEvidence',{}))
           print('Original-run BUY signals:', m.get('originalRunBuySignals',0))
           print('Original-run SELL signals:', m.get('originalRunSellSignals',0))
           print('Top sector:', m.get('topSector'))
@@ -160,6 +162,9 @@ jobs:
 
       - name: Setup calibration audit
         run: python audit_frontend_dataset.py
+
+      - name: Fundamental evidence audit
+        run: python audit_fundamental_evidence.py
 
       - name: Verify LEGACY source still frozen after enrichment
         run: python verify_legacy_baseline.py
@@ -190,6 +195,7 @@ jobs:
               "scan_engine": "fast-batched-5y-v1",
               "data_model": "rich-scan-layers-v1",
               "fundamentals_policy": "full-analyzed-universe-max-7d",
+              "fundamental_evidence_model": "stockscout-fundamental-evidence-v1",
               "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
               "legacy_capture_model": "legacy-complete-source-capture-v1",
               "layers": ["LEGACY", "STOCKSCOUT"],
@@ -216,6 +222,8 @@ jobs:
             echo "**LEGACY:** complete original runtime outputs + exact market-gated BUY/SELL emission"
             echo ""
             echo "**Fundamentals:** full analyzed universe, target cache age <=7 days"
+            echo ""
+            echo "**Fundamental Evidence:** transparent v1 score + separate coverage/confidence; does not affect Opportunity"
             echo ""
             echo '```text'
             head -n 80 data/daily_scans/latest_optimized_scan.txt
