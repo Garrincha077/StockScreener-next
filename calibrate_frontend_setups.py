@@ -223,6 +223,77 @@ def refresh_leadership_alias(row: dict):
     row["leadershipScore"] = int(round(clamp(individual + (group_rank - 50.0) * 0.10)))
 
 
+def assign_scout_tier(row: dict):
+    """Combine stock quality with MA-cluster timing without hiding either layer.
+
+    Timing Tier (maClusterTier) describes only entry geometry. Scout Tier is the
+    user-facing priority tier: it requires the stock itself to have enough Emerging
+    + RS evidence before a technically pretty MA cluster is promoted.
+    """
+    phase = str(row.get("maClusterPhase") or "NONE")
+    if phase not in {"WATCH", "READY", "ENTRY"}:
+        row.update({
+            "scoutTier": None,
+            "scoutTierRank": 0,
+            "scoutTierLabel": "—",
+            "scoutQualityConfirmed": False,
+            "scoutTierReasons": [],
+        })
+        return
+
+    emerging = n(row, "emergingLeaderScore", n(row, "opportunityScore"))
+    rs = n(row, "rsRank")
+    accel = n(row, "rsAcceleration")
+    stage = int(n(row, "stage"))
+    extended = bool(row.get("extended"))
+
+    strong_quality = bool(
+        emerging >= 55
+        and rs >= 70
+        and accel > 0
+        and stage in (1, 2)
+        and not extended
+    )
+    confirmed_quality = bool(
+        emerging >= 45
+        and rs >= 55
+        and accel >= 0
+        and stage in (1, 2)
+        and not extended
+    )
+
+    if phase in {"READY", "ENTRY"} and strong_quality:
+        tier = "A"
+    elif (phase in {"READY", "ENTRY"} and confirmed_quality) or (phase == "WATCH" and strong_quality):
+        tier = "B"
+    else:
+        tier = "C"
+
+    rank = {"C": 1, "B": 2, "A": 3}[tier]
+    label = f"{tier} · {phase}"
+    reasons = [
+        f"Timing {row.get('maClusterTierLabel') or phase}",
+        f"Emerging {emerging:.0f}",
+        f"RS {rs:.0f} {'↑' if accel > 0 else '↔' if accel == 0 else '↓'}",
+    ]
+    if tier == "A":
+        reasons.append("Quality + trigger zone confirmed")
+    elif tier == "B" and phase == "WATCH":
+        reasons.append("Quality confirmed; waiting for trigger")
+    elif tier == "B":
+        reasons.append("Moderate stock-quality confirmation")
+    else:
+        reasons.append("Timing present; stock quality not confirmed")
+
+    row.update({
+        "scoutTier": tier,
+        "scoutTierRank": rank,
+        "scoutTierLabel": label,
+        "scoutQualityConfirmed": bool(strong_quality),
+        "scoutTierReasons": reasons,
+    })
+
+
 def main():
     if not DATA.exists():
         print("Setup calibration skipped: latest.json missing")
@@ -247,8 +318,6 @@ def main():
                 tags.insert(0, discovery_tag)
             row["setupTags"] = tags
             row["setupMatchCount"] = len([t for t in tags if not str(t).startswith("⚠")])
-            # A live MA-cluster timing signal remains primary because it is the
-            # user's concrete entry trigger; discovery archetype is secondary.
             if row.get("maClusterPhase") == "ENTRY":
                 row["primarySetup"] = f"MA Cluster {row.get('maClusterTier')} · ENTRY"
             elif row.get("maClusterPhase") == "READY":
@@ -259,6 +328,16 @@ def main():
                 row["primarySetup"] = discovery_tag
         elif row.get("maClusterPhase") in {"ENTRY", "READY", "WATCH"}:
             row["primarySetup"] = row.get("maClusterTierLabel") or row.get("primarySetup")
+
+        assign_scout_tier(row)
+        if row.get("scoutTier") in {"A", "B"}:
+            tags = list(row.get("setupTags") or [])
+            scout_tag = f"Scout Tier {row.get('scoutTier')}"
+            if scout_tag not in tags:
+                tags.insert(0, scout_tag)
+            row["setupTags"] = tags
+            row["setupMatchCount"] = len([t for t in tags if not str(t).startswith("⚠")])
+            row["primarySetup"] = f"Scout {row.get('scoutTierLabel')}"
 
     market = payload.setdefault("market", {})
     emerging = [r for r in rows if r.get("emergingLeaderCandidate")]
@@ -277,6 +356,17 @@ def main():
     market["highEvidence"] = sum(int(r.get("emergingEvidenceCount", 0) or 0) >= 4 for r in rows)
     market["highConfluence"] = market["highEvidence"]
     market["extendedCount"] = sum(bool(r.get("extended")) for r in rows)
+    market["scoutTierCounts"] = {
+        tier: sum(r.get("scoutTier") == tier for r in rows)
+        for tier in ("A", "B", "C")
+    }
+    market["scoutTierATop"] = [
+        r.get("ticker") for r in sorted(
+            [r for r in rows if r.get("scoutTier") == "A"],
+            key=lambda r: (n(r, "maClusterPhase") == "ENTRY", n(r, "emergingLeaderScore"), n(r, "rsRank"), n(r, "maClusterScore")),
+            reverse=True,
+        )[:15]
+    ]
 
     lateral_candidates = [r for r in rows if r.get("lateralBaseCandidate")]
     market["lateralBaseCandidates"] = len(lateral_candidates)
@@ -308,8 +398,8 @@ def main():
         f"(neglected={len(neglected_emerging)}, reawakening={len(reawakening)}), "
         f"A+={len(a_plus)}, MA-watch={market.get('maClusterWatchCount',0)}, "
         f"MA-ready={market.get('maClusterReadyCount',0)}, MA-entry={market.get('maClusterEntryCount',0)}, "
-        f"MA-tiers={market.get('maClusterTierCounts',{})}, evidence4+={market['highEvidence']}, "
-        f"extended={market['extendedCount']}"
+        f"MA-tiers={market.get('maClusterTierCounts',{})}, Scout-tiers={market.get('scoutTierCounts',{})}, "
+        f"evidence4+={market['highEvidence']}, extended={market['extendedCount']}"
     )
 
 
