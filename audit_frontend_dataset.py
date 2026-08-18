@@ -8,6 +8,7 @@ from pathlib import Path
 from statistics import median
 
 DATA = Path("frontend/public/data/latest.json")
+GROUP_V2_MODEL = "behavioral-proxy-v2-confidence"
 
 
 def num(row, key, default=0.0):
@@ -119,6 +120,16 @@ def main():
             f"vol={num(r,'volumeRatio',1):.2f} d10w={num(r,'distance10w'):+.1f}% "
             f"prior9={num(r,'prior9mReturn'):+.1f}% {r.get('primarySetup')}"
         )
+
+    group_model = (payload.get("market") or {}).get("groupModel")
+    if group_model == GROUP_V2_MODEL:
+        print("\nGROUP LEADERSHIP V2 GUARDRAIL")
+        from audit_group_leadership import main as audit_group_leadership
+        status = audit_group_leadership()
+        if status:
+            raise SystemExit(status)
+    else:
+        print(f"\nGROUP LEADERSHIP V2 GUARDRAIL skipped for stored model={group_model or 'none'}")
 
 
 if __name__ == "__main__":
