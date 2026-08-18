@@ -291,10 +291,8 @@ def main():
     confidences = []
     for row in rows:
         close = close_series(price_history.get(str(row.get("ticker", "")).upper()))
-        if close.empty:
-            continue
-        sector_fit = best_proxy(close, spy, sectors_matrix, SECTOR_MIN_CORR)
-        industry_fit = best_proxy(close, spy, industries_matrix, INDUSTRY_MIN_CORR)
+        sector_fit = None if close.empty else best_proxy(close, spy, sectors_matrix, SECTOR_MIN_CORR)
+        industry_fit = None if close.empty else best_proxy(close, spy, industries_matrix, INDUSTRY_MIN_CORR)
 
         sector_rank, sector_conf, sector_rs = apply_fit(row, "sector", sector_fit, sector_stats)
         industry_rank, industry_conf, industry_rs = apply_fit(row, "industry", industry_fit, industry_stats)
