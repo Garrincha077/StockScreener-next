@@ -28,6 +28,7 @@ on:
       - 'compute_group_leadership.py'
       - 'audit_group_leadership.py'
       - 'audit_frontend_dataset.py'
+      - 'frontend/src/DeepVueTerminal.tsx'
       - 'frontend/src/GroupsPage.tsx'
       - 'frontend/src/deepvue/filterEngine.ts'
       - '.github/workflows/stockscout_validation.yml'
