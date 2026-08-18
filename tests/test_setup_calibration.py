@@ -25,18 +25,13 @@ def base_row(**overrides):
         "volumeDryUp": 0.9,
         "slope150": 0.2,
         "baseWeeks": 24,
-        "structureScore": 80.0,
-        "rsScore": 80.0,
-        "baseScore": 75.0,
-        "triggerScore": 75.0,
-        "freshnessScore": 85.0,
         "fundamentalSupport": True,
     }
     row.update(overrides)
     return row
 
 
-def test_early_neglected_candidate_is_recognized():
+def test_early_neglected_label_is_recognized_without_scoring_side_effects():
     row = base_row()
     calibrate(row)
 
@@ -44,7 +39,8 @@ def test_early_neglected_candidate_is_recognized():
     assert "Neglected → Leader" in row["setupTags"]
     assert "Fresh Breakout" in row["setupTags"]
     assert row["primarySetup"] == "Neglected → Leader"
-    assert row["perfect"] is True
+    assert "opportunityScore" not in row
+    assert "confluence" not in row
 
 
 def test_extended_move_cannot_be_fresh_or_neglected():
@@ -56,7 +52,6 @@ def test_extended_move_cannot_be_fresh_or_neglected():
     assert "Neglected → Leader" not in row["setupTags"]
     assert "⚠ Extended" in row["setupTags"]
     assert row["primarySetup"] == "Extended Stage 2"
-    assert row["perfect"] is False
 
 
 def test_large_post_breakout_move_is_not_labeled_fresh_breakout():
@@ -73,4 +68,3 @@ def test_mature_stage2_is_not_transition_or_fresh_stage2():
 
     assert "S1→S2 Transition" not in row["setupTags"]
     assert "Fresh Stage 2" not in row["setupTags"]
-    assert row["perfect"] is False
