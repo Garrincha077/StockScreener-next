@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit canonical Neglected → Emerging Leader score invariants."""
+"""Audit canonical dual-archetype Emerging Leader score invariants."""
 from __future__ import annotations
 
 import json
@@ -7,13 +7,18 @@ import math
 from pathlib import Path
 
 DATA = Path("frontend/public/data/latest.json")
-MODEL = "neglected-emerging-leader-v1"
+MODEL = "emerging-leader-v1-dual-archetype"
 REQUIRED = (
     "emergingLeaderScore",
+    "emergingArchetype",
+    "neglectedEmergingScore",
+    "resetReawakeningScore",
     "resetScore",
     "rsTurnScore",
     "neglectHistoryScore",
     "triggerReadinessScore",
+    "reawakeningStructureScore",
+    "ignitionScore",
     "stageFreshnessScore",
     "emergingEvidenceCount",
     "emergingLeaderCandidate",
@@ -51,46 +56,60 @@ def main():
         if all(key in row for key in REQUIRED):
             present += 1
         else:
-            missing = [key for key in REQUIRED if key not in row]
-            errors.append(f"{ticker}: missing {missing}")
+            errors.append(f"{ticker}: missing {[key for key in REQUIRED if key not in row]}")
             continue
 
         score = finite(row.get("emergingLeaderScore"))
         opp = finite(row.get("opportunityScore"))
         evidence = finite(row.get("emergingEvidenceCount"))
         confluence = finite(row.get("confluence"))
-        pillars = [
+        neglected_score = finite(row.get("neglectedEmergingScore"))
+        reawakening_score = finite(row.get("resetReawakeningScore"))
+        archetype = str(row.get("emergingArchetype"))
+        numeric_fields = [
+            neglected_score,
+            reawakening_score,
             finite(row.get("resetScore")),
             finite(row.get("rsTurnScore")),
             finite(row.get("neglectHistoryScore")),
             finite(row.get("triggerReadinessScore")),
+            finite(row.get("reawakeningStructureScore")),
+            finite(row.get("ignitionScore")),
             finite(row.get("stageFreshnessScore")),
         ]
         if score is None or not 0 <= score <= 100:
             errors.append(f"{ticker}: invalid emerging score {score}")
             continue
-        if any(v is None or not 0 <= v <= 100 for v in pillars):
-            errors.append(f"{ticker}: invalid pillar(s) {pillars}")
+        if any(v is None or not 0 <= v <= 100 for v in numeric_fields):
+            errors.append(f"{ticker}: invalid component score")
+        if archetype not in ("Neglected Emerging", "Reset Reawakening"):
+            errors.append(f"{ticker}: invalid archetype {archetype}")
+        if neglected_score is not None and reawakening_score is not None:
+            if abs(score - max(neglected_score, reawakening_score)) > 1e-9:
+                errors.append(f"{ticker}: selected score is not strongest archetype")
         if opp is None or abs(score - opp) > 1e-9:
-            errors.append(f"{ticker}: opportunity compatibility alias diverged ({opp} vs {score})")
+            errors.append(f"{ticker}: opportunity compatibility alias diverged")
         if evidence is None or evidence < 0 or evidence > 5 or int(evidence) != evidence:
             errors.append(f"{ticker}: invalid evidence count {evidence}")
         if confluence is None or evidence is None or confluence != evidence:
-            errors.append(f"{ticker}: legacy confluence alias diverged ({confluence} vs {evidence})")
+            errors.append(f"{ticker}: confluence compatibility alias diverged")
 
         extended = bool(row.get("extended"))
         base_weeks = finite(row.get("baseWeeks")) or 0.0
         accel = finite(row.get("rsAcceleration")) or 0.0
         rs = finite(row.get("rsRank")) or 0.0
+        volume = finite(row.get("volumeRatio")) or 0.0
         stage = int(finite(row.get("stage")) or 0)
         age = finite(row.get("stage2AgeWeeks")) or 0.0
+        d30 = finite(row.get("distance30w")) or 0.0
+        return3m = finite(row.get("return3m")) or 0.0
+        from_high = finite(row.get("from52wHigh"))
         reset = finite(row.get("resetScore")) or 0.0
         trigger = finite(row.get("triggerReadinessScore")) or 0.0
+        reawakening_structure = finite(row.get("reawakeningStructureScore")) or 0.0
 
         if extended and score > 35.01:
             errors.append(f"{ticker}: extended score cap violated ({score})")
-        if base_weeks < 8 and score > 50.01:
-            errors.append(f"{ticker}: young-base score cap violated ({score})")
         if accel <= -0.25 and score > 55.01:
             errors.append(f"{ticker}: negative-RS-acceleration cap violated ({score})")
         if stage not in (1, 2) and score > 30.01:
@@ -98,22 +117,25 @@ def main():
 
         candidate = bool(row.get("emergingLeaderCandidate"))
         if candidate:
-            gate_ok = (
-                score >= 60
-                and evidence is not None and evidence >= 4
-                and stage in (1, 2)
-                and not extended
-                and base_weeks >= 12
-                and rs >= 60
-                and accel > 0
-                and reset >= 45
-                and trigger >= 55
-            )
+            common = score >= 60 and evidence is not None and evidence >= 4 and stage in (1, 2) and not extended and accel > 0
+            if archetype == "Neglected Emerging":
+                gate_ok = common and base_weeks >= 12 and rs >= 60 and reset >= 45 and trigger >= 55
+            else:
+                gate_ok = (
+                    common
+                    and score >= 65
+                    and rs >= 70
+                    and volume >= 1.2
+                    and d30 >= -10
+                    and return3m > -2
+                    and from_high is not None and from_high <= -15
+                    and reawakening_structure >= 55
+                )
             if not gate_ok:
-                errors.append(f"{ticker}: candidate violates gate")
+                errors.append(f"{ticker}: {archetype} candidate violates gate")
 
         a_plus = bool(row.get("aPlusEmergingSetup"))
-        if a_plus and not (candidate and score >= 68 and evidence == 5):
+        if a_plus and not (candidate and score >= 72 and evidence == 5):
             errors.append(f"{ticker}: A+ setup violates gate")
         if stage == 2 and age > 12 and bool((row.get("emergingEvidenceFlags") or {}).get("Fresh stage")):
             errors.append(f"{ticker}: mature Stage 2 marked fresh")
@@ -124,15 +146,22 @@ def main():
 
     market = payload.get("market") or {}
     candidate_count = sum(bool(r.get("emergingLeaderCandidate")) for r in rows)
+    neglected_count = sum(bool(r.get("emergingLeaderCandidate")) and r.get("emergingArchetype") == "Neglected Emerging" for r in rows)
+    reawakening_count = sum(bool(r.get("emergingLeaderCandidate")) and r.get("emergingArchetype") == "Reset Reawakening" for r in rows)
     a_plus_count = sum(bool(r.get("aPlusEmergingSetup")) for r in rows)
     if int(market.get("emergingLeaderCandidates", -1)) != candidate_count:
         errors.append("Market emergingLeaderCandidates count mismatch")
+    if int(market.get("neglectedEmergingCandidates", -1)) != neglected_count:
+        errors.append("Market neglectedEmergingCandidates count mismatch")
+    if int(market.get("resetReawakeningCandidates", -1)) != reawakening_count:
+        errors.append("Market resetReawakeningCandidates count mismatch")
     if int(market.get("aPlusEmergingSetups", -1)) != a_plus_count:
         errors.append("Market aPlusEmergingSetups count mismatch")
 
     print(
         f"Emerging Leader audit: rows={len(rows)} coverage={coverage:.1f}% "
-        f"candidates={candidate_count} A+={a_plus_count} errors={len(errors)}"
+        f"candidates={candidate_count} neglected={neglected_count} "
+        f"reawakening={reawakening_count} A+={a_plus_count} errors={len(errors)}"
     )
     for error in errors[:30]:
         print(f"  ERROR {error}")
