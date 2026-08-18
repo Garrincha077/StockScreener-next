@@ -65,13 +65,13 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
 
       - name: Fast-engine regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py -q
+        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py -q
 
       - name: Preserve previous terminal snapshot
         shell: bash
@@ -141,6 +141,8 @@ jobs:
           print('Feature model:', p.get('featureModel'))
           print('Calibration:', p.get('calibrationModel'))
           print('Group model:', m.get('groupModel'))
+          print('Group avg confidence:', m.get('groupAverageConfidence'))
+          print('Group max ranking adjustment:', m.get('groupLeadershipMaxAdjustment'))
           print('Data model:', p.get('dataModel'))
           print('Layers:', list((p.get('layers') or {}).keys()))
           print('LEGACY coverage:', m.get('legacyLayerCoverage',0))
@@ -160,7 +162,7 @@ jobs:
       - name: Validate canonical dataset invariants
         run: python validate_canonical_dataset.py
 
-      - name: Setup calibration audit
+      - name: Setup and Group Leadership calibration audit
         run: python audit_frontend_dataset.py
 
       - name: Fundamental evidence audit
@@ -191,7 +193,7 @@ jobs:
               "session_guard": "completed-us-session-v1",
               "feature_model": "data-first-v2-early-leader-groups",
               "calibration_model": "early-leader-v2",
-              "group_model": "behavioral-proxy-v1",
+              "group_model": "behavioral-proxy-v2-confidence",
               "scan_engine": "fast-batched-5y-v1",
               "data_model": "rich-scan-layers-v1",
               "fundamentals_policy": "full-analyzed-universe-max-7d",
@@ -224,6 +226,8 @@ jobs:
             echo "**Fundamentals:** full analyzed universe, target cache age <=7 days"
             echo ""
             echo "**Fundamental Evidence:** transparent v1 score + separate coverage/confidence; does not affect Opportunity"
+            echo ""
+            echo "**Group Leadership:** confidence-weighted behavioral proxies; weak/noisy relationships are pulled toward neutral; Opportunity/Confluence unchanged"
             echo ""
             echo '```text'
             head -n 80 data/daily_scans/latest_optimized_scan.txt
