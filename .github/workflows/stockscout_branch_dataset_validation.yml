@@ -4,17 +4,8 @@ name: StockScout Branch Dataset Validation
 # GitHub Pages artifact so we can test new scoring/timing against real 5Y chart shards
 # without fetching intraday data, writing to main, or deploying production.
 on:
-  push:
-    branches:
-      - agent/neglected-emerging-leader-v1
-    paths:
-      - '.github/workflows/stockscout_branch_dataset_validation.yml'
-      - 'compute_ma_cluster_breakout.py'
-      - 'audit_ma_cluster_breakout.py'
-      - 'emerging_leader.py'
-      - 'audit_emerging_leader.py'
-      - 'calibrate_frontend_setups.py'
-      - 'frontend/src/deepvue/filterEngine.ts'
+  pull_request:
+    branches: [main]
   workflow_dispatch:
     inputs:
       source_run_id:
@@ -64,7 +55,6 @@ jobs:
           if [ -f /tmp/stockscout-pages/artifact.tar ]; then
             tar -xf /tmp/stockscout-pages/artifact.tar -C /tmp/stockscout-site
           else
-            # upload-pages-artifact may already be unpacked by download-artifact.
             cp -a /tmp/stockscout-pages/. /tmp/stockscout-site/
           fi
           test -s /tmp/stockscout-site/data/latest.json
@@ -124,7 +114,8 @@ jobs:
           print('MA WATCH/READY/ENTRY:', m.get('maClusterWatchCount'), m.get('maClusterReadyCount'), m.get('maClusterEntryCount'))
           print('MA tiers:', m.get('maClusterTierCounts'))
           active=[r for r in rows if r.get('maClusterPhase') in {'WATCH','READY','ENTRY'}]
-          active.sort(key=lambda r:(r.get('maClusterTierRank') or 0,r.get('maClusterPhase')=='ENTRY',r.get('maClusterScore') or 0,r.get('emergingLeaderScore') or 0),reverse=True)
+          phase_order={'ENTRY':3,'READY':2,'WATCH':1}
+          active.sort(key=lambda r:(r.get('maClusterTierRank') or 0,phase_order.get(r.get('maClusterPhase'),0),r.get('maClusterScore') or 0,r.get('emergingLeaderScore') or 0),reverse=True)
           print('\nTop active MA Cluster timing:')
           for r in active[:40]:
               print(f"{r.get('ticker'):5s} {r.get('maClusterTierLabel','—'):10s} timing={r.get('maClusterScore',0):5.1f} spread={r.get('maClusterSpreadPct',0):4.1f}% p={r.get('maClusterPricePct',0):+5.1f}% vol={r.get('maClusterVolumePace',0):4.2f}x E={r.get('emergingLeaderScore',0):5.1f} RS={r.get('rsRank',0)}")
