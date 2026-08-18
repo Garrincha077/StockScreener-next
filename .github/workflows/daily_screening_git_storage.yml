@@ -67,7 +67,7 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py hydrate_rich_fundamentals.py enrich_scan_layers.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
@@ -129,6 +129,10 @@ jobs:
           # LEGACY layer: call the frozen source functions on the same completed scan.
           python enrich_original_engine.py
 
+          # Capture every source output used by the original full-market runtime,
+          # including exact BUY/SELL emission after the original market gates.
+          python complete_legacy_capture.py
+
           # Compare StockScout discovery state with the previous nightly snapshot.
           python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
 
@@ -150,11 +154,12 @@ jobs:
           print('Data model:', p.get('dataModel'))
           print('Layers:', list((p.get('layers') or {}).keys()))
           print('LEGACY coverage:', m.get('legacyLayerCoverage',0))
+          print('LEGACY complete source coverage:', m.get('legacyCompleteSourceCoverage',0))
           print('STOCKSCOUT coverage:', m.get('stockscoutLayerCoverage',0))
           print('Rich technical coverage:', m.get('richTechnicalCoverage',0))
           print('Rich fundamental coverage:', m.get('richFundamentalCoverage',0))
-          print('Original qualified buys:', m.get('originalQualifiedBuys',0))
-          print('Original sells:', m.get('originalSells',0))
+          print('Original-run BUY signals:', m.get('originalRunBuySignals',0))
+          print('Original-run SELL signals:', m.get('originalRunSellSignals',0))
           print('Top sector:', m.get('topSector'))
           print('Top industry:', m.get('topIndustry'))
           print('Daily changes:', m.get('dailyChanges',{}))
@@ -192,6 +197,7 @@ jobs:
               "data_model": "rich-scan-layers-v1",
               "fundamentals_policy": "full-analyzed-universe-max-7d",
               "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
+              "legacy_capture_model": "legacy-complete-source-capture-v1",
               "layers": ["LEGACY", "STOCKSCOUT"],
           }
           Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
@@ -206,6 +212,8 @@ jobs:
             echo "**Run:** ${{ steps.date.outputs.date }} ${{ steps.date.outputs.time }} UTC"
             echo ""
             echo "**Layers:** LEGACY (frozen upstream) + STOCKSCOUT (custom discovery)"
+            echo ""
+            echo "**LEGACY:** complete original runtime outputs + exact market-gated BUY/SELL emission"
             echo ""
             echo "**Fundamentals:** full analyzed universe, target cache age <=7 days"
             echo ""
