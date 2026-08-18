@@ -23,12 +23,14 @@ type Stock={
   fundamentalSupport?:boolean|null;revenueYoY?:number|null;epsYoY?:number|null;grossMargin?:number|null;marginChange?:number|null
   changedToday?:boolean;newUniverseMember?:boolean;changeImpact?:number;opportunityDelta?:number;rsRankDelta?:number;confluenceDelta?:number;volumeRatioDelta?:number;freshnessDelta?:number
   stageFrom?:number|null;stageTo?:number|null;stageChanged?:boolean;newSetupTags?:string[];lostSetupTags?:string[];changeLabels?:string[]
+  originalBuyScore?:number;originalRR?:number;originalTTPasses?:number;originalVcpQuality?:number;originalAdVolumeRatio?:number;originalRiskPct?:number;originalSellScore?:number
   reasons?:string[]
+  __mixScore?:number;__mixAverage?:number
 }
 type Payload={version:number;generatedAt:string;market:Record<string,any>;universe:Stock[];chartShards?:Record<string,string>;featureModel?:string}
 
 const helper=createColumnHelper<Stock>()
-const defaultVisibility:VisibilityState={rsFromHigh:false,volumeDryUp:false,baseWeeks:false,distance30w:false,structureScore:false,baseScore:false,triggerScore:false,neglectedScore:false,avgDollarVolume20:false,fundamentalSupport:false}
+const defaultVisibility:VisibilityState={originalTTPasses:false,originalVcpQuality:false,originalAdVolumeRatio:false,originalRiskPct:false,originalSellScore:false,rsFromHigh:false,volumeDryUp:false,baseWeeks:false,distance30w:false,structureScore:false,baseScore:false,triggerScore:false,neglectedScore:false,avgDollarVolume20:false,fundamentalSupport:false}
 const recipeTabs=['All','Neglected → Leader','S1→S2 Transition','Fresh Breakout','Long Base Breakout','RS Before Price','Tight / VCP','10W Pullback','Volume Wake-Up','Fresh Stage 2']
 const fmt=(v:any,d=1)=>typeof v==='number'&&Number.isFinite(v)?v.toFixed(d):'—'
 const signed=(v:any,d=1)=>typeof v==='number'&&Number.isFinite(v)?`${v>0?'+':''}${v.toFixed(d)}%`:'—'
@@ -40,7 +42,29 @@ const opp=(s:Stock)=>s.opportunityScore??s.score??0
 function loadLocal<T>(key:string,fallback:T):T{try{const x=JSON.parse(localStorage.getItem(key)||'null');return x??fallback}catch{return fallback}}
 function sortValue(stock:Stock,id:string):any{if(id==='opportunityScore')return opp(stock);if(id==='primarySetup')return setupOf(stock);return(stock as any)[id]}
 function compareValues(a:any,b:any):number{const am=a==null||(typeof a==='number'&&!Number.isFinite(a)),bm=b==null||(typeof b==='number'&&!Number.isFinite(b));if(am&&bm)return 0;if(am)return 1;if(bm)return-1;if(typeof a==='number'&&typeof b==='number')return a-b;if(typeof a==='boolean'&&typeof b==='boolean')return Number(a)-Number(b);return String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:'base'})}
-function applyMultiSort(rows:Stock[],sorting:SortingState){if(!sorting.length)return rows;return rows.map((stock,index)=>({stock,index})).sort((a,b)=>{for(const s of sorting){const av=sortValue(a.stock,s.id),bv=sortValue(b.stock,s.id);const c=compareValues(av,bv);if(c!==0)return s.desc?-c:c}const t=a.stock.ticker.localeCompare(b.stock.ticker);return t||a.index-b.index}).map(x=>x.stock)}
+function prioritySort(rows:Stock[],sorting:SortingState){return rows.map((stock,index)=>({stock,index})).sort((a,b)=>{for(const s of sorting){const av=sortValue(a.stock,s.id),bv=sortValue(b.stock,s.id),c=compareValues(av,bv);if(c!==0)return s.desc?-c:c}const t=a.stock.ticker.localeCompare(b.stock.ticker);return t||a.index-b.index}).map(x=>x.stock)}
+function applyMultiSort(rows:Stock[],sorting:SortingState){
+  rows.forEach(stock=>{delete stock.__mixScore;delete stock.__mixAverage})
+  if(!sorting.length)return rows
+  if(sorting.length===1)return prioritySort(rows,sorting)
+  const accum=new Map<string,{log:number;arith:number;weight:number}>()
+  rows.forEach(stock=>accum.set(stock.ticker,{log:0,arith:0,weight:0}))
+  let activeCriteria=0
+  sorting.forEach((sort,sortIndex)=>{
+    const values=rows.map((stock,index)=>({stock,index,value:sortValue(stock,sort.id)})).filter(x=>typeof x.value==='number'&&Number.isFinite(x.value)) as {stock:Stock;index:number;value:number}[]
+    if(values.length<2)return
+    activeCriteria++
+    values.sort((a,b)=>(sort.desc?b.value-a.value:a.value-b.value)||(a.index-b.index))
+    const percentile=new Map<string,number>()
+    let i=0
+    while(i<values.length){let j=i+1;while(j<values.length&&values[j].value===values[i].value)j++;const avgPosition=(i+j-1)/2,score=100-(avgPosition/(values.length-1))*99;for(let k=i;k<j;k++)percentile.set(values[k].stock.ticker,score);i=j}
+    const weight=Math.max(.55,1-sortIndex*.10)
+    rows.forEach(stock=>{const p=Math.max(1,percentile.get(stock.ticker)??1),a=accum.get(stock.ticker)!;a.log+=Math.log(p)*weight;a.arith+=p*weight;a.weight+=weight})
+  })
+  if(activeCriteria<2)return prioritySort(rows,sorting)
+  rows.forEach(stock=>{const a=accum.get(stock.ticker)!;stock.__mixScore=a.weight?Math.exp(a.log/a.weight):0;stock.__mixAverage=a.weight?a.arith/a.weight:0})
+  return rows.map((stock,index)=>({stock,index})).sort((a,b)=>{const mix=(b.stock.__mixScore||0)-(a.stock.__mixScore||0);if(Math.abs(mix)>1e-9)return mix;const avg=(b.stock.__mixAverage||0)-(a.stock.__mixAverage||0);if(Math.abs(avg)>1e-9)return avg;const first=sorting[0],c=compareValues(sortValue(a.stock,first.id),sortValue(b.stock,first.id));if(c!==0)return first.desc?-c:c;return a.stock.ticker.localeCompare(b.stock.ticker)||a.index-b.index}).map(x=>x.stock)
+}
 function aggregateWeekly(bars:Bar[]){const out:Bar[]=[];for(const b of bars){const d=new Date(`${b.time}T00:00:00Z`),day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);const key=d.toISOString().slice(0,10),last=out[out.length-1];if(!last||last.time!==key)out.push({...b,time:key});else{last.high=Math.max(last.high,b.high);last.low=Math.min(last.low,b.low);last.close=b.close;last.volume+=b.volume;last.rs=b.rs}}return out}
 function ma(values:number[],n:number){const out:(number|null)[]=[];let sum=0;for(let i=0;i<values.length;i++){sum+=values[i];if(i>=n)sum-=values[i-n];out.push(i+1>=n?sum/n:null)}return out}
 function rangeCount(r:Range,i:Interval){return i==='W'?({"3M":13,"6M":26,"1Y":52,"2Y":104,"5Y":260} as any)[r]:({"3M":66,"6M":132,"1Y":252,"2Y":504,"5Y":1265} as any)[r]}
@@ -84,7 +108,7 @@ function DeepVueTerminal(){
   const[gridCount,setGridCount]=useState(16),[gridRange,setGridRange]=useState<Range>('2Y')
   const shardPromises=useRef<Record<string,Promise<Record<string,RawBar[]>>>>({})
 
-  const load=useCallback(()=>fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}).then((p:Payload)=>{if(!p.universe?.length)throw new Error('Dataset empty');setPayload(p);setError('');setSelectedTicker(t=>t||p.universe[0].ticker)}).catch(e=>setError(String(e))),[])
+  const load=useCallback(()=>fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}).then((p:Payload)=>{if(!p.universe?.length)throw new Error('Dataset empty');shardPromises.current={};setPayload(p);setError('');setSelectedTicker(t=>t||p.universe[0].ticker)}).catch(e=>setError(String(e))),[])
   useEffect(()=>{load()},[load])
   useEffect(()=>localStorage.setItem('dv-sorts-v1',JSON.stringify(sorting)),[sorting])
   useEffect(()=>localStorage.setItem('dv-cols-v1',JSON.stringify(visibility)),[visibility])
@@ -96,14 +120,13 @@ function DeepVueTerminal(){
 
   const loadBars=useCallback(async(ticker:string):Promise<Bar[]>=>{
     if(!payload)return[];const shard=payload.chartShards?.[ticker];if(!shard)return[]
-    if(!shardPromises.current[shard])shardPromises.current[shard]=fetch(`./data/charts/${shard}`).then(r=>{if(!r.ok)throw new Error(`chart ${r.status}`);return r.json()})
-    try{const data=await shardPromises.current[shard],rows=data[ticker]||[];return rows.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4],volume:r[5],rs:r[6]}))}catch{return[]}
+    const snapshot=payload.generatedAt||'snapshot',cacheKey=`${snapshot}:${shard}`
+    if(!shardPromises.current[cacheKey])shardPromises.current[cacheKey]=fetch(`./data/charts/${shard}?v=${encodeURIComponent(snapshot)}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`chart ${r.status}`);return r.json()})
+    try{const data=await shardPromises.current[cacheKey],rows=data[ticker]||[];return rows.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4],volume:r[5],rs:r[6]}))}catch{return[]}
   },[payload])
 
-  const universe=payload?.universe||[],selected=universe.find(s=>s.ticker===selectedTicker)||universe[0]
-  useEffect(()=>{let live=true;if(!selected){setSelectedBars([]);return}setChartLoading(true);loadBars(selected.ticker).then(x=>live&&setSelectedBars(x)).finally(()=>live&&setChartLoading(false));return()=>{live=false}},[selected?.ticker,loadBars])
+  const universe=payload?.universe||[]
   const toggleWatch=(ticker:string)=>setWatchlist(w=>w.includes(ticker)?w.filter(x=>x!==ticker):[...w,ticker])
-
   const filtered=useMemo(()=>universe.filter(s=>{
     if(page==='Watchlist'&&!watchlist.includes(s.ticker))return false
     if(page==='Changes'&&!s.changedToday)return false
@@ -112,20 +135,27 @@ function DeepVueTerminal(){
     return matchesGroups(s,groups,rootLogic)
   }),[universe,page,watchlist,query,recipe,groups,rootLogic])
   const sortedData=useMemo(()=>applyMultiSort(filtered,sorting),[filtered,sorting])
+  const selected=sortedData.find(s=>s.ticker===selectedTicker)||sortedData[0]
+  useEffect(()=>{if(sortedData.length&&selectedTicker!==selected?.ticker)setSelectedTicker(sortedData[0].ticker)},[sortedData,selectedTicker,selected?.ticker])
+  useEffect(()=>{let live=true;if(!selected){setSelectedBars([]);setChartLoading(false);return}setChartLoading(true);loadBars(selected.ticker).then(x=>live&&setSelectedBars(x)).finally(()=>live&&setChartLoading(false));return()=>{live=false}},[selected?.ticker,loadBars])
   useEffect(()=>setPagination(p=>({...p,pageIndex:0})),[page,recipe,query,groups,rootLogic,sorting])
 
   const columns=useMemo(()=>[
     helper.display({id:'watch',header:'',enableSorting:false,cell:({row})=><button className={`dv-star ${watchlist.includes(row.original.ticker)?'on':''}`} onClick={e=>{e.stopPropagation();toggleWatch(row.original.ticker)}}>★</button>}),
     helper.accessor('ticker',{header:'Ticker',cell:i=><b className="dv-ticker">{i.getValue()}</b>}),
     helper.accessor(s=>opp(s),{id:'opportunityScore',header:'Opportunity',cell:i=><b className="dv-score">{fmt(i.getValue(),0)}</b>}),
-    helper.accessor('changeImpact',{header:'Today Δ',cell:i=><b className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{num(i.getValue())?signed(i.getValue(),0):'—'}</b>}),
+    helper.accessor('originalBuyScore',{header:'LEG Buy',cell:i=><b className={num(i.getValue())>=90?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),
+    helper.accessor('originalRR',{header:'LEG R/R',cell:i=><b className={num(i.getValue())>=2?'dv-good':''}>{fmt(i.getValue(),1)}:1</b>}),
+    helper.accessor('originalTTPasses',{header:'LEG TT',cell:i=>`${fmt(i.getValue(),0)}/8`}),
+    helper.accessor('originalVcpQuality',{header:'LEG VCP',cell:i=>fmt(i.getValue(),0)}),
+    helper.accessor('originalAdVolumeRatio',{header:'LEG A/D',cell:i=>`${fmt(i.getValue(),2)}x`}),
+    helper.accessor('originalRiskPct',{header:'LEG Risk',cell:i=>`${fmt(i.getValue(),1)}%`}),
+    helper.accessor('originalSellScore',{header:'LEG Sell',cell:i=><b className={num(i.getValue())>=60?'dv-bad':''}>{fmt(i.getValue(),0)}</b>}),
+    helper.accessor('changeImpact',{header:'Since scan Δ',cell:i=><b className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{num(i.getValue())?signed(i.getValue(),0):'—'}</b>}),
     helper.display({id:'todaySignals',header:'What changed',enableSorting:false,cell:({row})=><div className="dv-changechips">{(row.original.changeLabels||[]).slice(0,2).map(x=><span key={x}>{x}</span>)}</div>}),
     helper.accessor(s=>setupOf(s),{id:'primarySetup',header:'Primary setup',cell:i=><span className="dv-primary">{i.getValue()}</span>}),
-    helper.accessor('confluence',{header:'Conf',cell:i=>fmt(i.getValue(),0)}),
-    helper.accessor('freshnessScore',{header:'Fresh',cell:i=>fmt(i.getValue(),0)}),
-    helper.accessor('rsRank',{header:'RS Rank',cell:i=><b className={num(i.getValue())>=90?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),
-    helper.accessor('rsRankDelta',{header:'Δ RS',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{num(i.getValue())?signed(i.getValue(),0):'—'}</span>}),
-    helper.accessor('rsAcceleration',{header:'RS Accel',cell:i=><span className={num(i.getValue())>0?'dv-good':'dv-bad'}>{fmt(i.getValue(),2)}</span>}),
+    helper.accessor('confluence',{header:'Conf',cell:i=>fmt(i.getValue(),0)}),helper.accessor('freshnessScore',{header:'Fresh',cell:i=>fmt(i.getValue(),0)}),
+    helper.accessor('rsRank',{header:'RS Rank',cell:i=><b className={num(i.getValue())>=90?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),helper.accessor('rsRankDelta',{header:'Δ RS',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{num(i.getValue())?signed(i.getValue(),0):'—'}</span>}),helper.accessor('rsAcceleration',{header:'RS Accel',cell:i=><span className={num(i.getValue())>0?'dv-good':'dv-bad'}>{fmt(i.getValue(),2)}</span>}),
     helper.accessor('stage',{header:'Stage'}),helper.accessor('stage2AgeWeeks',{header:'S2 age',cell:i=>`${fmt(i.getValue(),1)}w`}),helper.accessor('trendTemplatePasses',{header:'TT',cell:i=>`${fmt(i.getValue(),0)}/8`}),
     helper.accessor('return3m',{header:'3M',cell:i=>signed(i.getValue())}),helper.accessor('prior9mReturn',{header:'Prior 9M',cell:i=>signed(i.getValue())}),
     helper.accessor('volumeRatio',{header:'Vol x',cell:i=><span className={num(i.getValue())>=1.5?'dv-good':''}>{fmt(i.getValue(),2)}x</span>}),helper.accessor('breakoutPct',{header:'Breakout',cell:i=>signed(i.getValue())}),
@@ -157,14 +187,14 @@ function DeepVueTerminal(){
 
       <section className="dv-recipes">{recipeTabs.map(t=><button key={t} className={recipe===t?'active':''} onClick={()=>setRecipe(t)}>{t}<small>{t==='All'?universe.length:universe.filter(s=>tagsOf(s).includes(t)).length}</small></button>)}</section>
 
-      <section className="dv-sortbar"><span>MULTI-SORT</span>{sorting.length?sorting.map((s,i)=><div className="dv-sortchip" key={s.id}><b>{i+1}</b><em>{String(table.getColumn(s.id)?.columnDef.header||s.id)}</em><button onClick={()=>cycleSort(s.id)}>{s.desc?'↓':'↑'}</button><button disabled={i===0} onClick={()=>moveSort(s.id,-1)}>‹</button><button disabled={i===sorting.length-1} onClick={()=>moveSort(s.id,1)}>›</button><button onClick={()=>setSorting(x=>x.filter(y=>y.id!==s.id))}>×</button></div>):<i>Click headers to build #1 → #2 → #3 priorities</i>}<button className="dv-clear" onClick={()=>setSorting([])}>Clear</button></section>
+      <section className="dv-sortbar"><span>BALANCED MIX</span>{sorting.length?sorting.map((s,i)=><div className="dv-sortchip" key={s.id}><b>{i+1}</b><em>{String(table.getColumn(s.id)?.columnDef.header||s.id)}</em><button onClick={()=>cycleSort(s.id)}>{s.desc?'↓':'↑'}</button><button disabled={i===0} onClick={()=>moveSort(s.id,-1)}>‹</button><button disabled={i===sorting.length-1} onClick={()=>moveSort(s.id,1)}>›</button><button onClick={()=>setSorting(x=>x.filter(y=>y.id!==s.id))}>×</button></div>):<i>Select 2+ numeric columns to build a balanced percentile mix</i>}<button className="dv-clear" onClick={()=>setSorting([])}>Clear</button></section>
 
-      <section className="dv-toolbar"><button className={builderOpen?'active':''} onClick={()=>setBuilderOpen(x=>!x)}>⌁ ANY / ALL Builder <b>{groups.reduce((n,g)=>n+g.rules.length,0)}</b></button><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Ticker, setup or today's change…"/><button className={columnsOpen?'active':''} onClick={()=>setColumnsOpen(x=>!x)}>▦ Columns</button><select value={pagination.pageSize} onChange={e=>setPagination({pageIndex:0,pageSize:Number(e.target.value)})}><option>50</option><option>100</option><option>250</option></select><button onClick={exportCsv}>⇩ CSV</button></section>
+      <section className="dv-toolbar"><button className={builderOpen?'active':''} onClick={()=>setBuilderOpen(x=>!x)}>⌁ ANY / ALL Builder <b>{groups.reduce((n,g)=>n+g.rules.length,0)}</b></button><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Ticker, setup or change since last scan…"/><button className={columnsOpen?'active':''} onClick={()=>setColumnsOpen(x=>!x)}>▦ Columns</button><select value={pagination.pageSize} onChange={e=>setPagination({pageIndex:0,pageSize:Number(e.target.value)})}><option>50</option><option>100</option><option>250</option></select><button onClick={exportCsv}>⇩ CSV</button></section>
 
       {builderOpen&&<FilterBuilder rootLogic={rootLogic} setRootLogic={setRootLogic} groups={groups} setGroups={setGroups} addGroup={addGroup} updateGroup={updateGroup} removeGroup={removeGroup}/>} 
       {columnsOpen&&<ColumnPicker table={table} setVisibility={setVisibility}/>} 
 
-      {page==='Grid'?<GridView stocks={sortedData} count={gridCount} setCount={setGridCount} range={gridRange} setRange={setGridRange} loadBars={loadBars} selected={selected?.ticker} onSelect={setSelectedTicker}/>:<main className="dv-work"><div className="dv-tablebox"><div className="dv-tablewrap"><table><thead>{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const si=sorting.findIndex(s=>s.id===h.column.id),ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}</thead><tbody>{table.getRowModel().rows.map(r=><tr key={r.id} className={r.original.ticker===selected?.ticker?'selected':''} onClick={()=>setSelectedTicker(r.original.ticker)}>{r.getVisibleCells().map(c=><td key={c.id}>{flexRender(c.column.columnDef.cell,c.getContext())}</td>)}</tr>)}</tbody></table></div><footer><span>{page==='Changes'?'Only meaningful changes vs previous scan':'First clicked column is priority #1; next is #2'}</span><div><button disabled={!table.getCanPreviousPage()} onClick={()=>table.previousPage()}>←</button><b>{pagination.pageIndex+1}/{Math.max(1,table.getPageCount())}</b><button disabled={!table.getCanNextPage()} onClick={()=>table.nextPage()}>→</button></div></footer></div>{selected&&<Detail stock={selected} bars={selectedBars} loading={chartLoading} interval={interval} setInterval={setInterval} range={range} setRange={setRange} mode={chartMode} setMode={setChartMode} watched={watchlist.includes(selected.ticker)} toggleWatch={()=>toggleWatch(selected.ticker)}/>}</main>}
+      {page==='Grid'?<GridView stocks={sortedData} count={gridCount} setCount={setGridCount} range={gridRange} setRange={setGridRange} loadBars={loadBars} selected={selected?.ticker} onSelect={setSelectedTicker}/>:<main className="dv-work"><div className="dv-tablebox"><div className="dv-tablewrap"><table><thead>{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const si=sorting.findIndex(s=>s.id===h.column.id),ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}</thead><tbody>{table.getRowModel().rows.map(r=><tr key={r.id} className={r.original.ticker===selected?.ticker?'selected':''} onClick={()=>setSelectedTicker(r.original.ticker)}>{r.getVisibleCells().map(c=><td key={c.id}>{flexRender(c.column.columnDef.cell,c.getContext())}</td>)}</tr>)}</tbody></table></div><footer><span>{page==='Changes'?'Meaningful changes since the previous scan':sorting.length>1?'2+ sorts = percentile MIX; #1 gets only a mild extra weight':'Single sort = direct column priority'}</span><div><button disabled={!table.getCanPreviousPage()} onClick={()=>table.previousPage()}>←</button><b>{pagination.pageIndex+1}/{Math.max(1,table.getPageCount())}</b><button disabled={!table.getCanNextPage()} onClick={()=>table.nextPage()}>→</button></div></footer></div>{selected&&<Detail stock={selected} bars={selectedBars} loading={chartLoading} interval={interval} setInterval={setInterval} range={range} setRange={setRange} mode={chartMode} setMode={setChartMode} watched={watchlist.includes(selected.ticker)} toggleWatch={()=>toggleWatch(selected.ticker)}/>}</main>}
     </>}
   </div>
 }
@@ -179,17 +209,17 @@ function ColumnPicker({table,setVisibility}:{table:any;setVisibility:(v:Visibili
 }
 
 function GridView({stocks,count,setCount,range,setRange,loadBars,selected,onSelect}:{stocks:Stock[];count:number;setCount:(n:number)=>void;range:Range;setRange:(r:Range)=>void;loadBars:(t:string)=>Promise<Bar[]>;selected?:string;onSelect:(t:string)=>void}){
-  return <main className="dv-gridview"><header><div><b>RAPID REVIEW</b><span>{Math.min(count,stocks.length)} of {stocks.length.toLocaleString()} current matches · same filter + multi-sort stack</span></div><div><select value={count} onChange={e=>setCount(Number(e.target.value))}><option>12</option><option>16</option><option>24</option><option>36</option><option>48</option></select>{(['6M','1Y','2Y','5Y'] as Range[]).map(r=><button className={range===r?'active':''} key={r} onClick={()=>setRange(r)}>{r}</button>)}</div></header><section className="dv-chartgrid">{stocks.slice(0,count).map(s=><MiniCard key={s.ticker} stock={s} range={range} loadBars={loadBars} selected={selected===s.ticker} onClick={()=>onSelect(s.ticker)}/>)}</section></main>
+  return <main className="dv-gridview"><header><div><b>RAPID REVIEW</b><span>{Math.min(count,stocks.length)} of {stocks.length.toLocaleString()} current matches · same filter + balanced mix stack</span></div><div><select value={count} onChange={e=>setCount(Number(e.target.value))}><option>12</option><option>16</option><option>24</option><option>36</option><option>48</option></select>{(['6M','1Y','2Y','5Y'] as Range[]).map(r=><button className={range===r?'active':''} key={r} onClick={()=>setRange(r)}>{r}</button>)}</div></header><section className="dv-chartgrid">{stocks.slice(0,count).map(s=><MiniCard key={s.ticker} stock={s} range={range} loadBars={loadBars} selected={selected===s.ticker} onClick={()=>onSelect(s.ticker)}/>)}</section></main>
 }
 function MiniCard({stock,range,loadBars,selected,onClick}:{stock:Stock;range:Range;loadBars:(t:string)=>Promise<Bar[]>;selected:boolean;onClick:()=>void}){
   const[bars,setBars]=useState<Bar[]>([]);useEffect(()=>{let live=true;loadBars(stock.ticker).then(x=>live&&setBars(x));return()=>{live=false}},[stock.ticker,loadBars])
-  return <article className={`dv-minicard ${selected?'selected':''}`} onClick={onClick}><header><div><b>{stock.ticker}</b><span>{setupOf(stock)}</span></div><strong>{opp(stock)}</strong></header><div className="dv-miniinfo"><span>RS <b>{fmt(stock.rsRank,0)}</b></span><span>Vol <b>{fmt(stock.volumeRatio,1)}x</b></span><span>10W <b>{signed(stock.distance10w)}</b></span>{stock.changeImpact!==undefined&&num(stock.changeImpact)!==0&&<span className={num(stock.changeImpact)>0?'dv-good':'dv-bad'}>Today <b>{signed(stock.changeImpact,0)}</b></span>}</div>{bars.length?<PriceChart bars={bars} interval="W" range={range} mini/>:<div className="dv-miniload">loading chart…</div>}<footer>{(stock.changeLabels||[]).slice(0,2).map(x=><span key={x}>{x}</span>)}</footer></article>
+  return <article className={`dv-minicard ${selected?'selected':''}`} onClick={onClick}><header><div><b>{stock.ticker}</b><span>{setupOf(stock)}</span></div><strong>{opp(stock)}</strong></header><div className="dv-miniinfo"><span>RS <b>{fmt(stock.rsRank,0)}</b></span><span>Vol <b>{fmt(stock.volumeRatio,1)}x</b></span><span>10W <b>{signed(stock.distance10w)}</b></span>{stock.changeImpact!==undefined&&num(stock.changeImpact)!==0&&<span className={num(stock.changeImpact)>0?'dv-good':'dv-bad'}>Δ <b>{signed(stock.changeImpact,0)}</b></span>}</div>{bars.length?<PriceChart bars={bars} interval="W" range={range} mini/>:<div className="dv-miniload">loading chart…</div>}<footer>{(stock.changeLabels||[]).slice(0,2).map(x=><span key={x}>{x}</span>)}</footer></article>
 }
 
 function Detail({stock,bars,loading,interval,setInterval,range,setRange,mode,setMode,watched,toggleWatch}:{stock:Stock;bars:Bar[];loading:boolean;interval:Interval;setInterval:(v:Interval)=>void;range:Range;setRange:(v:Range)=>void;mode:ChartMode;setMode:(v:ChartMode)=>void;watched:boolean;toggleWatch:()=>void}){
   const dims=[['Structure',stock.structureScore],['RS',stock.rsScore],['Base',stock.baseScore],['Trigger',stock.triggerScore],['Freshness',stock.freshnessScore],['Neglected',stock.neglectedScore]] as [string,number|undefined][]
   return <aside className="dv-detail"><div className="dv-detailhead"><button className={`dv-star big ${watched?'on':''}`} onClick={toggleWatch}>★</button><div><h1>{stock.ticker}</h1><span>Stage {stock.stage} · {stock.stageName}</span></div><div className="dv-opp"><small>OPPORTUNITY</small><b>{opp(stock)}</b>{num(stock.opportunityDelta)!==0&&<span className={num(stock.opportunityDelta)>0?'dv-good':'dv-bad'}>{signed(stock.opportunityDelta,0)}</span>}</div><div className="dv-price"><b>${fmt(stock.price,2)}</b><span>{signed(stock.change20d)} 20D</span></div></div>
-    {(stock.changeLabels||[]).length>0&&<div className="dv-todaybox"><b>WHAT CHANGED</b>{stock.changeLabels!.map(x=><span key={x}>{x}</span>)}</div>}
+    {(stock.changeLabels||[]).length>0&&<div className="dv-todaybox"><b>CHANGED SINCE LAST SCAN</b>{stock.changeLabels!.map(x=><span key={x}>{x}</span>)}</div>}
     <div className="dv-tags">{tagsOf(stock).map(t=><span key={t} className={t.startsWith('⚠')?'warn':''}>{t}</span>)}</div>
     <div className="dv-chartcontrols"><div>{(['Price','RS','Volume'] as ChartMode[]).map(x=><button className={mode===x?'active':''} onClick={()=>setMode(x)} key={x}>{x}</button>)}</div><div>{(['D','W'] as Interval[]).map(x=><button className={interval===x?'active':''} onClick={()=>setInterval(x)} key={x}>{x==='D'?'Daily':'Weekly'}</button>)}</div><div>{(['3M','6M','1Y','2Y','5Y'] as Range[]).map(x=><button className={range===x?'active':''} onClick={()=>setRange(x)} key={x}>{x}</button>)}</div></div>
     <div className="dv-chartbox">{loading?<div className="dv-chartmsg">Loading 5Y history…</div>:bars.length?<PriceChart bars={bars} interval={interval} range={range} mode={mode}/>:<div className="dv-chartmsg">Chart unavailable</div>}</div>
@@ -198,6 +228,6 @@ function Detail({stock,bars,loading,interval,setInterval,range,setRange,mode,set
   </aside>
 }
 function K({l,v,d}:{l:string;v:string;d?:number}){return <span><small>{l}</small><b>{v}</b>{d!==undefined&&num(d)!==0&&<em className={num(d)>0?'dv-good':'dv-bad'}>{signed(d,0)}</em>}</span>}
-function Market({universe,market}:{universe:Stock[];market:Record<string,any>}){const daily=market.dailyChanges||{},stages=[1,2,3,4].map(s=>[s,universe.filter(x=>x.stage===s).length] as const),leaders=[...universe].sort((a,b)=>opp(b)-opp(a)).slice(0,20),changes=[...universe].filter(x=>x.changedToday).sort((a,b)=>num(b.changeImpact)-num(a.changeImpact)).slice(0,20);return <main className="dv-market"><section><h2>Market structure</h2><div className="dv-marketgrid">{stages.map(([s,n])=><div key={s}><b>{n}</b><span>Stage {s}</span></div>)}</div><p>Regime <b>{market.regime||'Unknown'}</b> · Stage 2 breadth <b>{market.stage2Pct??0}%</b></p></section><section><h2>What changed today</h2><div className="dv-marketgrid"><div><b>{daily.changed??0}</b><span>Changed</span></div><div><b>{daily.newSetups??0}</b><span>New setups</span></div><div><b>{daily.stageChanges??0}</b><span>Stage changes</span></div><div><b>{daily.rsMovers??0}</b><span>RS movers</span></div></div>{changes.slice(0,8).map(s=><div className="dv-leader" key={s.ticker}><b>{s.ticker}</b><span>{(s.changeLabels||[])[0]||'Changed'}</span><strong className={num(s.changeImpact)>0?'dv-good':'dv-bad'}>{signed(s.changeImpact,0)}</strong></div>)}</section><section><h2>Top opportunity</h2>{leaders.slice(0,12).map(s=><div className="dv-leader" key={s.ticker}><b>{s.ticker}</b><span>{setupOf(s)}</span><em>RS {fmt(s.rsRank,0)}</em><strong>{opp(s)}</strong></div>)}</section></main>}
+function Market({universe,market}:{universe:Stock[];market:Record<string,any>}){const daily=market.dailyChanges||{},stages=[1,2,3,4].map(s=>[s,universe.filter(x=>x.stage===s).length] as const),leaders=[...universe].sort((a,b)=>opp(b)-opp(a)).slice(0,20),changes=[...universe].filter(x=>x.changedToday).sort((a,b)=>num(b.changeImpact)-num(a.changeImpact)).slice(0,20);return <main className="dv-market"><section><h2>Market structure</h2><div className="dv-marketgrid">{stages.map(([s,n])=><div key={s}><b>{n}</b><span>Stage {s}</span></div>)}</div><p>Regime <b>{market.regime||'Unknown'}</b> · Stage 2 breadth <b>{market.stage2Pct??0}%</b></p></section><section><h2>What changed since last scan</h2><div className="dv-marketgrid"><div><b>{daily.changed??0}</b><span>Changed</span></div><div><b>{daily.newSetups??0}</b><span>New setups</span></div><div><b>{daily.stageChanges??0}</b><span>Stage changes</span></div><div><b>{daily.rsMovers??0}</b><span>RS movers</span></div></div>{changes.slice(0,8).map(s=><div className="dv-leader" key={s.ticker}><b>{s.ticker}</b><span>{(s.changeLabels||[])[0]||'Changed'}</span><strong className={num(s.changeImpact)>0?'dv-good':'dv-bad'}>{signed(s.changeImpact,0)}</strong></div>)}</section><section><h2>Top opportunity</h2>{leaders.slice(0,12).map(s=><div className="dv-leader" key={s.ticker}><b>{s.ticker}</b><span>{setupOf(s)}</span><em>RS {fmt(s.rsRank,0)}</em><strong>{opp(s)}</strong></div>)}</section></main>}
 
 export default DeepVueTerminal
