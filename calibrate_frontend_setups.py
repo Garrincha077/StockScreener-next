@@ -53,8 +53,11 @@ def calibrate(row: dict):
     volume_dry = n(row, "volumeDryUp", 1)
     slope150 = n(row, "slope150")
     base_weeks = n(row, "baseWeeks")
-    cluster_entry = bool(row.get("maClusterEntrySignal"))
-    cluster_ready = bool(row.get("maClusterReady")) and not cluster_entry
+    cluster_phase = str(row.get("maClusterPhase") or "NONE")
+    cluster_tier = row.get("maClusterTier")
+    cluster_entry = cluster_phase == "ENTRY"
+    cluster_ready = cluster_phase == "READY"
+    cluster_watch = cluster_phase == "WATCH"
 
     extended = d10 > 12 or d30 > 22
     row["extended"] = bool(extended)
@@ -145,9 +148,11 @@ def calibrate(row: dict):
     )
 
     if cluster_entry:
-        tags.append("MA Cluster ENTRY")
+        tags.extend(["MA Cluster ENTRY", f"MA Cluster {cluster_tier} ENTRY"])
     elif cluster_ready:
-        tags.append("MA Cluster Ready")
+        tags.extend(["MA Cluster Ready", f"MA Cluster {cluster_tier} Ready"])
+    elif cluster_watch:
+        tags.extend(["MA Cluster Watch", "MA Cluster C Watch"])
     if neglected:
         tags.append("Neglected → Leader")
     if transition:
@@ -174,6 +179,7 @@ def calibrate(row: dict):
     order = [
         "MA Cluster ENTRY",
         "MA Cluster Ready",
+        "MA Cluster Watch",
         "Neglected → Leader",
         "S1→S2 Transition",
         "Long Base Breakout",
@@ -243,12 +249,16 @@ def main():
             row["setupMatchCount"] = len([t for t in tags if not str(t).startswith("⚠")])
             # A live MA-cluster timing signal remains primary because it is the
             # user's concrete entry trigger; discovery archetype is secondary.
-            if row.get("maClusterEntrySignal"):
-                row["primarySetup"] = "MA Cluster ENTRY"
-            elif row.get("maClusterReady"):
-                row["primarySetup"] = "MA Cluster Ready"
+            if row.get("maClusterPhase") == "ENTRY":
+                row["primarySetup"] = f"MA Cluster {row.get('maClusterTier')} · ENTRY"
+            elif row.get("maClusterPhase") == "READY":
+                row["primarySetup"] = f"MA Cluster {row.get('maClusterTier')} · READY"
+            elif row.get("maClusterPhase") == "WATCH":
+                row["primarySetup"] = "MA Cluster C · WATCH"
             else:
                 row["primarySetup"] = discovery_tag
+        elif row.get("maClusterPhase") in {"ENTRY", "READY", "WATCH"}:
+            row["primarySetup"] = row.get("maClusterTierLabel") or row.get("primarySetup")
 
     market = payload.setdefault("market", {})
     emerging = [r for r in rows if r.get("emergingLeaderCandidate")]
@@ -296,8 +306,9 @@ def main():
     print(
         f"Calibrated {len(rows):,} rows: emerging={len(emerging)} "
         f"(neglected={len(neglected_emerging)}, reawakening={len(reawakening)}), "
-        f"A+={len(a_plus)}, MA-ready={market.get('maClusterReadyCount',0)}, "
-        f"MA-entry={market.get('maClusterEntryCount',0)}, evidence4+={market['highEvidence']}, "
+        f"A+={len(a_plus)}, MA-watch={market.get('maClusterWatchCount',0)}, "
+        f"MA-ready={market.get('maClusterReadyCount',0)}, MA-entry={market.get('maClusterEntryCount',0)}, "
+        f"MA-tiers={market.get('maClusterTierCounts',{})}, evidence4+={market['highEvidence']}, "
         f"extended={market['extendedCount']}"
     )
 
