@@ -8,8 +8,9 @@ run_optimized_scan.py at the frozen fork baseline:
 - validate_minervini_trend_template / detect_breakout
 - raw VCP output already produced by the original processor
 - market gating already attached by enrich_original_engine.py
+- the standard fundamental snapshot emitted by the original default run
 
-No StockScout rules participate here.  Large OHLCV frames are not duplicated into
+No StockScout rules participate here. Large OHLCV frames are not duplicated into
 latest.json because the canonical chart/rich-data store already preserves them.
 """
 from __future__ import annotations
@@ -23,6 +24,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from src.data.enhanced_fundamentals import EnhancedFundamentalsFetcher
 from src.screening.phase_indicators import calculate_sma, detect_breakout, validate_minervini_trend_template
 from src.screening.signal_engine import score_buy_signal, score_sell_signal
 
@@ -83,6 +85,7 @@ def main() -> None:
     gate = ((payload.get("market") or {}).get("originalSignalGate") or {}).get("gate") or {}
     buy_gate = bool(gate.get("should_generate_buys", False))
     sell_gate = bool(gate.get("should_generate_sells", False))
+    fundamentals_fetcher = EnhancedFundamentalsFetcher()
 
     captured = 0
     errors = 0
@@ -126,6 +129,16 @@ def main() -> None:
 
             emitted_buy = bool(buy_gate and phase in (1, 2) and buy.get("is_buy", False))
             emitted_sell = bool(sell_gate and phase in (3, 4) and sell.get("is_sell", False))
+            fundamental_snapshot = None
+            if emitted_buy or emitted_sell:
+                # The original default run calls create_snapshot with use_fmp=False
+                # unless --use-fmp is explicitly supplied. This reproduces that
+                # default source behavior without adding any StockScout enrichment.
+                fundamental_snapshot = fundamentals_fetcher.create_snapshot(
+                    ticker,
+                    quarterly_data=quarterly,
+                    use_fmp=False,
+                )
 
             engine = row.setdefault("originalEngine", {})
             engine["completeSourceCaptureModel"] = MODEL
@@ -141,13 +154,18 @@ def main() -> None:
                 "minervini": native(minervini),
                 "breakout": native(breakout),
                 "vcp": native(vcp),
+                "fundamentalSnapshot": fundamental_snapshot,
             }
             engine.setdefault("buy", {})["sourceReason"] = native(buy.get("reason"))
             engine["buy"]["allDetails"] = native(buy.get("details", {}))
             engine["buy"]["emittedByOriginalRun"] = emitted_buy
+            if emitted_buy:
+                engine["buy"]["fundamentalSnapshot"] = fundamental_snapshot
             engine.setdefault("sell", {})["sourceReason"] = native(sell.get("reason"))
             engine["sell"]["allDetails"] = native(sell.get("details", {}))
             engine["sell"]["emittedByOriginalRun"] = emitted_sell
+            if emitted_sell:
+                engine["sell"]["fundamentalSnapshot"] = fundamental_snapshot
 
             row["originalRunBuySignal"] = emitted_buy
             row["originalRunSellSignal"] = emitted_sell
