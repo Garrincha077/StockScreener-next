@@ -20,8 +20,6 @@ concurrency:
 jobs:
   screen-stocks:
     runs-on: ubuntu-latest
-    # Post-market quality/coverage is more important than runtime. Leave enough
-    # headroom for conservative Yahoo retries plus rich enrichment.
     timeout-minutes: 300
     permissions:
       contents: write
@@ -67,7 +65,7 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py validate_scan_session.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py validate_scan_session.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
@@ -112,6 +110,7 @@ jobs:
 
       - name: Hydrate rich fundamentals for all analyzed stocks
         env:
+          FORCE_FULL_REFRESH: ${{ github.event.inputs.force_full_refresh || 'false' }}
           RICH_FUNDAMENTALS_MAX_AGE_DAYS: '7'
           RICH_FUNDAMENTALS_REQUEST_DELAY: '0.35'
         run: |
@@ -121,26 +120,13 @@ jobs:
       - name: Export rich LEGACY + STOCKSCOUT terminal dataset and 5Y charts
         shell: bash
         run: |
-          # Base canonical rows/charts from the completed scan.
           python export_frontend_data_fast.py
-
-          # STOCKSCOUT custom discovery layer.
           python enhance_frontend_dataset.py
           python calibrate_frontend_setups.py
           python compute_group_leadership.py
-
-          # LEGACY layer: call the frozen source functions on the same completed scan.
           python enrich_original_engine.py
-
-          # Capture every source output used by the original full-market runtime,
-          # including exact BUY/SELL emission after the original market gates.
           python complete_legacy_capture.py
-
-          # Compare StockScout discovery state with the previous nightly snapshot.
           python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
-
-          # Shared rich evidence + explicit two-layer schema. This runs last so the
-          # nested StockScout projection also contains today's change state.
           python enrich_scan_layers.py
 
           test -s frontend/public/data/latest.json
