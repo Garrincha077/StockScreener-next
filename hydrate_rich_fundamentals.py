@@ -2,20 +2,18 @@
 """Hydrate fundamental cache for the entire analyzed post-market universe.
 
 The fast screening engine intentionally fetches fundamentals only for Stage 1/2
-because those values participate in its buy-side scoring.  The terminal, however,
+because those values participate in its buy-side scoring. The terminal, however,
 benefits from having the same evidence available for Stage 3/4 and for custom
-research filters.  This post-market pass fills that gap without changing LEGACY
+research filters. This post-market pass fills that gap without changing LEGACY
 scoring rules.
 
 Policy:
 - inspect every ticker present in batch_progress.pkl analyses;
 - reuse a cache file while it is <= MAX_AGE_DAYS old;
+- when FORCE_FULL_REFRESH=true, bypass cache age for every analyzed ticker;
 - otherwise fetch the repository's existing quarterly fundamental dataset;
 - never delete a good old cache if a refresh fails;
 - rate-limit fresh requests conservatively.
-
-MAX_AGE_DAYS defaults to 7 because this job runs after market and runtime is less
-important than evidence freshness. Override with RICH_FUNDAMENTALS_MAX_AGE_DAYS.
 """
 from __future__ import annotations
 
@@ -35,6 +33,7 @@ PROGRESS = ROOT / "data" / "batch_results" / "batch_progress.pkl"
 FUND_DIR = ROOT / "data" / "fundamentals_cache"
 MAX_AGE_DAYS = max(1, int(os.getenv("RICH_FUNDAMENTALS_MAX_AGE_DAYS", "7")))
 REQUEST_DELAY = max(0.0, float(os.getenv("RICH_FUNDAMENTALS_REQUEST_DELAY", "0.35")))
+FORCE_FULL_REFRESH = os.getenv("FORCE_FULL_REFRESH", "false").strip().lower() in {"1", "true", "yes", "on"}
 
 
 def cache_age_days(path: Path) -> int | None:
@@ -77,15 +76,14 @@ def main() -> None:
     fetcher = GitStorageFetcher(str(FUND_DIR))
     reused = refreshed = missing = failed = 0
 
-    print(
-        f"Rich fundamentals hydration: {len(tickers):,} analyzed tickers; "
-        f"max cache age={MAX_AGE_DAYS}d"
-    )
+    mode = "FORCED FULL REFRESH" if FORCE_FULL_REFRESH else f"max cache age={MAX_AGE_DAYS}d"
+    print(f"Rich fundamentals hydration: {len(tickers):,} analyzed tickers; {mode}")
 
     for idx, ticker in enumerate(tickers, 1):
         path = FUND_DIR / f"{ticker}_fundamentals.json"
         age = cache_age_days(path)
-        if age is not None and age <= MAX_AGE_DAYS:
+        cache_is_fresh = age is not None and age <= MAX_AGE_DAYS
+        if cache_is_fresh and not FORCE_FULL_REFRESH:
             reused += 1
         else:
             if path.exists():
