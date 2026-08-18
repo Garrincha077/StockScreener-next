@@ -43,9 +43,9 @@ export const fieldDefs:FieldDef[]=[
   {id:'setupTags',label:'Setup tag',kind:'text',defaultOp:'contains'},
   {id:'fundamentalSupport',label:'Fundamental support',kind:'boolean',defaultOp:'true'},
   {id:'extended',label:'Extended',kind:'boolean',defaultOp:'false'},
-  {id:'changedToday',label:'Changed today',kind:'boolean',defaultOp:'true'},
+  {id:'changedToday',label:'Changed since last scan',kind:'boolean',defaultOp:'true'},
   {id:'stageChanged',label:'Stage changed',kind:'boolean',defaultOp:'true'},
-  {id:'newSetupTags',label:'New setup today',kind:'text',defaultOp:'contains'},
+  {id:'newSetupTags',label:'New setup since last scan',kind:'text',defaultOp:'contains'},
   {id:'changeImpact',label:'Change impact',kind:'number',defaultOp:'>='},
   {id:'opportunityDelta',label:'Δ Opportunity',kind:'number',defaultOp:'>='},
   {id:'rsRankDelta',label:'Δ RS Rank',kind:'number',defaultOp:'>='},
@@ -77,21 +77,6 @@ export const fieldDefs:FieldDef[]=[
   {id:'inventoryQoQ',label:'RICH inventory QoQ %',kind:'number',defaultOp:'<='},
   {id:'inventoryToSales',label:'RICH inventory / sales',kind:'number',defaultOp:'<='},
   {id:'fundamentalsAgeDays',label:'RICH fundamentals age days',kind:'number',defaultOp:'<='},
-
-  // Frozen repository source methodology. These fields are populated by
-  // enrich_original_engine.py and protected by verify_legacy_baseline.py.
-  {id:'originalMarketQualifiedBuy',label:'LEGACY market-qualified BUY',kind:'boolean',defaultOp:'true'},
-  {id:'originalBuyScore',label:'LEGACY Buy Score /125',kind:'number',defaultOp:'>='},
-  {id:'originalRR',label:'LEGACY Risk/Reward',kind:'number',defaultOp:'>='},
-  {id:'originalRiskPct',label:'LEGACY stop risk %',kind:'number',defaultOp:'<='},
-  {id:'originalTTPasses',label:'LEGACY Minervini TT /8',kind:'number',defaultOp:'>='},
-  {id:'originalTTScore',label:'LEGACY TT score /100',kind:'number',defaultOp:'>='},
-  {id:'originalVcpQuality',label:'LEGACY VCP quality',kind:'number',defaultOp:'>='},
-  {id:'originalAdVolumeRatio',label:'LEGACY A/D volume ratio',kind:'number',defaultOp:'>='},
-  {id:'originalBreakoutVolumeConfirmed',label:'LEGACY breakout volume confirmed',kind:'boolean',defaultOp:'true'},
-  {id:'originalBreakoutType',label:'LEGACY breakout type',kind:'text',defaultOp:'contains'},
-  {id:'originalSell',label:'LEGACY sell signal',kind:'boolean',defaultOp:'true'},
-  {id:'originalSellScore',label:'LEGACY Sell Score',kind:'number',defaultOp:'>='},
 ]
 
 export const opsByKind={
@@ -122,12 +107,16 @@ export function matchesRule(stock:any,rule:Rule):boolean{
   const def=fieldDefs.find(x=>x.id===rule.field)
   if(def?.kind==='text'){
     const left=textValue(raw).toLowerCase(),right=rule.value.trim().toLowerCase()
+    if(!right)return true
     return rule.op==='!='?left!==right:left===right
   }
+  if(def?.kind==='number'&&!rule.value.trim())return true
   const left=asNumber(raw)
   if(!Number.isFinite(left))return false
   if(rule.op==='between'){
-    const [a,b]=rule.value.split(',').map(x=>Number(x.trim()))
+    const parts=rule.value.split(',').map(x=>x.trim())
+    if(parts.length!==2||parts.some(x=>!x))return true
+    const [a,b]=parts.map(Number)
     if(!Number.isFinite(a)||!Number.isFinite(b))return true
     return left>=Math.min(a,b)&&left<=Math.max(a,b)
   }
@@ -152,16 +141,6 @@ const rule=(field:string,op:RuleOp,value=''):Rule=>({id:uid(),field,op,value})
 const group=(logic:Logic,rules:Rule[]):RuleGroup=>({id:uid(),logic,rules})
 
 export const builtInScreens:ScreenState[]=[
-  {
-    name:'LEGACY — Source Rank',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
-    sorting:[{id:'originalBuyScore',desc:true}],
-    groups:[group('ALL',[rule('originalMarketQualifiedBuy','true')])],
-  },
-  {
-    name:'LEGACY — Balanced Mix',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
-    sorting:[{id:'originalBuyScore',desc:true},{id:'originalRR',desc:true},{id:'originalTTPasses',desc:true},{id:'originalVcpQuality',desc:true},{id:'originalAdVolumeRatio',desc:true}],
-    groups:[group('ALL',[rule('originalMarketQualifiedBuy','true')])],
-  },
   {
     name:'Perfect Setup',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
     sorting:[{id:'confluence',desc:true},{id:'freshnessScore',desc:true},{id:'rsRank',desc:true},{id:'opportunityScore',desc:true}],
@@ -202,7 +181,7 @@ export const builtInScreens:ScreenState[]=[
     groups:[group('ALL',[rule('tightRange20','<=','12'),rule('atrCompression','>=','20'),rule('baseWeeks','>=','6'),rule('extended','false')])],
   },
   {
-    name:'What Changed Today',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
+    name:'Since Last Scan',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,visibility:{},
     sorting:[{id:'changeImpact',desc:true},{id:'rsRankDelta',desc:true},{id:'opportunityDelta',desc:true},{id:'rsRank',desc:true}],
     groups:[group('ALL',[rule('changedToday','true')])],
   },
