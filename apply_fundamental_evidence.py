@@ -55,10 +55,14 @@ def main() -> None:
         }
         row["stockscout"] = stockscout
 
+        groups = evidence.get("groupScores") or {}
         row["fundamentalEvidenceScore"] = evidence["score"]
         row["fundamentalEvidenceCoverage"] = evidence["coveragePct"]
         row["fundamentalEvidenceConfidence"] = evidence["confidencePct"]
         row["fundamentalEvidenceLabel"] = evidence["label"]
+        row["fundamentalGrowthScore"] = groups.get("growth")
+        row["fundamentalMarginScore"] = groups.get("margins")
+        row["fundamentalInventoryScore"] = groups.get("inventory")
 
         if evidence["score"] is not None:
             scored += 1
