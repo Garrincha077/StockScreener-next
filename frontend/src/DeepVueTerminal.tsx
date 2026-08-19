@@ -133,7 +133,7 @@ function DeepVueTerminal(){
   },[])
   useEffect(()=>{load()},[load])
   useEffect(()=>localStorage.setItem('dv-sorts-v1',JSON.stringify(sorting)),[sorting])
-  useEffect(()=>localStorage.setItem('dv-cols-v3',JSON.stringify(visibility)),[visibility])
+  useEffect(()=>localStorage.setItem('dv-cols-v4',JSON.stringify(visibility)),[visibility])
   useEffect(()=>localStorage.setItem('dv-root-logic',JSON.stringify(rootLogic)),[rootLogic])
   useEffect(()=>localStorage.setItem('dv-groups-v1',JSON.stringify(groups)),[groups])
   useEffect(()=>localStorage.setItem('dv-custom-screens-v1',JSON.stringify(customScreens)),[customScreens])
