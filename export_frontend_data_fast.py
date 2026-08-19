@@ -201,3 +201,5 @@ base.build_five_year_chart_shards = build_from_scan_cache
 
 if __name__ == "__main__":
     base.main()
+    from compute_ma_crosses import hydrate_dataset
+    hydrate_dataset()
