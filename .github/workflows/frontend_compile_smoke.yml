@@ -5,11 +5,20 @@ on:
     branches: [main]
     paths:
       - 'frontend/**'
+      - 'prepare_frontend_payloads.py'
+      - 'tests/test_prepare_frontend_payloads.py'
+      - '.github/workflows/frontend_compile_smoke.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'frontend/**'
+      - 'prepare_frontend_payloads.py'
+      - 'tests/test_prepare_frontend_payloads.py'
       - '.github/workflows/frontend_compile_smoke.yml'
   workflow_dispatch:
 
 concurrency:
-  group: frontend-compile-smoke
+  group: frontend-compile-smoke-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -17,12 +26,24 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Client payload tests
+        run: |
+          python -m pip install --upgrade pip pytest
+          python -m pytest tests/test_prepare_frontend_payloads.py -q
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+
       - name: Install
         working-directory: frontend
         run: npm install
-      - name: TypeScript and Vite build
+
+      - name: Runtime tests, TypeScript and Vite build
         working-directory: frontend
-        run: npm run build
+        run: npm run check
