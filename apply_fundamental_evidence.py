@@ -4,12 +4,16 @@
 Runs after rich-layer enrichment. This script is intentionally non-invasive:
 it never changes Opportunity, Confluence, setup tags, LEGACY outputs, or technical
 scores. It only adds evidence fields derived from already-hydrated fundamentals.
+
+Because this is the final enrichment step in the nightly pipeline, it also runs
+the sortable-field data-quality gate before the dataset can be published.
 """
 from __future__ import annotations
 
 import json
 from pathlib import Path
 
+from audit_sortable_coverage import audit as audit_sortable_coverage
 from fundamental_evidence import MODEL, score_fundamentals
 
 ROOT = Path(__file__).resolve().parent
@@ -67,10 +71,14 @@ def main() -> None:
         if evidence["score"] is not None:
             scored += 1
             label = evidence["label"].lower()
-            if label == "strong": strong += 1
-            elif label == "supportive": supportive += 1
-            elif label == "mixed": mixed += 1
-            elif label == "weak": weak += 1
+            if label == "strong":
+                strong += 1
+            elif label == "supportive":
+                supportive += 1
+            elif label == "mixed":
+                mixed += 1
+            elif label == "weak":
+                weak += 1
         if evidence["confidencePct"] >= 70:
             high_conf += 1
 
@@ -97,6 +105,10 @@ def main() -> None:
         f"high-confidence={high_conf:,}; strong={strong:,}; supportive={supportive:,}; "
         f"mixed={mixed:,}; weak={weak:,}; Opportunity unchanged"
     )
+
+    # Final publish-quality contract. This writes market.dataQuality and exits
+    # non-zero when core sortable technical coverage materially regresses.
+    audit_sortable_coverage(dataset_path=OUT, fail_on_gate=True)
 
 
 if __name__ == "__main__":
