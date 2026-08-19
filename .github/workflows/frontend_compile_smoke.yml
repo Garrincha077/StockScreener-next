@@ -4,7 +4,13 @@ on:
   push:
     branches: [main]
     paths:
-      - 'frontend/**'
+      - 'frontend/src/**'
+      - 'frontend/e2e/**'
+      - 'frontend/index.html'
+      - 'frontend/package.json'
+      - 'frontend/tsconfig*.json'
+      - 'frontend/vite.config.ts'
+      - 'frontend/playwright.config.ts'
       - 'prepare_frontend_payloads.py'
       - 'hydrate_frontend_charts_readonly.py'
       - 'tests/test_prepare_frontend_payloads.py'
@@ -13,7 +19,13 @@ on:
   pull_request:
     branches: [main]
     paths:
-      - 'frontend/**'
+      - 'frontend/src/**'
+      - 'frontend/e2e/**'
+      - 'frontend/index.html'
+      - 'frontend/package.json'
+      - 'frontend/tsconfig*.json'
+      - 'frontend/vite.config.ts'
+      - 'frontend/playwright.config.ts'
       - 'prepare_frontend_payloads.py'
       - 'hydrate_frontend_charts_readonly.py'
       - 'tests/test_prepare_frontend_payloads.py'
@@ -60,3 +72,11 @@ jobs:
       - name: Runtime tests, TypeScript and Vite build
         working-directory: frontend
         run: npm run check
+
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: npx playwright install --with-deps chromium
+
+      - name: Mobile Rapid Review browser smoke
+        working-directory: frontend
+        run: npm run test:e2e
