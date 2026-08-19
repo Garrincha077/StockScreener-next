@@ -41,23 +41,23 @@ def test_core_projection_strips_only_heavy_nested_row_payloads():
     assert "richData" not in core["universe"][0]
     assert "stockscout" not in core["universe"][0]
     assert core["chartShards"] == payload["chartShards"]
-    assert core["layers"]["legacy"]["lazyFile"] == "full.json"
+    assert core["layers"]["legacy"]["lazyFile"] == "latest.json"
 
 
-def test_publish_preserves_full_snapshot_and_writes_smaller_core(tmp_path):
+def test_publish_preserves_canonical_snapshot_and_writes_smaller_core(tmp_path):
     latest = tmp_path / "latest.json"
-    full = tmp_path / "full.json"
+    core_path = tmp_path / "core.json"
     manifest = tmp_path / "manifest.json"
     payload = sample_payload()
     original = json.dumps(payload, separators=(",", ":"), ensure_ascii=False).encode()
     latest.write_bytes(original)
 
-    meta = publish(latest, full, manifest)
-    core = json.loads(latest.read_text())
+    meta = publish(latest, core_path, manifest)
+    core = json.loads(core_path.read_text())
 
-    assert full.read_bytes() == original
+    assert latest.read_bytes() == original
     assert meta["universe"] == 2
     assert meta["coreBytes"] < meta["fullBytes"]
-    assert core["fullDataFile"] == "full.json"
+    assert core["fullDataFile"] == "latest.json"
     assert len(core["universe"]) == len(payload["universe"])
-    assert json.loads(manifest.read_text())["fullFile"] == "full.json"
+    assert json.loads(manifest.read_text())["fullFile"] == "latest.json"
