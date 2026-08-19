@@ -61,6 +61,10 @@ def main(previous_path: Path = DEFAULT_PREVIOUS, current_path: Path = DEFAULT_CU
         for row in (previous.get("universe") or [])
         if row.get("ticker")
     }
+    opportunity_comparable = bool(
+        previous.get("opportunityModel")
+        and previous.get("opportunityModel") == current.get("opportunityModel")
+    )
 
     changed_count = 0
     new_setup_count = 0
@@ -91,7 +95,15 @@ def main(previous_path: Path = DEFAULT_PREVIOUS, current_path: Path = DEFAULT_CU
             changed_count += 1
             continue
 
-        opportunity_delta = rounded_delta(row.get("opportunityScore", row.get("score")), prev.get("opportunityScore", prev.get("score")), 1)
+        opportunity_delta = (
+            rounded_delta(
+                row.get("opportunityScore", row.get("score")),
+                prev.get("opportunityScore", prev.get("score")),
+                1,
+            )
+            if opportunity_comparable
+            else 0
+        )
         rs_delta = rounded_delta(row.get("rsRank"), prev.get("rsRank"), 0)
         confluence_delta = rounded_delta(row.get("confluence"), prev.get("confluence"), 0)
         volume_delta = rounded_delta(row.get("volumeRatio"), prev.get("volumeRatio"), 2)
@@ -187,13 +199,17 @@ def main(previous_path: Path = DEFAULT_PREVIOUS, current_path: Path = DEFAULT_CU
         "rsMovers": rs_mover_count,
         "scoreMovers": score_mover_count,
         "previousGeneratedAt": previous.get("generatedAt"),
+        "opportunityComparable": opportunity_comparable,
     }
     current["version"] = max(5, int(current.get("version", 1) or 1))
     current["featureModel"] = "data-first-v2-daily-diff"
-    current_path.write_text(json.dumps(current, separators=(",", ":"), ensure_ascii=False), encoding="utf-8")
+    current_path.write_text(
+        json.dumps(current, separators=(",", ":"), ensure_ascii=False), encoding="utf-8"
+    )
     print(
         f"Daily diff: {changed_count:,} changed, {new_setup_count:,} new setups, "
-        f"{stage_change_count:,} stage changes, {rs_mover_count:,} RS movers"
+        f"{stage_change_count:,} stage changes, {rs_mover_count:,} RS movers; "
+        f"Opportunity comparable={opportunity_comparable}"
     )
 
 
