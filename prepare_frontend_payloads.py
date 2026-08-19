@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
-"""Publish a lightweight StockScout client payload plus the complete audit payload.
+"""Publish a lightweight StockScout client payload beside the canonical snapshot.
 
-The nightly pipeline builds and validates ``latest.json`` as the full canonical
-snapshot first. This final presentation step preserves that exact validated
-snapshot as ``full.json`` and rewrites ``latest.json`` to a lightweight client
-projection. The default STOCKSCOUT UI only needs flattened row fields; complete
-LEGACY source output and nested rich evidence remain available lazily in
-``full.json``.
+The nightly pipeline continues to build, validate and persist ``latest.json`` as
+the complete canonical/audit snapshot. This presentation-only step derives
+``core.json`` by removing nested duplicate/heavy row payloads that the default
+STOCKSCOUT terminal does not render. LEGACY and rich source evidence remain in
+``latest.json`` and are loaded only when those views are opened.
 """
 from __future__ import annotations
 
@@ -19,7 +18,7 @@ from typing import Any
 ROOT = Path(__file__).resolve().parent
 DATA_DIR = ROOT / "frontend" / "public" / "data"
 LATEST = DATA_DIR / "latest.json"
-FULL = DATA_DIR / "full.json"
+CORE = DATA_DIR / "core.json"
 MANIFEST = DATA_DIR / "manifest.json"
 MODEL = "stockscout-client-core-v1"
 HEAVY_ROW_KEYS = {"originalEngine", "richData", "stockscout"}
@@ -42,14 +41,14 @@ def build_core_payload(payload: dict[str, Any]) -> dict[str, Any]:
         rows.append({key: value for key, value in row.items() if key not in HEAVY_ROW_KEYS})
     core["universe"] = rows
     core["clientPayloadModel"] = MODEL
-    core["fullDataFile"] = "full.json"
+    core["fullDataFile"] = "latest.json"
 
     layers = core.get("layers")
     if isinstance(layers, dict):
         legacy = layers.get("legacy")
         if isinstance(legacy, dict):
-            legacy["lazyFile"] = "full.json"
-        layers["sharedEvidenceFile"] = "full.json"
+            legacy["lazyFile"] = "latest.json"
+        layers["sharedEvidenceFile"] = "latest.json"
     return core
 
 
@@ -60,7 +59,7 @@ def atomic_write(path: Path, data: bytes) -> None:
     temp.replace(path)
 
 
-def publish(latest: Path = LATEST, full: Path = FULL, manifest: Path = MANIFEST) -> dict[str, Any]:
+def publish(latest: Path = LATEST, core_path: Path = CORE, manifest: Path = MANIFEST) -> dict[str, Any]:
     if not latest.exists():
         raise SystemExit(f"Missing validated frontend payload: {latest}")
 
@@ -84,8 +83,8 @@ def publish(latest: Path = LATEST, full: Path = FULL, manifest: Path = MANIFEST)
         "model": MODEL,
         "generatedAt": payload.get("generatedAt"),
         "universe": len(core.get("universe") or []),
-        "coreFile": "latest.json",
-        "fullFile": "full.json",
+        "coreFile": "core.json",
+        "fullFile": "latest.json",
         "coreBytes": len(core_bytes),
         "fullBytes": len(full_bytes),
         "coreSha256": sha256(core_bytes),
@@ -93,15 +92,15 @@ def publish(latest: Path = LATEST, full: Path = FULL, manifest: Path = MANIFEST)
         "strippedRowKeys": sorted(HEAVY_ROW_KEYS),
     }
 
-    # Preserve the already validated full snapshot before replacing latest.json.
-    atomic_write(full, full_bytes)
-    atomic_write(latest, core_bytes)
+    atomic_write(core_path, core_bytes)
     atomic_write(manifest, encoded(manifest_payload) + b"\n")
+    if latest.read_bytes() != full_bytes:
+        raise SystemExit("Invariant violation: client projection modified canonical latest.json")
 
     ratio = len(core_bytes) / max(1, len(full_bytes))
     print(
-        f"Frontend payload split: core={len(core_bytes)/1024/1024:.2f} MB, "
-        f"full={len(full_bytes)/1024/1024:.2f} MB ({ratio:.1%} of full)"
+        f"Frontend client payload: core={len(core_bytes)/1024/1024:.2f} MB, "
+        f"canonical={len(full_bytes)/1024/1024:.2f} MB ({ratio:.1%} of canonical)"
     )
     return manifest_payload
 
