@@ -36,6 +36,15 @@ jobs:
           python -m pip install --upgrade pip pytest
           python -m pytest tests/test_prepare_frontend_payloads.py -q
 
+      - name: Project the current canonical snapshot
+        run: |
+          BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          python prepare_frontend_payloads.py
+          AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          test "$BEFORE" = "$AFTER"
+          test -s frontend/public/data/core.json
+          cat frontend/public/data/manifest.json
+
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
