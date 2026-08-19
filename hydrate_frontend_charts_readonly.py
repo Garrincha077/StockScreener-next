@@ -3,8 +3,9 @@
 
 Frontend-only deployments must be presentation-only. They may download adjusted
 OHLCV to rebuild static chart shards that are not committed to Git, but they must
-never rewrite `latest.json`, recalculate RS ranks, volume fields, setup labels or
-any other scan result.
+never rewrite ``latest.json`` or recalculate scan results. Chart history is
+anchored to the canonical payload's ``generatedAt`` timestamp, so a later code
+redeploy cannot silently add newer price bars to an older scan snapshot.
 """
 from __future__ import annotations
 
@@ -29,6 +30,22 @@ def finite(value, default=0.0):
         return value if math.isfinite(value) else default
     except Exception:
         return default
+
+
+def snapshot_window(generated_at: str) -> tuple[pd.Timestamp, str, str]:
+    if not generated_at:
+        raise SystemExit("Canonical dataset has no generatedAt timestamp")
+    try:
+        stamp = pd.Timestamp(generated_at)
+    except Exception as exc:
+        raise SystemExit(f"Invalid canonical generatedAt timestamp: {generated_at!r} ({exc})") from exc
+    if stamp.tzinfo is not None:
+        stamp = stamp.tz_convert("UTC").tz_localize(None)
+    cutoff = stamp.normalize()
+    start = (cutoff - pd.DateOffset(years=5) - pd.Timedelta(days=10)).strftime("%Y-%m-%d")
+    # yfinance treats end as exclusive, so include the completed cutoff session.
+    end = (cutoff + pd.Timedelta(days=1)).strftime("%Y-%m-%d")
+    return cutoff, start, end
 
 
 def shard_for(ticker: str) -> str:
@@ -62,12 +79,16 @@ def extract_ticker_frame(download: pd.DataFrame, ticker: str, chunk_size: int) -
     return frame.sort_index()
 
 
-def compact_bars(frame: pd.DataFrame, spy_close: pd.Series) -> list[list]:
+def compact_bars(frame: pd.DataFrame, spy_close: pd.Series, cutoff: pd.Timestamp) -> list[list]:
     if frame.empty or "Close" not in frame:
+        return []
+    frame = frame.loc[pd.DatetimeIndex(frame.index) <= cutoff].copy()
+    if frame.empty:
         return []
     spy = spy_close.copy()
     if isinstance(spy.index, pd.DatetimeIndex) and spy.index.tz is not None:
         spy.index = spy.index.tz_localize(None)
+    spy = spy.loc[pd.DatetimeIndex(spy.index) <= cutoff]
     spy_aligned = spy.reindex(frame.index, method="ffill")
     rows: list[list] = []
     for ts, row in frame.tail(1265).iterrows():
@@ -86,13 +107,21 @@ def compact_bars(frame: pd.DataFrame, spy_close: pd.Series) -> list[list]:
     return rows
 
 
-def download_chunk(chunk: list[str], spy_close: pd.Series, threads: bool) -> dict[str, list[list]]:
+def download_chunk(
+    chunk: list[str],
+    spy_close: pd.Series,
+    cutoff: pd.Timestamp,
+    start_date: str,
+    end_date: str,
+    threads: bool,
+) -> dict[str, list[list]]:
     if not chunk:
         return {}
     try:
         raw = yf.download(
             chunk,
-            period="5y",
+            start=start_date,
+            end=end_date,
             interval="1d",
             group_by="ticker",
             auto_adjust=True,
@@ -106,7 +135,7 @@ def download_chunk(chunk: list[str], spy_close: pd.Series, threads: bool) -> dic
     out: dict[str, list[list]] = {}
     for ticker in chunk:
         frame = extract_ticker_frame(raw, ticker, len(chunk))
-        bars = compact_bars(frame, spy_close)
+        bars = compact_bars(frame, spy_close, cutoff)
         if bars:
             out[ticker] = bars
     return out
@@ -120,6 +149,7 @@ def main() -> None:
     tickers = [str(row.get("ticker", "")).upper() for row in payload.get("universe", []) if row.get("ticker")]
     if not tickers:
         raise SystemExit("Canonical dataset has no universe")
+    cutoff, start_date, end_date = snapshot_window(str(payload.get("generatedAt") or ""))
 
     existing_mapping = payload.get("chartShards") or {}
     for ticker, shard in existing_mapping.items():
@@ -127,7 +157,16 @@ def main() -> None:
         if shard != expected:
             raise SystemExit(f"Canonical chart mapping mismatch for {ticker}: {shard} != {expected}")
 
-    spy = yf.download("SPY", period="5y", interval="1d", auto_adjust=True, progress=False, threads=False, timeout=30)
+    spy = yf.download(
+        "SPY",
+        start=start_date,
+        end=end_date,
+        interval="1d",
+        auto_adjust=True,
+        progress=False,
+        threads=False,
+        timeout=30,
+    )
     if isinstance(spy.columns, pd.MultiIndex):
         if "SPY" in spy.columns.get_level_values(0):
             spy = spy["SPY"]
@@ -136,6 +175,7 @@ def main() -> None:
     if spy.empty or "Close" not in spy:
         raise SystemExit("Unable to download adjusted SPY history")
     spy.index = pd.DatetimeIndex(spy.index).tz_localize(None) if pd.DatetimeIndex(spy.index).tz is not None else pd.DatetimeIndex(spy.index)
+    spy = spy.loc[pd.DatetimeIndex(spy.index) <= cutoff]
     spy_close = spy["Close"].astype(float).dropna()
 
     CHART_DIR.mkdir(parents=True, exist_ok=True)
@@ -146,7 +186,7 @@ def main() -> None:
 
     for start in range(0, len(tickers), 100):
         chunk = tickers[start:start + 100]
-        batch = download_chunk(chunk, spy_close, threads=True)
+        batch = download_chunk(chunk, spy_close, cutoff, start_date, end_date, threads=True)
         for ticker in chunk:
             bars = batch.get(ticker)
             if bars:
@@ -158,7 +198,7 @@ def main() -> None:
         still_missing: list[str] = []
         for start in range(0, len(missing), 20):
             chunk = missing[start:start + 20]
-            batch = download_chunk(chunk, spy_close, threads=False)
+            batch = download_chunk(chunk, spy_close, cutoff, start_date, end_date, threads=False)
             for ticker in chunk:
                 bars = batch.get(ticker)
                 if bars:
@@ -184,7 +224,10 @@ def main() -> None:
         raise SystemExit("Invariant violation: read-only chart hydration modified latest.json")
 
     size_mb = sum(p.stat().st_size for p in CHART_DIR.glob("*.json")) / 1024 / 1024
-    print(f"Read-only adjusted chart hydration: {covered:,}/{len(tickers):,}, {written} shards, {size_mb:.1f} MB")
+    print(
+        f"Read-only adjusted chart hydration at {cutoff.date()}: "
+        f"{covered:,}/{len(tickers):,}, {written} shards, {size_mb:.1f} MB"
+    )
     if missing:
         print(f"Charts unavailable after retry: {len(missing):,}")
 
