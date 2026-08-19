@@ -65,13 +65,13 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py compute_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py validate_frontend_charts.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py audit_lateral_base.py audit_emerging_leader.py audit_frontend_dataset.py audit_pipeline_models.py compute_opportunity_v2.py finalize_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py validate_frontend_charts.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
 
       - name: Fast-engine regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_opportunity_v2.py tests/test_prepare_frontend_payloads.py -q
+        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_emerging_leader.py tests/test_lateral_base.py tests/test_opportunity_v2.py tests/test_opportunity_v2_integration.py tests/test_prepare_frontend_payloads.py -q
 
       - name: Preserve previous terminal snapshot
         shell: bash
@@ -130,6 +130,7 @@ jobs:
           python apply_fundamental_evidence.py
           python compute_opportunity_v2.py
           python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
+          python finalize_opportunity_v2.py
 
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
@@ -165,8 +166,8 @@ jobs:
       - name: Validate canonical dataset invariants
         run: python validate_canonical_dataset.py
 
-      - name: Setup and Group Leadership calibration audit
-        run: python audit_frontend_dataset.py
+      - name: Opportunity v2 and model compatibility audit
+        run: python audit_pipeline_models.py
 
       - name: Fundamental evidence audit
         run: python audit_fundamental_evidence.py
