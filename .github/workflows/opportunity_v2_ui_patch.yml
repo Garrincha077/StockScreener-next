@@ -1,0 +1,114 @@
+name: Opportunity v2 UI Patch
+
+on:
+  push:
+    paths:
+      - '.github/workflows/opportunity_v2_ui_patch.yml'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  patch-build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Patch Opportunity v2 UI
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def repl(text, old, new, label):
+              n=text.count(old)
+              if n != 1:
+                  raise SystemExit(f'{label}: expected 1 match, got {n}')
+              return text.replace(old,new,1)
+
+          p=Path('frontend/src/DeepVueTerminal.tsx')
+          t=p.read_text(encoding='utf-8')
+          t=repl(t,
+              '  opportunityScore?:number;confluence?:number;structureScore?:number;rsScore?:number;baseScore?:number;triggerScore?:number;freshnessScore?:number;neglectedScore?:number\n',
+              '  opportunityScore?:number;opportunityPotential?:number;opportunityTiming?:number;opportunityRank?:number;opportunityTier?:string;opportunityGroupModifier?:number;opportunityFundModifier?:number;opportunityPenalty?:number;emergingLeaderScore?:number;confluence?:number;structureScore?:number;rsScore?:number;baseScore?:number;triggerScore?:number;freshnessScore?:number;neglectedScore?:number\n',
+              'types')
+          t=repl(t,
+              'fundamentalSupport:false,fundamentalEvidenceCoverage:false,',
+              'fundamentalSupport:false,fundamentalEvidenceCoverage:false,opportunityGroupModifier:false,opportunityFundModifier:false,opportunityPenalty:false,emergingLeaderScore:false,',
+              'visibility defaults')
+          t=repl(t,"loadLocal('dv-cols-v2',defaultVisibility)","loadLocal('dv-cols-v3',defaultVisibility)",'visibility read migration')
+          t=repl(t,"localStorage.setItem('dv-cols-v2',JSON.stringify(visibility))","localStorage.setItem('dv-cols-v3',JSON.stringify(visibility))",'visibility write migration')
+
+          anchor="    helper.accessor(s=>opp(s),{id:'opportunityScore',header:'Opportunity',cell:i=><b className=\"dv-score\">{fmt(i.getValue(),0)}</b>}),\n"
+          block=anchor + (
+              "    helper.accessor('opportunityTier',{header:'Tier',cell:i=><b>{i.getValue()||'—'}</b>}),\n"
+              "    helper.accessor('opportunityRank',{header:'Opp Rank',cell:i=><b className={num(i.getValue())>=95?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),\n"
+              "    helper.accessor('opportunityPotential',{header:'Potential',cell:i=>fmt(i.getValue(),0)}),\n"
+              "    helper.accessor('opportunityTiming',{header:'Timing',cell:i=><b className={num(i.getValue())>=80?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),\n"
+              "    helper.accessor('opportunityGroupModifier',{header:'Group Δ',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{num(i.getValue())>0?'+':''}{fmt(i.getValue(),1)}</span>}),\n"
+              "    helper.accessor('opportunityFundModifier',{header:'Fund Δ',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{num(i.getValue())>0?'+':''}{fmt(i.getValue(),1)}</span>}),\n"
+              "    helper.accessor('opportunityPenalty',{header:'Penalty',cell:i=><span className={num(i.getValue())>0?'dv-bad':''}>{num(i.getValue())?`-${fmt(i.getValue(),0)}`:'—'}</span>}),\n"
+              "    helper.accessor('emergingLeaderScore',{header:'Emerging',cell:i=>fmt(i.getValue(),0)}),\n"
+          )
+          t=repl(t,anchor,block,'columns')
+          t=repl(t,
+              'const sets:Record<string,VisibilityState>={Core:defaultVisibility,',
+              'const sets:Record<string,VisibilityState>={Core:defaultVisibility,Opportunity:{...defaultVisibility,opportunityTier:true,opportunityRank:true,opportunityPotential:true,opportunityTiming:true,opportunityGroupModifier:true,opportunityFundModifier:true,opportunityPenalty:true,emergingLeaderScore:true},',
+              'column preset')
+          t=repl(t,'<small>OPPORTUNITY</small>',"<small>OPPORTUNITY · {stock.opportunityTier||'—'}</small>",'detail tier')
+          t=repl(t,'<b>{opp(stock)}</b>{num(stock.opportunityDelta)!==0','<b>{opp(stock)}</b><span>Rank {fmt(stock.opportunityRank,0)}</span>{num(stock.opportunityDelta)!==0','detail rank')
+          t=repl(t,
+              '<K l="Fund Ev" v={fmt(stock.fundamentalEvidenceScore,0)}/><K l="Fund conf" v={`${fmt(stock.fundamentalEvidenceConfidence,0)}%`}/></div>',
+              '<K l="Potential" v={fmt(stock.opportunityPotential,0)}/><K l="Timing" v={fmt(stock.opportunityTiming,0)}/><K l="Opp Rank" v={fmt(stock.opportunityRank,0)}/><K l="Group Δ" v={`${num(stock.opportunityGroupModifier)>0?\'+\':\'\'}${fmt(stock.opportunityGroupModifier,1)}`}/><K l="Fund Δ" v={`${num(stock.opportunityFundModifier)>0?\'+\':\'\'}${fmt(stock.opportunityFundModifier,1)}`}/><K l="Fund Ev" v={fmt(stock.fundamentalEvidenceScore,0)}/><K l="Fund conf" v={`${fmt(stock.fundamentalEvidenceConfidence,0)}%`}/></div>',
+              'detail kpis')
+          t=repl(t,'<small>evidence only · does not affect Opportunity</small>','<small>confirmation evidence · bounded ±5 Opportunity modifier</small>','fund wording')
+          p.write_text(t,encoding='utf-8')
+
+          p=Path('frontend/src/deepvue/filterEngine.ts')
+          t=p.read_text(encoding='utf-8')
+          t=repl(t,
+              "  {id:'opportunityScore',label:'Emerging Score',kind:'number',defaultOp:'>='},\n",
+              "  {id:'opportunityScore',label:'Opportunity v2 0-100',kind:'number',defaultOp:'>='},\n  {id:'opportunityRank',label:'Opportunity Rank 1-99',kind:'number',defaultOp:'>='},\n  {id:'opportunityTier',label:'Opportunity Tier',kind:'text',defaultOp:'='},\n  {id:'opportunityPotential',label:'Opportunity Potential 0-100',kind:'number',defaultOp:'>='},\n  {id:'opportunityTiming',label:'Opportunity Timing 0-100',kind:'number',defaultOp:'>='},\n  {id:'opportunityGroupModifier',label:'Opportunity Group modifier',kind:'number',defaultOp:'>='},\n  {id:'opportunityFundModifier',label:'Opportunity Fundamental modifier',kind:'number',defaultOp:'>='},\n  {id:'opportunityPenalty',label:'Opportunity penalty',kind:'number',defaultOp:'<='},\n  {id:'emergingLeaderScore',label:'Emerging discovery score 0-100',kind:'number',defaultOp:'>='},\n",
+              'filter fields')
+          t=repl(t,"  {id:'opportunityDelta',label:'Δ Emerging Score',kind:'number',defaultOp:'>='},\n","  {id:'opportunityDelta',label:'Δ Opportunity Score',kind:'number',defaultOp:'>='},\n",'delta label')
+          anchor='export const builtInScreens:ScreenState[]=[\n'
+          screen=anchor + "  {\n    name:'Prime / Ready Opportunities',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,\n    visibility:{opportunityTier:true,opportunityRank:true,opportunityPotential:true,opportunityTiming:true,rsRank:true,volumeRatio:true,fundamentalEvidenceScore:true},\n    sorting:[{id:'opportunityScore',desc:true},{id:'opportunityRank',desc:true},{id:'opportunityTiming',desc:true},{id:'opportunityPotential',desc:true}],\n    groups:[group('ALL',[rule('opportunityScore','>=','80'),rule('opportunityRank','>=','90'),rule('extended','false')])],\n  },\n"
+          t=repl(t,anchor,screen,'Prime screen')
+          p.write_text(t,encoding='utf-8')
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test and build
+        working-directory: frontend
+        run: |
+          npm install
+          npm run check
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+      - name: Commit UI patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm .github/workflows/opportunity_v2_ui_patch.yml
+          git add frontend/src/DeepVueTerminal.tsx frontend/src/deepvue/filterEngine.ts
+          git commit -m "feat: expose Opportunity v2 breakdown"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+      - name: Deploy terminal
+        id: deployment
+        uses: actions/deploy-pages@v4
