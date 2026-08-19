@@ -1,7 +1,7 @@
 name: StockScout Full Validation
 
 # Final gate for the calibrated early-leader model + behavioral Groups UI.
-# Manual full-run trigger: 2026-08-19 12:06 Europe/Zagreb — MA crosses + sortable coverage validation
+# Manual full-run trigger: 2026-08-19 12:12 Europe/Zagreb — clean run after stale-queue cancellation
 on:
   push:
     paths:
