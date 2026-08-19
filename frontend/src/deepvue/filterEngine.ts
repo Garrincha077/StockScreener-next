@@ -45,7 +45,15 @@ export const fieldDefs:FieldDef[]=[
   {id:'sma10w20wCross',label:'Weekly SMA 10/20 last cross',kind:'text',defaultOp:'='},
   {id:'sma10w20wCrossAge',label:'Weekly SMA 10/20 cross age (weeks)',kind:'number',defaultOp:'<='},
   {id:'sma10w20wSpreadPct',label:'Weekly SMA 10/20 spread %',kind:'number',defaultOp:'between',placeholder:'-2,2'},
-  {id:'opportunityScore',label:'Emerging Score',kind:'number',defaultOp:'>='},
+  {id:'opportunityScore',label:'Opportunity v2 0-100',kind:'number',defaultOp:'>='},
+  {id:'opportunityRank',label:'Opportunity Rank 1-99',kind:'number',defaultOp:'>='},
+  {id:'opportunityTier',label:'Opportunity Tier',kind:'text',defaultOp:'='},
+  {id:'opportunityPotential',label:'Opportunity Potential 0-100',kind:'number',defaultOp:'>='},
+  {id:'opportunityTiming',label:'Opportunity Timing 0-100',kind:'number',defaultOp:'>='},
+  {id:'opportunityGroupModifier',label:'Opportunity Group modifier',kind:'number',defaultOp:'>='},
+  {id:'opportunityFundModifier',label:'Opportunity Fundamental modifier',kind:'number',defaultOp:'>='},
+  {id:'opportunityPenalty',label:'Opportunity penalty',kind:'number',defaultOp:'<='},
+  {id:'emergingLeaderScore',label:'Emerging discovery score 0-100',kind:'number',defaultOp:'>='},
   {id:'emergingArchetype',label:'Emerging archetype',kind:'text',defaultOp:'contains'},
   {id:'emergingEvidenceCount',label:'Evidence 0-5',kind:'number',defaultOp:'>='},
   {id:'emergingLeaderCandidate',label:'Emerging Leader candidate',kind:'boolean',defaultOp:'true'},
@@ -116,7 +124,7 @@ export const fieldDefs:FieldDef[]=[
   {id:'stageChanged',label:'Stage changed',kind:'boolean',defaultOp:'true'},
   {id:'newSetupTags',label:'New setup since last scan',kind:'text',defaultOp:'contains'},
   {id:'changeImpact',label:'Change impact',kind:'number',defaultOp:'>='},
-  {id:'opportunityDelta',label:'Δ Emerging Score',kind:'number',defaultOp:'>='},
+  {id:'opportunityDelta',label:'Δ Opportunity Score',kind:'number',defaultOp:'>='},
   {id:'rsRankDelta',label:'Δ RS Rank',kind:'number',defaultOp:'>='},
 
   // Rich shared evidence generated after the nightly scan from the same 5Y cache.
@@ -210,6 +218,12 @@ const rule=(field:string,op:RuleOp,value=''):Rule=>({id:uid(),field,op,value})
 const group=(logic:Logic,rules:Rule[]):RuleGroup=>({id:uid(),logic,rules})
 
 export const builtInScreens:ScreenState[]=[
+  {
+    name:'Prime / Ready Opportunities',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
+    visibility:{opportunityTier:true,opportunityRank:true,opportunityPotential:true,opportunityTiming:true,rsRank:true,volumeRatio:true,fundamentalEvidenceScore:true},
+    sorting:[{id:'opportunityScore',desc:true},{id:'opportunityRank',desc:true},{id:'opportunityTiming',desc:true},{id:'opportunityPotential',desc:true}],
+    groups:[group('ALL',[rule('opportunityScore','>=','80'),rule('opportunityRank','>=','90'),rule('extended','false')])],
+  },
   {
     name:'Scout Tier A',rootLogic:'ALL',recipe:'All',query:'',pageSize:100,
     visibility:{scoutTierLabel:true,maClusterTierLabel:true,maClusterScore:true,maClusterSpreadPct:true,maClusterVolumePace:true,opportunityScore:true,emergingArchetype:true,emergingEvidenceCount:true},
