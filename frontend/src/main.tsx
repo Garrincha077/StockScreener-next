@@ -11,6 +11,7 @@ import './fundamental-evidence.css'
 import './mobile-layer-fix.css'
 import './mobile-grid-scroll.css'
 
+// Pages redeploy trigger: 2026-08-19
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <App />
