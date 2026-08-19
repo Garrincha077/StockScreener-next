@@ -2,6 +2,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {createColumnHelper,flexRender,getCoreRowModel,getPaginationRowModel,type PaginationState,type SortingState,type VisibilityState,useReactTable} from '@tanstack/react-table'
 import {CandlestickSeries,ColorType,HistogramSeries,LineSeries,createChart} from 'lightweight-charts'
 import {builtInScreens,fieldDefs,makeGroup,makeRule,matchesGroups,opsByKind,type Logic,type RuleGroup,type ScreenState} from './deepvue/filterEngine'
+import {RetryJsonCache,nextGridCount} from './deepvue/runtime'
 
 type Bar={time:string;open:number;high:number;low:number;close:number;volume:number;rs:number}
 type RawBar=[string,number,number,number,number,number,number]
@@ -110,9 +111,23 @@ function DeepVueTerminal(){
   const[selectedBars,setSelectedBars]=useState<Bar[]>([]),[chartLoading,setChartLoading]=useState(false)
   const[interval,setInterval]=useState<Interval>('W'),[range,setRange]=useState<Range>('5Y'),[chartMode,setChartMode]=useState<ChartMode>('Price')
   const[gridCount,setGridCount]=useState(16),[gridRange,setGridRange]=useState<Range>('2Y')
-  const shardPromises=useRef<Record<string,Promise<Record<string,RawBar[]>>>>({})
+  const shardCache=useRef(new RetryJsonCache<Record<string,RawBar[]>>())
 
-  const load=useCallback(()=>fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}).then((p:Payload)=>{if(!p.universe?.length)throw new Error('Dataset empty');shardPromises.current={};setPayload(p);setError('');setSelectedTicker(t=>t||p.universe[0].ticker)}).catch(e=>setError(String(e))),[])
+  const load=useCallback(async()=>{
+    let lastError:unknown=new Error('Dataset unavailable')
+    for(const file of ['core.json','latest.json']){
+      try{
+        const response=await fetch(`./data/${file}?t=${Date.now()}`,{cache:'no-store'})
+        if(!response.ok)throw new Error(`${file} HTTP ${response.status}`)
+        const p=await response.json() as Payload
+        if(!p.universe?.length)throw new Error(`${file} dataset empty`)
+        shardCache.current.clear()
+        setPayload(p);setError('');setSelectedTicker(t=>t||p.universe[0].ticker)
+        return
+      }catch(error){lastError=error}
+    }
+    setError(String(lastError))
+  },[])
   useEffect(()=>{load()},[load])
   useEffect(()=>localStorage.setItem('dv-sorts-v1',JSON.stringify(sorting)),[sorting])
   useEffect(()=>localStorage.setItem('dv-cols-v1',JSON.stringify(visibility)),[visibility])
@@ -125,8 +140,11 @@ function DeepVueTerminal(){
   const loadBars=useCallback(async(ticker:string):Promise<Bar[]>=>{
     if(!payload)return[];const shard=payload.chartShards?.[ticker];if(!shard)return[]
     const snapshot=payload.generatedAt||'snapshot',cacheKey=`${snapshot}:${shard}`
-    if(!shardPromises.current[cacheKey])shardPromises.current[cacheKey]=fetch(`./data/charts/${shard}?v=${encodeURIComponent(snapshot)}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`chart ${r.status}`);return r.json()})
-    try{const data=await shardPromises.current[cacheKey],rows=data[ticker]||[];return rows.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4],volume:r[5],rs:r[6]}))}catch{return[]}
+    try{
+      const data=await shardCache.current.load(cacheKey,`./data/charts/${shard}?v=${encodeURIComponent(snapshot)}`)
+      const rows=data[ticker]||[]
+      return rows.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4],volume:r[5],rs:r[6]}))
+    }catch{return[]}
   },[payload])
 
   const universe=payload?.universe||[]
@@ -220,11 +238,24 @@ function ColumnPicker({table,setVisibility}:{table:any;setVisibility:(v:Visibili
 }
 
 function GridView({stocks,count,setCount,range,setRange,loadBars,selected,onSelect}:{stocks:Stock[];count:number;setCount:(n:number)=>void;range:Range;setRange:(r:Range)=>void;loadBars:(t:string)=>Promise<Bar[]>;selected?:string;onSelect:(t:string)=>void}){
-  return <main className="dv-gridview"><header><div><b>RAPID REVIEW</b><span>{Math.min(count,stocks.length)} of {stocks.length.toLocaleString()} current matches · same filter + balanced mix stack</span></div><div><select value={count} onChange={e=>setCount(Number(e.target.value))}><option>12</option><option>16</option><option>24</option><option>36</option><option>48</option></select>{(['6M','1Y','2Y','5Y'] as Range[]).map(r=><button className={range===r?'active':''} key={r} onClick={()=>setRange(r)}>{r}</button>)}</div></header><section className="dv-chartgrid">{stocks.slice(0,count).map(s=><MiniCard key={s.ticker} stock={s} range={range} loadBars={loadBars} selected={selected===s.ticker} onClick={()=>onSelect(s.ticker)}/>)}</section></main>
+  const sentinel=useRef<HTMLDivElement>(null)
+  const presets=[12,16,24,36,48]
+  const visible=Math.min(count,stocks.length)
+  const selectValue=count>=stocks.length?stocks.length:count
+  const showProgress=count<stocks.length&&!presets.includes(count)
+  useEffect(()=>{
+    const node=sentinel.current
+    if(!node||count>=stocks.length||!window.matchMedia('(max-width: 700px)').matches)return
+    const observer=new IntersectionObserver(([entry])=>{if(entry?.isIntersecting)setCount(nextGridCount(count,stocks.length))},{rootMargin:'1200px 0px'})
+    observer.observe(node)
+    return()=>observer.disconnect()
+  },[count,stocks.length,setCount])
+  return <main className="dv-gridview"><header><div><b>RAPID REVIEW</b><span>{visible} of {stocks.length.toLocaleString()} current matches · same filter + balanced mix stack</span></div><div><select value={selectValue} onChange={e=>setCount(Number(e.target.value))}>{showProgress&&<option value={count}>{count}</option>}{presets.map(n=><option key={n} value={n}>{n}</option>)}{!presets.includes(stocks.length)&&<option value={stocks.length}>All ({stocks.length})</option>}</select>{(['6M','1Y','2Y','5Y'] as Range[]).map(r=><button className={range===r?'active':''} key={r} onClick={()=>setRange(r)}>{r}</button>)}</div></header><section className="dv-chartgrid">{stocks.slice(0,visible).map(s=><MiniCard key={s.ticker} stock={s} range={range} loadBars={loadBars} selected={selected===s.ticker} onClick={()=>onSelect(s.ticker)}/>)}</section><div className="dv-grid-sentinel" ref={sentinel} aria-hidden="true"/></main>
 }
 function MiniCard({stock,range,loadBars,selected,onClick}:{stock:Stock;range:Range;loadBars:(t:string)=>Promise<Bar[]>;selected:boolean;onClick:()=>void}){
-  const[bars,setBars]=useState<Bar[]>([]);useEffect(()=>{let live=true;loadBars(stock.ticker).then(x=>live&&setBars(x));return()=>{live=false}},[stock.ticker,loadBars])
-  return <article className={`dv-minicard ${selected?'selected':''}`} onClick={onClick}><header><div><b>{stock.ticker}</b><span>{setupOf(stock)}</span></div><strong>{opp(stock)}</strong></header><div className="dv-miniinfo"><span>RS <b>{fmt(stock.rsRank,0)}</b></span><span>Fund <b>{fmt(stock.fundamentalEvidenceScore,0)}</b></span><span>Vol <b>{fmt(stock.volumeRatio,1)}x</b></span><span>10W <b>{signed(stock.distance10w)}</b></span>{stock.changeImpact!==undefined&&num(stock.changeImpact)!==0&&<span className={num(stock.changeImpact)>0?'dv-good':'dv-bad'}>Δ <b>{signed(stock.changeImpact,0)}</b></span>}</div>{bars.length?<PriceChart bars={bars} interval="W" range={range} mini/>:<div className="dv-miniload">loading chart…</div>}<footer>{(stock.changeLabels||[]).slice(0,2).map(x=><span key={x}>{x}</span>)}</footer></article>
+  const[bars,setBars]=useState<Bar[]>([]),[loading,setLoading]=useState(true),[attempt,setAttempt]=useState(0)
+  useEffect(()=>{let live=true;setLoading(true);setBars([]);loadBars(stock.ticker).then(x=>{if(live)setBars(x)}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[stock.ticker,loadBars,attempt])
+  return <article className={`dv-minicard ${selected?'selected':''}`} onClick={onClick}><header><div><b>{stock.ticker}</b><span>{setupOf(stock)}</span></div><strong>{opp(stock)}</strong></header><div className="dv-miniinfo"><span>RS <b>{fmt(stock.rsRank,0)}</b></span><span>Fund <b>{fmt(stock.fundamentalEvidenceScore,0)}</b></span><span>Vol <b>{fmt(stock.volumeRatio,1)}x</b></span><span>10W <b>{signed(stock.distance10w)}</b></span>{stock.changeImpact!==undefined&&num(stock.changeImpact)!==0&&<span className={num(stock.changeImpact)>0?'dv-good':'dv-bad'}>Δ <b>{signed(stock.changeImpact,0)}</b></span>}</div>{bars.length?<PriceChart bars={bars} interval="W" range={range} mini/>:loading?<div className="dv-miniload">loading chart…</div>:<div className="dv-miniload"><button onClick={e=>{e.stopPropagation();setAttempt(x=>x+1)}}>retry chart</button></div>}<footer>{(stock.changeLabels||[]).slice(0,2).map(x=><span key={x}>{x}</span>)}</footer></article>
 }
 
 function Detail({stock,bars,loading,interval,setInterval,range,setRange,mode,setMode,watched,toggleWatch}:{stock:Stock;bars:Bar[];loading:boolean;interval:Interval;setInterval:(v:Interval)=>void;range:Range;setRange:(v:Range)=>void;mode:ChartMode;setMode:(v:ChartMode)=>void;watched:boolean;toggleWatch:()=>void}){
