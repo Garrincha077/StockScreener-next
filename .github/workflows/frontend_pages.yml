@@ -49,7 +49,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install yfinance pandas
           BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
-          python hydrate_frontend_charts_readonly.py
+          HYDRATED=false
+          for attempt in 1 2 3; do
+            echo "Chart hydration attempt $attempt/3"
+            rm -rf frontend/public/data/charts
+            if python hydrate_frontend_charts_readonly.py; then
+              HYDRATED=true
+              break
+            fi
+            if [ "$attempt" -lt 3 ]; then
+              sleep $((attempt * 5))
+            fi
+          done
+          if [ "$HYDRATED" != true ]; then
+            echo "::error::Unable to rebuild usable chart shards after 3 attempts."
+            exit 1
+          fi
           AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           test "$BEFORE" = "$AFTER"
           test -d frontend/public/data/charts
