@@ -1,0 +1,97 @@
+name: Grid auto Daily Weekly interval
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/grid_auto_interval.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  patch-build-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Auto switch Grid interval by range
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('frontend/src/DeepVueTerminal.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          old = "function MiniCard({stock,range,loadBars,selected,watched,toggleWatch,onClick}:{stock:Stock;range:Range;loadBars:(t:string)=>Promise<Bar[]>;selected:boolean;watched:boolean;toggleWatch:()=>void;onClick:()=>void}){\n  const[bars,setBars]=useState<Bar[]>([]),[loading,setLoading]=useState(true),[attempt,setAttempt]=useState(0)"
+          new = "function MiniCard({stock,range,loadBars,selected,watched,toggleWatch,onClick}:{stock:Stock;range:Range;loadBars:(t:string)=>Promise<Bar[]>;selected:boolean;watched:boolean;toggleWatch:()=>void;onClick:()=>void}){\n  const interval:Interval=range==='6M'||range==='1Y'?'D':'W'\n  const[bars,setBars]=useState<Bar[]>([]),[loading,setLoading]=useState(true),[attempt,setAttempt]=useState(0)"
+          if old not in text:
+              raise SystemExit('MiniCard anchor not found')
+          text = text.replace(old, new, 1)
+
+          old_chart = '<PriceChart bars={bars} interval="W" range={range} mini/>'
+          new_chart = '<PriceChart bars={bars} interval={interval} range={range} mini/>'
+          if old_chart not in text:
+              raise SystemExit('Grid PriceChart anchor not found')
+          text = text.replace(old_chart, new_chart, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Verify frontend
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run check
+          grep -q "range==='6M'||range==='1Y'?'D':'W'" src/DeepVueTerminal.tsx
+          grep -q 'interval={interval}' src/DeepVueTerminal.tsx
+
+      - name: Commit source fix
+        shell: bash
+        run: |
+          rm -f .github/workflows/grid_auto_interval.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/DeepVueTerminal.tsx .github/workflows/grid_auto_interval.yml
+          git commit -m "feat: auto switch grid charts daily weekly by range"
+          git push origin HEAD:main
+
+      - name: Prepare current frontend data
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install yfinance pandas
+          python prepare_frontend_payloads.py
+          rm -rf frontend/public/data/charts
+          if ! python hydrate_frontend_charts_readonly.py; then
+            echo "::warning::Chart hydration failed; deploying UI with available canonical data."
+            mkdir -p frontend/public/data/charts
+          fi
+          python validate_frontend_charts.py frontend/public
+
+      - name: Build Pages artifact
+        working-directory: frontend
+        run: npm run check
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+      - name: Deploy Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
