@@ -48,17 +48,16 @@ export default function OriginalEngineDock({open,onOpenChange,embedded=false}:Pr
   const[ticker,setTicker]=useState(()=>location.hash.replace('#','').toUpperCase())
 
   useEffect(()=>{
-    if(!open||payload||loading)return
+    if(!open||payload||loading||loadError)return
     let live=true
     setLoading(true)
-    setLoadError('')
     fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'})
       .then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()})
       .then((data:Payload)=>{if(live)setPayload(data)})
       .catch(error=>{if(live)setLoadError(String(error))})
       .finally(()=>{if(live)setLoading(false)})
     return()=>{live=false}
-  },[open,payload,loading])
+  },[open,payload,loading,loadError])
   useEffect(()=>{
     let last=location.hash
     const timer=window.setInterval(()=>{
