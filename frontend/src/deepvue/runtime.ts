@@ -42,11 +42,19 @@ export async function fetchJsonWithRetry<T>(
 
 export class RetryJsonCache<T>{
   private pending=new Map<string,Promise<T>>()
+  private fetcher:FetchLike
+  private sleeper:SleepLike
+  private options:RetryOptions
+
   constructor(
-    private fetcher:FetchLike=fetch,
-    private sleeper:SleepLike=sleep,
-    private options:RetryOptions={attempts:3,baseDelayMs:250,cache:'force-cache'},
-  ){}
+    fetcher:FetchLike=fetch,
+    sleeper:SleepLike=sleep,
+    options:RetryOptions={attempts:3,baseDelayMs:250,cache:'force-cache'},
+  ){
+    this.fetcher=fetcher
+    this.sleeper=sleeper
+    this.options=options
+  }
 
   load(key:string,url:string):Promise<T>{
     const existing=this.pending.get(key)
