@@ -2,7 +2,7 @@ import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {createColumnHelper,flexRender,getCoreRowModel,getPaginationRowModel,type PaginationState,type SortingState,type VisibilityState,useReactTable} from '@tanstack/react-table'
 import {CandlestickSeries,ColorType,HistogramSeries,LineSeries,createChart} from 'lightweight-charts'
 import {builtInScreens,fieldDefs,makeGroup,makeRule,matchesGroups,opsByKind,type Logic,type RuleGroup,type ScreenState} from './deepvue/filterEngine'
-import {RetryJsonCache,nextGridCount} from './deepvue/runtime'
+import {RetryJsonCache,chartShardFor,nextGridCount} from './deepvue/runtime'
 
 type Bar={time:string;open:number;high:number;low:number;close:number;volume:number;rs:number}
 type RawBar=[string,number,number,number,number,number,number]
@@ -141,7 +141,7 @@ function DeepVueTerminal(){
   useEffect(()=>{if(selectedTicker)history.replaceState(null,'',`${location.pathname}${location.search}#${selectedTicker}`)},[selectedTicker])
 
   const loadBars=useCallback(async(ticker:string):Promise<Bar[]>=>{
-    if(!payload)return[];const shard=payload.chartShards?.[ticker];if(!shard)return[]
+    if(!payload)return[];const shard=payload.chartShards?.[ticker]||chartShardFor(ticker)
     const snapshot=payload.generatedAt||'snapshot',cacheKey=`${snapshot}:${shard}`
     try{
       const data=await shardCache.current.load(cacheKey,`./data/charts/${shard}?v=${encodeURIComponent(snapshot)}`)
@@ -268,7 +268,7 @@ function GridView({stocks,count,setCount,range,setRange,loadBars,selected,onSele
   const showProgress=count<stocks.length&&!presets.includes(count)
   useEffect(()=>{
     const node=sentinel.current
-    if(!node||count>=stocks.length||!window.matchMedia('(max-width: 700px)').matches)return
+    if(!node||count>=stocks.length)return
     const observer=new IntersectionObserver(([entry])=>{if(entry?.isIntersecting)setCount(nextGridCount(count,stocks.length))},{rootMargin:'1200px 0px'})
     observer.observe(node)
     return()=>observer.disconnect()

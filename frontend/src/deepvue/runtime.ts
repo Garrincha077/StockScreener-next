@@ -1,4 +1,12 @@
 export const GRID_STEP=16
+export const CHART_SHARD_COUNT=128
+
+export function chartShardFor(ticker:string,shardCount=CHART_SHARD_COUNT){
+  const normalized=ticker.trim().toUpperCase()
+  let value=0
+  for(let i=0;i<normalized.length;i++)value+=(i+1)*normalized.charCodeAt(i)
+  return `${String(value%Math.max(1,Math.floor(shardCount))).padStart(3,'0')}.json`
+}
 
 export function nextGridCount(current:number,total:number,step=GRID_STEP){
   const safeTotal=Math.max(0,Math.floor(total))
