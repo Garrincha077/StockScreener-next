@@ -1,0 +1,81 @@
+name: Restore 10/20 MA columns
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/restore_ma_columns.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore 10/20 EMA and SMA visibility and values
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('frontend/src/DeepVueTerminal.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          # Force a fresh column layout so old localStorage cannot keep MA columns hidden.
+          text = text.replace("loadLocal('dv-cols-v3',defaultVisibility)", "loadLocal('dv-cols-v4',defaultVisibility)")
+
+          # The four MA cross columns were explicitly hidden in the Core/default layout.
+          for token in [
+              ',ema10d20dCrossAge:false',
+              ',ema10d20dSpreadPct:false',
+              ',sma10w20wCrossAge:false',
+              ',sma10w20wSpreadPct:false',
+          ]:
+              text = text.replace(token, '')
+
+          old = "helper.accessor('ema10d20dCrossAge',{header:'D EMA X',cell:i=>{const cross=i.row.original.ema10d20dCross;return cross?<b className={cross==='BULL'?'dv-good':'dv-bad'}>{cross} {fmt(i.getValue(),0)}d</b>:'—'}}),\n    helper.accessor('ema10d20dSpreadPct',{header:'D EMA 10/20',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue(),2)}</span>}),\n    helper.accessor('sma10w20wCrossAge',{header:'W SMA X',cell:i=>{const cross=i.row.original.sma10w20wCross;return cross?<b className={cross==='BULL'?'dv-good':'dv-bad'}>{cross} {fmt(i.getValue(),0)}w</b>:'—'}}),\n    helper.accessor('sma10w20wSpreadPct',{header:'W SMA 10/20',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue(),2)}</span>}),"
+          new = "helper.accessor('ema10d',{header:'EMA 10D',cell:i=>fmt(i.getValue(),2)}),\n    helper.accessor('ema20d',{header:'EMA 20D',cell:i=>fmt(i.getValue(),2)}),\n    helper.accessor('ema10d20dCrossAge',{header:'D EMA X',cell:i=>{const cross=i.row.original.ema10d20dCross;return cross?<b className={cross==='BULL'?'dv-good':'dv-bad'}>{cross} {fmt(i.getValue(),0)}d</b>:'—'}}),\n    helper.accessor('ema10d20dSpreadPct',{header:'D EMA 10/20',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue(),2)}</span>}),\n    helper.accessor('sma10w',{header:'SMA 10W',cell:i=>fmt(i.getValue(),2)}),\n    helper.accessor('sma20w',{header:'SMA 20W',cell:i=>fmt(i.getValue(),2)}),\n    helper.accessor('sma10w20wCrossAge',{header:'W SMA X',cell:i=>{const cross=i.row.original.sma10w20wCross;return cross?<b className={cross==='BULL'?'dv-good':'dv-bad'}>{cross} {fmt(i.getValue(),0)}w</b>:'—'}}),\n    helper.accessor('sma10w20wSpreadPct',{header:'W SMA 10/20',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue(),2)}</span>}),"
+          if old not in text:
+              raise SystemExit('MA column block not found')
+          text = text.replace(old, new, 1)
+
+          old = "Crosses:{...defaultVisibility,ema10d20dCrossAge:true,ema10d20dSpreadPct:true,sma10w20wCrossAge:true,sma10w20wSpreadPct:true}"
+          new = "Crosses:{...defaultVisibility,ema10d:true,ema20d:true,ema10d20dCrossAge:true,ema10d20dSpreadPct:true,sma10w:true,sma20w:true,sma10w20wCrossAge:true,sma10w20wSpreadPct:true}"
+          if old not in text:
+              raise SystemExit('Crosses column preset not found')
+          text = text.replace(old, new, 1)
+
+          old = '<K l="D EMA X" v={stock.ema10d20dCross?`${stock.ema10d20dCross} ${fmt(stock.ema10d20dCrossAge,0)}d`:\'—\'}/><K l="D EMA spread" v={signed(stock.ema10d20dSpreadPct,2)}/><K l="W SMA X" v={stock.sma10w20wCross?`${stock.sma10w20wCross} ${fmt(stock.sma10w20wCrossAge,0)}w`:\'—\'}/><K l="W SMA spread" v={signed(stock.sma10w20wSpreadPct,2)}/>'
+          new = '<K l="EMA 10D" v={fmt(stock.ema10d,2)}/><K l="EMA 20D" v={fmt(stock.ema20d,2)}/><K l="D EMA X" v={stock.ema10d20dCross?`${stock.ema10d20dCross} ${fmt(stock.ema10d20dCrossAge,0)}d`:\'—\'}/><K l="D EMA spread" v={signed(stock.ema10d20dSpreadPct,2)}/><K l="SMA 10W" v={fmt(stock.sma10w,2)}/><K l="SMA 20W" v={fmt(stock.sma20w,2)}/><K l="W SMA X" v={stock.sma10w20wCross?`${stock.sma10w20wCross} ${fmt(stock.sma10w20wCrossAge,0)}w`:\'—\'}/><K l="W SMA spread" v={signed(stock.sma10w20wSpreadPct,2)}/>'
+          if old not in text:
+              raise SystemExit('MA detail KPI block not found')
+          text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run check
+
+      - name: Commit patch and remove one-shot workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/restore_ma_columns.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/DeepVueTerminal.tsx .github/workflows/restore_ma_columns.yml
+          git commit -m "fix: restore visible 10/20 EMA and SMA fields"
+          git push origin HEAD:main
