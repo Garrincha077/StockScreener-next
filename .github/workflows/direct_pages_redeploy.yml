@@ -1,0 +1,74 @@
+name: Direct StockScout Pages Redeploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/direct_pages_redeploy.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: direct-stockscout-pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Build lightweight client payload
+        run: |
+          test -s frontend/public/data/latest.json
+          python prepare_frontend_payloads.py
+          test -s frontend/public/data/core.json
+
+      - name: Hydrate chart shards best effort
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install yfinance pandas
+          rm -rf frontend/public/data/charts
+          python hydrate_frontend_charts_readonly.py || true
+          mkdir -p frontend/public/data/charts
+          python validate_frontend_charts.py frontend/public
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install and build
+        working-directory: frontend
+        run: |
+          npm install
+          npm run check
+
+      - name: Verify promoted screener columns are in built source
+        shell: bash
+        run: |
+          grep -q "header:'EMA 10/20'" frontend/src/DeepVueTerminal.tsx
+          grep -q "header:'SMA 10/20'" frontend/src/DeepVueTerminal.tsx
+          grep -q "dv-cols-v5" frontend/src/DeepVueTerminal.tsx
+          echo "Verified promoted EMA/SMA columns in current main."
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+      - name: Deploy current build to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
