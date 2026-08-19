@@ -44,11 +44,22 @@ def test_build_report_passes_complete_core(monkeypatch):
 
 def test_build_report_fails_real_missing_core(monkeypatch):
     monkeypatch.setattr(audit, "frontend_fields", lambda: [{"id": "rsRank", "label": "RS", "kind": "number"}])
-    rows = [row(f"T{i:03d}") for i in range(99)] + [row("BAD", complete=False)]
+    rows = [row(f"T{i:03d}") for i in range(97)] + [row("BAD1", complete=False), row("BAD2", complete=False), row("BAD3", complete=False)]
     report = audit.build_report(payload(rows))
     assert report["status"] == "FAIL"
     assert any("rsRank" in failure for failure in report["failures"])
-    assert report["critical"]["rsRank"]["sampleMissing"] == ["BAD"]
+    assert report["critical"]["rsRank"]["sampleMissing"] == ["BAD1", "BAD2", "BAD3"]
+
+
+def test_recent_ipos_do_not_fail_global_gate_when_ma_eligible_coverage_is_good(monkeypatch):
+    monkeypatch.setattr(audit, "frontend_fields", lambda: [{"id": "sma10w20wSpreadPct", "label": "Weekly spread", "kind": "number"}])
+    rows = [row(f"T{i:03d}") for i in range(100)]
+    for item in rows[:10]:
+        item["sma10w20wSpreadPct"] = None
+    report = audit.build_report(payload(rows))
+    assert report["status"] == "PASS"
+    assert report["maFields"]["sma10w20wSpreadPct"]["coveragePct"] == 0.0
+    assert report["maCrossCoverage"]["weekly"]["coveragePct"] == 100.0
 
 
 def test_audit_embeds_report_without_zero_coercion(tmp_path: Path, monkeypatch):
