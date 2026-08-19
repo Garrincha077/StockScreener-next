@@ -65,13 +65,13 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
 
       - name: Fast-engine regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py -q
+        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_prepare_frontend_payloads.py -q
 
       - name: Preserve previous terminal snapshot
         shell: bash
@@ -171,6 +171,12 @@ jobs:
       - name: Verify LEGACY source still frozen after enrichment
         run: python verify_legacy_baseline.py
 
+      - name: Build lightweight client payload
+        run: |
+          python prepare_frontend_payloads.py
+          test -s frontend/public/data/core.json
+          test -s frontend/public/data/manifest.json
+
       - name: Write run metadata
         env:
           RUN_ID: ${{ github.run_id }}
@@ -188,6 +194,7 @@ jobs:
               "source_commit": os.environ["COMMIT_SHA"],
               "report": "data/daily_scans/latest_optimized_scan.txt",
               "frontend_data": "frontend/public/data/latest.json",
+              "frontend_client_data": "frontend/public/data/core.json",
               "chart_horizon": "5y",
               "price_convention": "adjusted-ohlcv",
               "session_guard": "completed-us-session-v1",
@@ -196,6 +203,7 @@ jobs:
               "group_model": "behavioral-proxy-v2-confidence",
               "scan_engine": "fast-batched-5y-v1",
               "data_model": "rich-scan-layers-v1",
+              "client_payload_model": "stockscout-client-core-v1",
               "fundamentals_policy": "full-analyzed-universe-max-7d",
               "fundamental_evidence_model": "stockscout-fundamental-evidence-v1",
               "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
@@ -218,6 +226,8 @@ jobs:
             echo "**Price convention:** adjusted OHLCV end-to-end"
             echo ""
             echo "**Canonical dataset:** hard invariants passed before publish"
+            echo ""
+            echo "**Client payload:** lightweight core projection; full LEGACY/rich source payload loads on demand"
             echo ""
             echo "**Layers:** LEGACY (frozen upstream) + STOCKSCOUT (custom discovery)"
             echo ""
@@ -244,6 +254,8 @@ jobs:
           git add -f data/daily_scans/latest_optimized_scan.txt
           git add -f data/daily_scans/latest_scan_meta.json
           git add -f frontend/public/data/latest.json
+          git add -f frontend/public/data/core.json
+          git add -f frontend/public/data/manifest.json
 
           if git diff --staged --quiet; then
             echo "No persistent changes to commit"
@@ -256,7 +268,6 @@ jobs:
 
       - name: Sync persistent outputs to main
         if: steps.commit.outputs.has_changes == 'true'
-        continue-on-error: true
         shell: bash
         run: |
           pushed=false
@@ -271,7 +282,7 @@ jobs:
             sleep $((attempt * 3))
           done
           if [ "$pushed" != true ]; then
-            echo "::warning::Canonical push failed after retries; recovery artifact and Pages deploy will still continue."
+            echo "::error::Canonical push failed after retries; Pages deployment is blocked to prevent publishing data that is not persisted in Git."
             exit 1
           fi
 
@@ -286,6 +297,8 @@ jobs:
             data/batch_results/batch_progress.pkl
             data/batch_results/previous_frontend.json
             frontend/public/data/latest.json
+            frontend/public/data/core.json
+            frontend/public/data/manifest.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -298,9 +311,9 @@ jobs:
         working-directory: frontend
         run: npm install
 
-      - name: Build terminal with live scan data
+      - name: Test and build terminal with live scan data
         working-directory: frontend
-        run: npm run build
+        run: npm run check
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -332,6 +345,9 @@ jobs:
   deploy-pages:
     needs: screen-stocks
     runs-on: ubuntu-latest
+    concurrency:
+      group: stockscout-pages-deploy
+      cancel-in-progress: false
     permissions:
       pages: write
       id-token: write

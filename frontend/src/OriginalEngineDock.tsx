@@ -43,11 +43,21 @@ const criteriaLabels:Record<string,string>={
 
 export default function OriginalEngineDock({open,onOpenChange,embedded=false}:Props){
   const[payload,setPayload]=useState<Payload|null>(null)
+  const[loading,setLoading]=useState(false)
+  const[loadError,setLoadError]=useState('')
   const[ticker,setTicker]=useState(()=>location.hash.replace('#','').toUpperCase())
 
   useEffect(()=>{
-    fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>r.ok?r.json():null).then(setPayload).catch(()=>setPayload(null))
-  },[])
+    if(!open||payload||loading||loadError)return
+    let live=true
+    setLoading(true)
+    fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'})
+      .then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()})
+      .then((data:Payload)=>{if(live)setPayload(data)})
+      .catch(error=>{if(live)setLoadError(String(error))})
+      .finally(()=>{if(live)setLoading(false)})
+    return()=>{live=false}
+  },[open,payload,loading,loadError])
   useEffect(()=>{
     let last=location.hash
     const timer=window.setInterval(()=>{
@@ -67,8 +77,8 @@ export default function OriginalEngineDock({open,onOpenChange,embedded=false}:Pr
   return <>
     {!open&&<button className={`oe-launch ${qualified?'qualified':''}`} onClick={()=>onOpenChange(true)} title="Open repository source signal engine" aria-expanded={false}>ORIGINAL {row?.originalBuyScore!=null?fmt(row.originalBuyScore,0):''}</button>}
     {open&&<aside className={`oe-dock ${embedded?'embedded':''}`}>
-      <header><div><small>SOURCE METHODOLOGY</small><b>ORIGINAL ENGINE · {row?.ticker||'—'}</b></div><button onClick={()=>onOpenChange(false)} aria-label="Close Original Engine">×</button></header>
-      {!e?<div className="oe-empty">Original-engine fields are not present in this dataset yet.</div>:<div className="oe-body">
+      <header><div><small>SOURCE METHODOLOGY</small><b>ORIGINAL ENGINE · {row?.ticker||ticker||'—'}</b></div><button onClick={()=>onOpenChange(false)} aria-label="Close Original Engine">×</button></header>
+      {loading?<div className="oe-empty">Loading complete source payload…</div>:loadError?<div className="oe-empty">Unable to load source payload. <button onClick={()=>{setLoadError('');setPayload(null)}}>Retry</button></div>:!e?<div className="oe-empty">Original-engine fields are not present in this dataset yet.</div>:<div className="oe-body">
         <section className="oe-summary">
           <div><small>BUY SCORE</small><strong>{fmt(e.buy?.score,0)}<em>/125</em></strong></div>
           <div><small>MARKET GATE</small><strong className={gate?.should_generate_buys?'good':'warn'}>{gate?.should_generate_buys?'ON':'OFF'}</strong></div>

@@ -14,7 +14,24 @@ const score=(s:Stock)=>s.leadershipScore??s.opportunityScore??0
 export default function GroupsPage({onBack,onOpenTicker}:{onBack:()=>void;onOpenTicker:(ticker:string)=>void}){
   const[payload,setPayload]=useState<Payload|null>(null),[error,setError]=useState('')
   const[mode,setMode]=useState<Mode>('Sectors'),[sort,setSort]=useState<Sort>('rank')
-  useEffect(()=>{fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'}).then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()}).then(setPayload).catch(e=>setError(String(e)))},[])
+  useEffect(()=>{
+    let live=true
+    ;(async()=>{
+      let lastError:unknown=new Error('Group dataset unavailable')
+      for(const file of ['core.json','latest.json']){
+        try{
+          const response=await fetch(`./data/${file}?t=${Date.now()}`,{cache:'no-store'})
+          if(!response.ok)throw new Error(`${file} HTTP ${response.status}`)
+          const data=await response.json() as Payload
+          if(!data.universe?.length)throw new Error(`${file} dataset empty`)
+          if(live){setPayload(data);setError('')}
+          return
+        }catch(nextError){lastError=nextError}
+      }
+      if(live)setError(String(lastError))
+    })()
+    return()=>{live=false}
+  },[])
   const groups=mode==='Sectors'?payload?.groups?.sectors||[]:payload?.groups?.industries||[]
   const ordered=useMemo(()=>[...groups].sort((a,b)=>{
     if(sort==='early')return b.earlyLeaders-a.earlyLeaders||b.rank-a.rank

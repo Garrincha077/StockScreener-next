@@ -5,7 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node --experimental-strip-types --test src/deepvue/runtime.test.ts",
+    "test:e2e": "playwright test",
     "build": "tsc --noEmit && vite build",
+    "check": "npm run test && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -15,6 +18,7 @@
     "react-dom": "19.2.8"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "6.0.4",
