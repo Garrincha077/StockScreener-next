@@ -8,6 +8,7 @@ from pathlib import Path
 
 DATA = Path("frontend/public/data/latest.json")
 MODEL = "emerging-leader-v1-dual-archetype"
+OPPORTUNITY_V2_MODEL = "stockscout-opportunity-v2-potential-timing"
 REQUIRED = (
     "emergingLeaderScore",
     "emergingArchetype",
@@ -49,6 +50,7 @@ def main():
         print("No universe rows")
         return 1
 
+    opportunity_v2_active = payload.get("opportunityModel") == OPPORTUNITY_V2_MODEL
     errors = []
     present = 0
     for row in rows:
@@ -87,8 +89,12 @@ def main():
         if neglected_score is not None and reawakening_score is not None:
             if abs(score - max(neglected_score, reawakening_score)) > 1e-9:
                 errors.append(f"{ticker}: selected score is not strongest archetype")
-        if opp is None or abs(score - opp) > 1e-9:
+        # Before Opportunity v2, opportunityScore was a compatibility alias for
+        # emergingLeaderScore. Under Opportunity v2 it is intentionally independent.
+        if not opportunity_v2_active and (opp is None or abs(score - opp) > 1e-9):
             errors.append(f"{ticker}: opportunity compatibility alias diverged")
+        if opportunity_v2_active and (opp is None or not 0 <= opp <= 100):
+            errors.append(f"{ticker}: invalid Opportunity v2 score {opp}")
         if evidence is None or evidence < 0 or evidence > 5 or int(evidence) != evidence:
             errors.append(f"{ticker}: invalid evidence count {evidence}")
         if confluence is None or evidence is None or confluence != evidence:
@@ -161,7 +167,8 @@ def main():
     print(
         f"Emerging Leader audit: rows={len(rows)} coverage={coverage:.1f}% "
         f"candidates={candidate_count} neglected={neglected_count} "
-        f"reawakening={reawakening_count} A+={a_plus_count} errors={len(errors)}"
+        f"reawakening={reawakening_count} A+={a_plus_count} "
+        f"opportunity_v2={opportunity_v2_active} errors={len(errors)}"
     )
     for error in errors[:30]:
         print(f"  ERROR {error}")
