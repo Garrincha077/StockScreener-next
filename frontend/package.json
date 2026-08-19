@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "node --experimental-strip-types --test src/deepvue/runtime.test.ts",
     "build": "tsc --noEmit && vite build",
+    "check": "npm run test && npm run build",
     "preview": "vite preview"
   },
   "dependencies": {
