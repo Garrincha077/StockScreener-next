@@ -8,6 +8,7 @@ import './deepvue.css'
 import './mobile-tradingview.css'
 import './fundamental-evidence.css'
 import './mobile-layer-fix.css'
+import './mobile-grid-scroll.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
