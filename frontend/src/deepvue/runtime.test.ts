@@ -19,6 +19,19 @@ test('fetchJsonWithRetry recovers from a transient HTTP failure',async()=>{
   assert.equal(calls,2)
 })
 
+test('chart requests bypass stale browser/CDN cache by default',async()=>{
+  let requested=''
+  let cacheMode:RequestCache|undefined
+  const fetcher=async(input:RequestInfo|URL,init?:RequestInit)=>{
+    requested=String(input)
+    cacheMode=init?.cache
+    return Response.json({ok:true})
+  }
+  await fetchJsonWithRetry<{ok:boolean}>('/data/charts/001.json?v=snapshot',{attempts:1,baseDelayMs:0},fetcher)
+  assert.equal(cacheMode,'no-store')
+  assert.match(requested,/\/data\/charts\/001\.json\?v=snapshot&_cb=/)
+})
+
 test('RetryJsonCache evicts a rejected promise so a later request can recover',async()=>{
   let calls=0
   const fetcher=async()=>{
