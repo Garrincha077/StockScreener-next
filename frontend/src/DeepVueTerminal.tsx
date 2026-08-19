@@ -28,6 +28,7 @@ type Stock={
   fundamentalSupport?:boolean|null;revenueYoY?:number|null;epsYoY?:number|null;grossMargin?:number|null;marginChange?:number|null
   fundamentalEvidenceScore?:number|null;fundamentalEvidenceConfidence?:number;fundamentalEvidenceCoverage?:number;fundamentalEvidenceLabel?:string
   fundamentalGrowthScore?:number|null;fundamentalMarginScore?:number|null;fundamentalInventoryScore?:number|null
+  operatingCashFlowYoY?:number|null;freeCashFlowYoY?:number|null;freeCashFlowMargin?:number|null;totalDebtYoY?:number|null;netDebt?:number|null;shareDilutionYoY?:number|null;fundamentalDataSource?:string|null
   changedToday?:boolean;newUniverseMember?:boolean;changeImpact?:number;opportunityDelta?:number;rsRankDelta?:number;confluenceDelta?:number;volumeRatioDelta?:number;freshnessDelta?:number
   stageFrom?:number|null;stageTo?:number|null;stageChanged?:boolean;newSetupTags?:string[];lostSetupTags?:string[];changeLabels?:string[]
   originalBuyScore?:number;originalRR?:number;originalTTPasses?:number;originalVcpQuality?:number;originalAdVolumeRatio?:number;originalRiskPct?:number;originalSellScore?:number
@@ -37,7 +38,7 @@ type Stock={
 type Payload={version:number;generatedAt:string;market:Record<string,any>;universe:Stock[];chartShards?:Record<string,string>;featureModel?:string}
 
 const helper=createColumnHelper<Stock>()
-const defaultVisibility:VisibilityState={originalTTPasses:false,originalVcpQuality:false,originalAdVolumeRatio:false,originalRiskPct:false,originalSellScore:false,rsFromHigh:false,volumeDryUp:false,baseWeeks:false,distance30w:false,structureScore:false,baseScore:false,triggerScore:false,neglectedScore:false,avgDollarVolume20:false,fundamentalSupport:false,fundamentalEvidenceConfidence:false,fundamentalEvidenceCoverage:false,leadershipScore:false,groupRank:false,groupRS:false,groupConfidence:false,ema10d20dCrossAge:false,ema10d20dSpreadPct:false,sma10w20wCrossAge:false,sma10w20wSpreadPct:false}
+const defaultVisibility:VisibilityState={originalTTPasses:false,originalVcpQuality:false,originalAdVolumeRatio:false,originalRiskPct:false,originalSellScore:false,rsFromHigh:false,volumeDryUp:false,baseWeeks:false,distance30w:false,structureScore:false,baseScore:false,triggerScore:false,neglectedScore:false,avgDollarVolume20:false,fundamentalSupport:false,fundamentalEvidenceCoverage:false,revenueYoY:false,epsYoY:false,operatingCashFlowYoY:false,freeCashFlowYoY:false,freeCashFlowMargin:false,totalDebtYoY:false,netDebt:false,shareDilutionYoY:false,leadershipScore:false,groupRank:false,groupRS:false,groupConfidence:false,ema10d20dCrossAge:false,ema10d20dSpreadPct:false,sma10w20wCrossAge:false,sma10w20wSpreadPct:false}
 const recipeTabs=['All','Neglected → Leader','S1→S2 Transition','Fresh Breakout','Long Base Breakout','RS Before Price','Tight / VCP','10W Pullback','Volume Wake-Up','Fresh Stage 2']
 const fmt=(v:any,d=1)=>typeof v==='number'&&Number.isFinite(v)?v.toFixed(d):'—'
 const signed=(v:any,d=1)=>typeof v==='number'&&Number.isFinite(v)?`${v>0?'+':''}${v.toFixed(d)}%`:'—'
@@ -102,7 +103,7 @@ function DeepVueTerminal(){
   const[payload,setPayload]=useState<Payload|null>(null),[error,setError]=useState('')
   const[page,setPage]=useState<Page>('Screener'),[recipe,setRecipe]=useState('All'),[query,setQuery]=useState('')
   const[sorting,setSorting]=useState<SortingState>(()=>loadLocal('dv-sorts-v1',[{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}]))
-  const[visibility,setVisibility]=useState<VisibilityState>(()=>loadLocal('dv-cols-v1',defaultVisibility))
+  const[visibility,setVisibility]=useState<VisibilityState>(()=>loadLocal('dv-cols-v2',defaultVisibility))
   const[pagination,setPagination]=useState<PaginationState>({pageIndex:0,pageSize:100})
   const[rootLogic,setRootLogic]=useState<Logic>(()=>loadLocal('dv-root-logic','ALL'))
   const[groups,setGroups]=useState<RuleGroup[]>(()=>loadLocal('dv-groups-v1',[]))
@@ -132,7 +133,7 @@ function DeepVueTerminal(){
   },[])
   useEffect(()=>{load()},[load])
   useEffect(()=>localStorage.setItem('dv-sorts-v1',JSON.stringify(sorting)),[sorting])
-  useEffect(()=>localStorage.setItem('dv-cols-v1',JSON.stringify(visibility)),[visibility])
+  useEffect(()=>localStorage.setItem('dv-cols-v2',JSON.stringify(visibility)),[visibility])
   useEffect(()=>localStorage.setItem('dv-root-logic',JSON.stringify(rootLogic)),[rootLogic])
   useEffect(()=>localStorage.setItem('dv-groups-v1',JSON.stringify(groups)),[groups])
   useEffect(()=>localStorage.setItem('dv-custom-screens-v1',JSON.stringify(customScreens)),[customScreens])
@@ -175,6 +176,14 @@ function DeepVueTerminal(){
     helper.accessor('fundamentalEvidenceScore',{header:'Fund Ev',cell:i=><b className={num(i.getValue(),-1)>=75?'dv-good':num(i.getValue(),-1)>=0&&num(i.getValue(),-1)<40?'dv-bad':''}>{fmt(i.getValue(),0)}</b>}),
     helper.accessor('fundamentalEvidenceConfidence',{header:'Fund Conf',cell:i=>`${fmt(i.getValue(),0)}%`}),
     helper.accessor('fundamentalEvidenceCoverage',{header:'Fund Cov',cell:i=>`${fmt(i.getValue(),0)}%`}),
+    helper.accessor('revenueYoY',{header:'Rev YoY',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue())}</span>}),
+    helper.accessor('epsYoY',{header:'EPS YoY',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue())}</span>}),
+    helper.accessor('operatingCashFlowYoY',{header:'OCF YoY',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue())}</span>}),
+    helper.accessor('freeCashFlowYoY',{header:'FCF YoY',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue())}</span>}),
+    helper.accessor('freeCashFlowMargin',{header:'FCF Margin',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue())}</span>}),
+    helper.accessor('totalDebtYoY',{header:'Debt YoY',cell:i=><span className={num(i.getValue())<0?'dv-good':num(i.getValue())>0?'dv-bad':''}>{signed(i.getValue())}</span>}),
+    helper.accessor('netDebt',{header:'Net Debt',cell:i=><span className={num(i.getValue())<0?'dv-good':''}>{compact(i.getValue())}</span>}),
+    helper.accessor('shareDilutionYoY',{header:'Dilution YoY',cell:i=><span className={num(i.getValue())<=0?'dv-good':num(i.getValue())>2?'dv-bad':''}>{signed(i.getValue())}</span>}),
     helper.accessor('originalBuyScore',{header:'LEG Buy',cell:i=><b className={num(i.getValue())>=90?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),
     helper.accessor('originalRR',{header:'LEG R/R',cell:i=><b className={num(i.getValue())>=2?'dv-good':''}>{fmt(i.getValue(),1)}:1</b>}),
     helper.accessor('originalTTPasses',{header:'LEG TT',cell:i=>`${fmt(i.getValue(),0)}/8`}),
@@ -239,7 +248,7 @@ function FilterBuilder({rootLogic,setRootLogic,groups,setGroups,addGroup,updateG
 }
 
 function ColumnPicker({table,setVisibility}:{table:any;setVisibility:(v:VisibilityState)=>void}){
-  const sets:Record<string,VisibilityState>={Core:defaultVisibility,Early:{...defaultVisibility,prior9mReturn:true,stage2AgeWeeks:true,neglectedScore:true,atrCompression:false,vcpScore:false},Crosses:{...defaultVisibility,ema10d20dCrossAge:true,ema10d20dSpreadPct:true,sma10w20wCrossAge:true,sma10w20wSpreadPct:true},Groups:{...defaultVisibility,leadershipScore:true,groupRank:true,groupRS:true,groupConfidence:true},Breakout:{...defaultVisibility,breakoutPct:true,volumeRatio:true,triggerScore:true,atrCompression:true},Base:{...defaultVisibility,vcpScore:true,atrCompression:true,tightRange20:true,baseWeeks:true,baseScore:true},Fundamentals:{...defaultVisibility,fundamentalEvidenceScore:true,fundamentalEvidenceConfidence:true,fundamentalEvidenceCoverage:true,fundamentalSupport:true},Changes:{...defaultVisibility,changeImpact:true,opportunityDelta:true,rsRankDelta:true,todaySignals:true}}
+  const sets:Record<string,VisibilityState>={Core:defaultVisibility,Early:{...defaultVisibility,prior9mReturn:true,stage2AgeWeeks:true,neglectedScore:true,atrCompression:false,vcpScore:false},Crosses:{...defaultVisibility,ema10d20dCrossAge:true,ema10d20dSpreadPct:true,sma10w20wCrossAge:true,sma10w20wSpreadPct:true},Groups:{...defaultVisibility,leadershipScore:true,groupRank:true,groupRS:true,groupConfidence:true},Breakout:{...defaultVisibility,breakoutPct:true,volumeRatio:true,triggerScore:true,atrCompression:true},Base:{...defaultVisibility,vcpScore:true,atrCompression:true,tightRange20:true,baseWeeks:true,baseScore:true},Fundamentals:{...defaultVisibility,fundamentalEvidenceScore:true,fundamentalEvidenceConfidence:true,fundamentalEvidenceCoverage:true,fundamentalSupport:true,revenueYoY:true,epsYoY:true,operatingCashFlowYoY:true,freeCashFlowYoY:true,freeCashFlowMargin:true,totalDebtYoY:true,netDebt:true,shareDilutionYoY:true},Changes:{...defaultVisibility,changeImpact:true,opportunityDelta:true,rsRankDelta:true,todaySignals:true}}
   return <section className="dv-colpicker"><div className="dv-colsets">{Object.entries(sets).map(([name,v])=><button key={name} onClick={()=>setVisibility(v)}>{name}</button>)}<button onClick={()=>table.getAllLeafColumns().forEach((c:any)=>c.toggleVisibility(true))}>All</button></div>{table.getAllLeafColumns().filter((c:any)=>c.id!=='watch').map((c:any)=><label key={c.id}><input type="checkbox" checked={c.getIsVisible()} onChange={c.getToggleVisibilityHandler()}/>{String(c.columnDef.header||c.id)}</label>)}</section>
 }
 
