@@ -1,0 +1,90 @@
+name: Force Current StockScout Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/force_current_pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: stockscout-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Make grid watchlist heart unmistakably visible
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p=Path('frontend/src/deepvue.css')
+          css=p.read_text(encoding='utf-8')
+          css=css.replace('.dv-minicard{background:#07121e;', '.dv-minicard{position:relative;background:#07121e;', 1)
+          css=css.replace('.dv-minicard>header{display:flex;justify-content:space-between;align-items:flex-start}', '.dv-minicard>header{display:flex;justify-content:space-between;align-items:flex-start;padding-right:38px}', 1)
+          old='.dv-heart{border:0;background:transparent;color:#65778c;font-size:21px;line-height:1;padding:2px 3px;cursor:pointer}'
+          new='.dv-heart{position:absolute;top:6px;right:6px;z-index:8;display:grid;place-items:center;width:32px;height:32px;border:1px solid #31455d;border-radius:50%;background:#0d1b2a;color:#91a2b5;font-size:24px;line-height:1;padding:0;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.28)}'
+          if old not in css:
+              raise SystemExit('heart CSS marker not found')
+          css=css.replace(old,new,1)
+          css=css.replace('.dv-heart.on{color:#ff5f73}', '.dv-heart.on{color:#ff5f73;border-color:#ff5f73;background:#2a1119}', 1)
+          p.write_text(css,encoding='utf-8')
+          PY
+
+      - name: Commit visible heart styling
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/deepvue.css
+          if ! git diff --staged --quiet; then
+            git commit -m "fix: pin grid watchlist heart visibly on cards"
+            git push origin HEAD:main
+          fi
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Prepare current frontend payload and best-effort charts
+        shell: bash
+        run: |
+          python prepare_frontend_payloads.py
+          python -m pip install --upgrade pip
+          pip install yfinance pandas
+          rm -rf frontend/public/data/charts
+          python hydrate_frontend_charts_readonly.py || echo "::warning::Chart hydration incomplete; deploying app anyway."
+          python validate_frontend_charts.py frontend/public || true
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Build current main frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run check
+
+      - name: Upload current Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+      - name: Deploy current Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
