@@ -1,0 +1,36 @@
+name: Data Quality Smoke
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'audit_sortable_coverage.py'
+      - 'apply_fundamental_evidence.py'
+      - 'tests/test_sortable_coverage.py'
+      - '.github/workflows/data_quality_smoke.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'audit_sortable_coverage.py'
+      - 'apply_fundamental_evidence.py'
+      - 'tests/test_sortable_coverage.py'
+      - '.github/workflows/data_quality_smoke.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install test dependency
+        run: python -m pip install --upgrade pip pytest
+      - name: Syntax and coverage-contract tests
+        run: |
+          python -m py_compile audit_sortable_coverage.py apply_fundamental_evidence.py
+          python -m pytest tests/test_sortable_coverage.py -q
