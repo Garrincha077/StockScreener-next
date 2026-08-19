@@ -65,7 +65,7 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py compute_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py compute_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py validate_frontend_charts.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
@@ -179,6 +179,11 @@ jobs:
           python prepare_frontend_payloads.py
           test -s frontend/public/data/core.json
           test -s frontend/public/data/manifest.json
+
+      - name: Validate chart coverage before publish
+        shell: bash
+        run: |
+          python validate_frontend_charts.py frontend/public
 
       - name: Write run metadata
         env:
@@ -320,6 +325,11 @@ jobs:
       - name: Test and build terminal with live scan data
         working-directory: frontend
         run: npm run check
+
+      - name: Verify built Pages artifact contains usable charts
+        shell: bash
+        run: |
+          python validate_frontend_charts.py frontend/dist
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
