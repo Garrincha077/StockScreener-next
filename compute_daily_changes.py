@@ -44,6 +44,22 @@ def tags(row):
     return {str(x) for x in (row.get("setupTags") or []) if x}
 
 
+def synchronize_leadership_score(row):
+    """Keep the derived leadership score aligned with final Opportunity v2.
+
+    Group leadership is computed before Opportunity v2 in the nightly pipeline.
+    Opportunity v2 then replaces opportunityScore, so the earlier leadershipScore
+    becomes stale unless it is refreshed here. Group influence remains bounded to
+    roughly +/-5 points, matching compute_group_leadership.py and its audit.
+    """
+    if "groupRank" not in row:
+        return
+    individual = number(row.get("opportunityScore", row.get("score", 0)))
+    group_rank = number(row.get("groupRank"), 50.0)
+    adjustment = (group_rank - 50.0) * 0.10
+    row["leadershipScore"] = int(round(max(0.0, min(100.0, individual + adjustment))))
+
+
 def main(previous_path: Path = DEFAULT_PREVIOUS, current_path: Path = DEFAULT_CURRENT):
     if not current_path.exists():
         raise SystemExit(f"Current dataset missing: {current_path}")
@@ -73,6 +89,7 @@ def main(previous_path: Path = DEFAULT_PREVIOUS, current_path: Path = DEFAULT_CU
     score_mover_count = 0
 
     for row in current.get("universe") or []:
+        synchronize_leadership_score(row)
         ticker = str(row.get("ticker", "")).upper()
         prev = prev_rows.get(ticker)
         if not prev:
