@@ -11,6 +11,7 @@ on:
       - 'frontend/vite.config.ts'
       - 'prepare_frontend_payloads.py'
       - 'hydrate_frontend_charts_readonly.py'
+      - 'validate_frontend_charts.py'
       - '.github/workflows/frontend_pages.yml'
   workflow_dispatch:
 
@@ -52,6 +53,7 @@ jobs:
           AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           test "$BEFORE" = "$AFTER"
           test -d frontend/public/data/charts
+          python validate_frontend_charts.py frontend/public
           echo "Canonical latest.json unchanged: $AFTER"
           echo "Chart shards: $(find frontend/public/data/charts -name '*.json' | wc -l)"
           du -sh frontend/public/data
@@ -82,30 +84,10 @@ jobs:
         working-directory: frontend
         run: npm run check
 
-      - name: Verify Pages artifact contains chart data
+      - name: Verify Pages artifact contains usable chart data
         shell: bash
         run: |
-          test -d frontend/dist/data/charts
-          SHARDS=$(find frontend/dist/data/charts -type f -name '*.json' | wc -l | tr -d ' ')
-          if [ "$SHARDS" -le 0 ]; then
-            echo "::error::Built Pages artifact contains no chart shards."
-            exit 1
-          fi
-          python - <<'PY'
-          import glob, json
-          files = glob.glob('frontend/dist/data/charts/*.json')
-          tickers = 0
-          nonempty = 0
-          for path in files:
-              with open(path, encoding='utf-8') as fh:
-                  payload = json.load(fh)
-              if payload:
-                  nonempty += 1
-                  tickers += len(payload)
-          if nonempty == 0 or tickers == 0:
-              raise SystemExit('Built Pages artifact chart shards are empty')
-          print(f'Pages artifact verified: {nonempty} non-empty shards, {tickers} ticker charts')
-          PY
+          python validate_frontend_charts.py frontend/dist
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
