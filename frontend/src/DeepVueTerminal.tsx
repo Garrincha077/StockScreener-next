@@ -47,8 +47,16 @@ const num=(v:any,f=0)=>typeof v==='number'&&Number.isFinite(v)?v:f
 const setupOf=(s:Stock)=>s.primarySetup||s.setup||s.stageName||'Other'
 const tagsOf=(s:Stock)=>s.setupTags?.length?s.setupTags:[setupOf(s)]
 const opp=(s:Stock)=>s.opportunityScore??s.score??0
+const EMA_FRESH_SORT='ema10d20dFresh',SMA_FRESH_SORT='sma10w20wFresh'
+const isFreshMaSort=(id:string)=>id===EMA_FRESH_SORT||id===SMA_FRESH_SORT
+const maBaseSortId=(id:string)=>id===EMA_FRESH_SORT?'ema10d20dSpreadPct':id===SMA_FRESH_SORT?'sma10w20wSpreadPct':id
+const maFreshSortId=(id:string)=>id==='ema10d20dSpreadPct'?EMA_FRESH_SORT:id==='sma10w20wSpreadPct'?SMA_FRESH_SORT:null
 function loadLocal<T>(key:string,fallback:T):T{try{const x=JSON.parse(localStorage.getItem(key)||'null');return x??fallback}catch{return fallback}}
-function sortValue(stock:Stock,id:string):any{if(id==='opportunityScore')return opp(stock);if(id==='primarySetup')return setupOf(stock);return(stock as any)[id]}
+function sortValue(stock:Stock,id:string):any{
+  if(id===EMA_FRESH_SORT){const age=stock.ema10d20dCrossAge,cross=stock.ema10d20dCross;return typeof age==='number'&&cross?-age+(cross==='BULL'?0.25:0):-1e9}
+  if(id===SMA_FRESH_SORT){const age=stock.sma10w20wCrossAge,cross=stock.sma10w20wCross;return typeof age==='number'&&cross?-age+(cross==='BULL'?0.25:0):-1e9}
+  if(id==='opportunityScore')return opp(stock);if(id==='primarySetup')return setupOf(stock);return(stock as any)[id]
+}
 function compareValues(a:any,b:any):number{const am=a==null||(typeof a==='number'&&!Number.isFinite(a)),bm=b==null||(typeof b==='number'&&!Number.isFinite(b));if(am&&bm)return 0;if(am)return 1;if(bm)return-1;if(typeof a==='number'&&typeof b==='number')return a-b;if(typeof a==='boolean'&&typeof b==='boolean')return Number(a)-Number(b);return String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:'base'})}
 function prioritySort(rows:Stock[],sorting:SortingState){return rows.map((stock,index)=>({stock,index})).sort((a,b)=>{for(const s of sorting){const av=sortValue(a.stock,s.id),bv=sortValue(b.stock,s.id),c=compareValues(av,bv);if(c!==0)return s.desc?-c:c}const t=a.stock.ticker.localeCompare(b.stock.ticker);return t||a.index-b.index}).map(x=>x.stock)}
 function applyMultiSort(rows:Stock[],sorting:SortingState){
@@ -171,8 +179,8 @@ function DeepVueTerminal(){
     helper.display({id:'watch',header:'',enableSorting:false,cell:({row})=><button className={`dv-star ${watchlist.includes(row.original.ticker)?'on':''}`} onClick={e=>{e.stopPropagation();toggleWatch(row.original.ticker)}}>★</button>}),
     helper.accessor('ticker',{header:'Ticker',cell:i=><b className="dv-ticker">{i.getValue()}</b>}),
     helper.accessor(s=>opp(s),{id:'opportunityScore',header:'Opportunity',cell:i=><b className="dv-score">{fmt(i.getValue(),0)}</b>}),
-    helper.accessor('ema10d20dSpreadPct',{header:'EMA 10/20',cell:i=>{const state=i.row.original.ema10d20dState;const v=i.getValue();return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}</b>}}),
-    helper.accessor('sma10w20wSpreadPct',{header:'SMA 10/20',cell:i=>{const state=i.row.original.sma10w20wState;const v=i.getValue();return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}</b>}}),
+    helper.accessor('ema10d20dSpreadPct',{header:'EMA 10/20',cell:i=>{const state=i.row.original.ema10d20dState,v=i.getValue(),age=i.row.original.ema10d20dCrossAge;return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}{typeof age==='number'?` · ${age}d`:''}</b>}}),
+    helper.accessor('sma10w20wSpreadPct',{header:'SMA 10/20',cell:i=>{const state=i.row.original.sma10w20wState,v=i.getValue(),age=i.row.original.sma10w20wCrossAge;return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}{typeof age==='number'?` · ${age}w`:''}</b>}}),
     helper.accessor('opportunityTier',{header:'Tier',cell:i=><b>{i.getValue()||'—'}</b>}),
     helper.accessor('opportunityRank',{header:'Opp Rank',cell:i=><b className={num(i.getValue())>=95?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),
     helper.accessor('opportunityPotential',{header:'Potential',cell:i=>fmt(i.getValue(),0)}),
@@ -223,7 +231,16 @@ function DeepVueTerminal(){
     helper.accessor('avgDollarVolume20',{header:'$ Vol',cell:i=>compact(i.getValue())}),helper.accessor('fundamentalSupport',{header:'Fund',cell:i=>i.getValue()==null?'—':i.getValue()?'✓':'×'}),
   ],[watchlist])
   const table=useReactTable({data:sortedData,columns,state:{pagination,columnVisibility:visibility},onPaginationChange:setPagination,onColumnVisibilityChange:setVisibility,getCoreRowModel:getCoreRowModel(),getPaginationRowModel:getPaginationRowModel()})
-  const cycleSort=(id:string)=>setSorting(prev=>{const i=prev.findIndex(x=>x.id===id);if(i<0)return[...prev,{id,desc:true}];if(prev[i].desc)return prev.map((x,n)=>n===i?{...x,desc:false}:x);return prev.filter((_,n)=>n!==i)})
+  const cycleSort=(id:string)=>setSorting(prev=>{
+    const base=maBaseSortId(id),fresh=maFreshSortId(base)
+    if(!fresh){const i=prev.findIndex(x=>x.id===id);if(i<0)return[...prev,{id,desc:true}];if(prev[i].desc)return prev.map((x,n)=>n===i?{...x,desc:false}:x);return prev.filter((_,n)=>n!==i)}
+    const i=prev.findIndex(x=>x.id===base||x.id===fresh)
+    if(i<0)return[...prev,{id:base,desc:true}]
+    const current=prev[i]
+    if(current.id===fresh)return prev.filter((_,n)=>n!==i)
+    if(current.desc)return prev.map((x,n)=>n===i?{id:base,desc:false}:x)
+    return prev.map((x,n)=>n===i?{id:fresh,desc:true}:x)
+  })
   const moveSort=(id:string,dir:-1|1)=>setSorting(s=>{const a=[...s],i=a.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=a.length)return s;[a[i],a[j]]=[a[j],a[i]];return a})
 
   const allScreens=[...builtInScreens,...customScreens]
@@ -245,14 +262,14 @@ function DeepVueTerminal(){
 
       <section className="dv-recipes">{recipeTabs.map(t=><button key={t} className={recipe===t?'active':''} onClick={()=>setRecipe(t)}>{t}<small>{t==='All'?universe.length:universe.filter(s=>tagsOf(s).includes(t)).length}</small></button>)}</section>
 
-      <section className="dv-sortbar"><span>BALANCED MIX</span>{sorting.length?sorting.map((s,i)=><div className="dv-sortchip" key={s.id}><b>{i+1}</b><em>{String(table.getColumn(s.id)?.columnDef.header||s.id)}</em><button onClick={()=>cycleSort(s.id)}>{s.desc?'↓':'↑'}</button><button disabled={i===0} onClick={()=>moveSort(s.id,-1)}>‹</button><button disabled={i===sorting.length-1} onClick={()=>moveSort(s.id,1)}>›</button><button onClick={()=>setSorting(x=>x.filter(y=>y.id!==s.id))}>×</button></div>):<i>Select 2+ numeric columns to build a balanced percentile mix</i>}<button className="dv-clear" onClick={()=>setSorting([])}>Clear</button></section>
+      <section className="dv-sortbar"><span>BALANCED MIX</span>{sorting.length?sorting.map((s,i)=><div className="dv-sortchip" key={s.id}><b>{i+1}</b><em>{s.id===EMA_FRESH_SORT?'EMA 10/20 · Fresh':s.id===SMA_FRESH_SORT?'SMA 10/20 · Fresh':String(table.getColumn(s.id)?.columnDef.header||s.id)}</em><button title={isFreshMaSort(s.id)?'Fresh crossover first':s.desc?'Strength descending':'Strength ascending'} onClick={()=>cycleSort(s.id)}>{isFreshMaSort(s.id)?'✨':s.desc?'↓':'↑'}</button><button disabled={i===0} onClick={()=>moveSort(s.id,-1)}>‹</button><button disabled={i===sorting.length-1} onClick={()=>moveSort(s.id,1)}>›</button><button onClick={()=>setSorting(x=>x.filter(y=>y.id!==s.id))}>×</button></div>):<i>Select 2+ numeric columns to build a balanced percentile mix</i>}<button className="dv-clear" onClick={()=>setSorting([])}>Clear</button></section>
 
       <section className="dv-toolbar"><button className={builderOpen?'active':''} onClick={()=>setBuilderOpen(x=>!x)}>⌁ ANY / ALL Builder <b>{groups.reduce((n,g)=>n+g.rules.length,0)}</b></button><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Ticker, setup or change since last scan…"/><button className={columnsOpen?'active':''} onClick={()=>setColumnsOpen(x=>!x)}>▦ Columns</button><select value={pagination.pageSize} onChange={e=>setPagination({pageIndex:0,pageSize:Number(e.target.value)})}><option>50</option><option>100</option><option>250</option></select><button onClick={exportCsv}>⇩ CSV</button></section>
 
       {builderOpen&&<FilterBuilder rootLogic={rootLogic} setRootLogic={setRootLogic} groups={groups} setGroups={setGroups} addGroup={addGroup} updateGroup={updateGroup} removeGroup={removeGroup}/>} 
       {columnsOpen&&<ColumnPicker table={table} setVisibility={setVisibility}/>} 
 
-      {page==='Grid'?<GridView stocks={sortedData} count={gridCount} setCount={setGridCount} range={gridRange} setRange={setGridRange} loadBars={loadBars} selected={selected?.ticker} onSelect={setSelectedTicker} watchlist={watchlist} toggleWatch={toggleWatch}/>:<main className="dv-work"><div className="dv-tablebox"><div className="dv-tablewrap"><table><thead>{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const si=sorting.findIndex(s=>s.id===h.column.id),ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}</thead><tbody>{table.getRowModel().rows.map(r=><tr key={r.id} className={r.original.ticker===selected?.ticker?'selected':''} onClick={()=>setSelectedTicker(r.original.ticker)}>{r.getVisibleCells().map(c=><td key={c.id}>{flexRender(c.column.columnDef.cell,c.getContext())}</td>)}</tr>)}</tbody></table></div><footer><span>{page==='Changes'?'Meaningful changes since the previous scan':sorting.length>1?'2+ sorts = percentile MIX; #1 gets only a mild extra weight':'Single sort = direct column priority'}</span><div><button disabled={!table.getCanPreviousPage()} onClick={()=>table.previousPage()}>←</button><b>{pagination.pageIndex+1}/{Math.max(1,table.getPageCount())}</b><button disabled={!table.getCanNextPage()} onClick={()=>table.nextPage()}>→</button></div></footer></div>{selected&&<Detail stock={selected} bars={selectedBars} loading={chartLoading} interval={interval} setInterval={setInterval} range={range} setRange={setRange} mode={chartMode} setMode={setChartMode} watched={watchlist.includes(selected.ticker)} toggleWatch={()=>toggleWatch(selected.ticker)}/>}</main>}
+      {page==='Grid'?<GridView stocks={sortedData} count={gridCount} setCount={setGridCount} range={gridRange} setRange={setGridRange} loadBars={loadBars} selected={selected?.ticker} onSelect={setSelectedTicker} watchlist={watchlist} toggleWatch={toggleWatch}/>:<main className="dv-work"><div className="dv-tablebox"><div className="dv-tablewrap"><table><thead>{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const fid=maFreshSortId(h.column.id),si=sorting.findIndex(s=>s.id===h.column.id||(fid!==null&&s.id===fid)),ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss&&isFreshMaSort(ss.id)?'✨':ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}</thead><tbody>{table.getRowModel().rows.map(r=><tr key={r.id} className={r.original.ticker===selected?.ticker?'selected':''} onClick={()=>setSelectedTicker(r.original.ticker)}>{r.getVisibleCells().map(c=><td key={c.id}>{flexRender(c.column.columnDef.cell,c.getContext())}</td>)}</tr>)}</tbody></table></div><footer><span>{page==='Changes'?'Meaningful changes since the previous scan':sorting.length>1?'2+ sorts = percentile MIX; #1 gets only a mild extra weight':'Single sort = direct column priority'}</span><div><button disabled={!table.getCanPreviousPage()} onClick={()=>table.previousPage()}>←</button><b>{pagination.pageIndex+1}/{Math.max(1,table.getPageCount())}</b><button disabled={!table.getCanNextPage()} onClick={()=>table.nextPage()}>→</button></div></footer></div>{selected&&<Detail stock={selected} bars={selectedBars} loading={chartLoading} interval={interval} setInterval={setInterval} range={range} setRange={setRange} mode={chartMode} setMode={setChartMode} watched={watchlist.includes(selected.ticker)} toggleWatch={()=>toggleWatch(selected.ticker)}/>}</main>}
     </>}
   </div>
 }
