@@ -23,6 +23,8 @@ on:
       - 'tests/test_fundamental_evidence.py'
       - 'tests/test_group_leadership.py'
       - 'tests/test_lateral_base.py'
+      - 'tests/test_opportunity_v2.py'
+      - 'tests/test_opportunity_v2_integration.py'
       - 'emerging_leader.py'
       - 'audit_emerging_leader.py'
       - 'compute_ma_cluster_breakout.py'
@@ -39,6 +41,10 @@ on:
       - 'calibrate_frontend_setups.py'
       - 'compute_group_leadership.py'
       - 'audit_group_leadership.py'
+      - 'compute_opportunity_v2.py'
+      - 'finalize_opportunity_v2.py'
+      - 'compute_daily_changes.py'
+      - 'audit_pipeline_models.py'
       - 'audit_frontend_dataset.py'
       - 'frontend/src/DeepVueTerminal.tsx'
       - 'frontend/src/GroupsPage.tsx'
@@ -112,7 +118,7 @@ jobs:
       - name: Verify frozen LEGACY execution graph
         run: python verify_legacy_baseline.py
 
-      - name: Regression and differential tests
+      - name: Regression and integration tests
         run: |
           python -m pytest \
             tests/test_fast_batch_processor_regression.py \
@@ -124,16 +130,31 @@ jobs:
             tests/test_scout_tiers.py \
             tests/test_fundamental_evidence.py \
             tests/test_group_leadership.py \
-            tests/test_lateral_base.py -q
+            tests/test_lateral_base.py \
+            tests/test_opportunity_v2.py \
+            tests/test_opportunity_v2_integration.py -q
 
-      - name: Syntax-check enrichment engines
-        run: python -m py_compile emerging_leader.py audit_emerging_leader.py compute_ma_cluster_breakout.py audit_ma_cluster_breakout.py audit_scout_tiers.py lateral_base.py compute_lateral_base.py audit_lateral_base.py compute_group_leadership.py audit_group_leadership.py export_frontend_data_fast.py calibrate_frontend_setups.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py
+      - name: Syntax-check enrichment engines and audits
+        run: |
+          python -m py_compile \
+            emerging_leader.py audit_emerging_leader.py \
+            compute_ma_cluster_breakout.py audit_ma_cluster_breakout.py audit_scout_tiers.py \
+            lateral_base.py compute_lateral_base.py audit_lateral_base.py \
+            compute_group_leadership.py audit_group_leadership.py \
+            compute_opportunity_v2.py finalize_opportunity_v2.py compute_daily_changes.py audit_pipeline_models.py \
+            export_frontend_data_fast.py calibrate_frontend_setups.py \
+            fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py
 
-      - name: Apply current setup calibration in workspace
-        run: python calibrate_frontend_setups.py
+      - name: Apply current model stack to validation snapshot
+        run: |
+          python calibrate_frontend_setups.py
+          python compute_opportunity_v2.py
+          python finalize_opportunity_v2.py
 
-      - name: Dataset calibration audit
-        run: python audit_frontend_dataset.py
+      - name: Integrated model compatibility audit
+        run: |
+          python audit_pipeline_models.py
+          python audit_emerging_leader.py
 
       - name: MA Cluster timing audit
         env:
@@ -153,6 +174,8 @@ jobs:
           rows=p.get('universe') or []
           m=p.get('market') or {}
           print('=== REAL 5Y BRANCH CALIBRATION ===')
+          print('Opportunity model:',p.get('opportunityModel'))
+          print('Opportunity v2:',m.get('opportunityV2'))
           print('Emerging:',m.get('emergingLeaderCandidates'),'A+:',m.get('aPlusEmergingSetups'))
           print('MA coverage:',m.get('maClusterCoverage'))
           print('WATCH / READY / ENTRY:',m.get('maClusterWatchCount'),m.get('maClusterReadyCount'),m.get('maClusterEntryCount'))
@@ -162,7 +185,7 @@ jobs:
           priority.sort(key=lambda r:(r.get('scoutTierRank') or 0,r.get('maClusterPhase')=='ENTRY',r.get('emergingLeaderScore') or 0,r.get('rsRank') or 0),reverse=True)
           print('\nScout A/B:')
           for r in priority[:30]:
-              print(f"{r.get('ticker'):5s} Scout={r.get('scoutTierLabel')} timing={r.get('maClusterTierLabel')} E={r.get('emergingLeaderScore',0):5.1f} RS={r.get('rsRank',0):2} accel={r.get('rsAcceleration',0):+.3f} spread={r.get('maClusterSpreadPct',0):4.1f}% vol={r.get('maClusterVolumePace',0):4.2f}x")
+              print(f"{r.get('ticker'):5s} Scout={r.get('scoutTierLabel')} timing={r.get('maClusterTierLabel')} E={r.get('emergingLeaderScore',0):5.1f} Opp={r.get('opportunityScore',0):5.1f} RS={r.get('rsRank',0):2} accel={r.get('rsAcceleration',0):+.3f} spread={r.get('maClusterSpreadPct',0):4.1f}% vol={r.get('maClusterVolumePace',0):4.2f}x")
           PY
 
       - name: Set up Node
