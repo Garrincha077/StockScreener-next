@@ -65,13 +65,13 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py compute_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
 
       - name: Fast-engine regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_prepare_frontend_payloads.py -q
+        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_opportunity_v2.py tests/test_prepare_frontend_payloads.py -q
 
       - name: Preserve previous terminal snapshot
         shell: bash
@@ -126,9 +126,10 @@ jobs:
           python compute_group_leadership.py
           python enrich_original_engine.py
           python complete_legacy_capture.py
-          python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
           python enrich_scan_layers.py
           python apply_fundamental_evidence.py
+          python compute_opportunity_v2.py
+          python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
 
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
@@ -151,6 +152,8 @@ jobs:
           print('Rich technical coverage:', m.get('richTechnicalCoverage',0))
           print('Rich fundamental coverage:', m.get('richFundamentalCoverage',0))
           print('Fundamental Evidence:', m.get('fundamentalEvidence',{}))
+          print('Opportunity model:', p.get('opportunityModel'))
+          print('Opportunity v2:', m.get('opportunityV2',{}))
           print('Original-run BUY signals:', m.get('originalRunBuySignals',0))
           print('Original-run SELL signals:', m.get('originalRunSellSignals',0))
           print('Top sector:', m.get('topSector'))
@@ -206,6 +209,7 @@ jobs:
               "client_payload_model": "stockscout-client-core-v1",
               "fundamentals_policy": "full-analyzed-universe-max-7d",
               "fundamental_evidence_model": "stockscout-fundamental-evidence-v1",
+              "opportunity_model": "stockscout-opportunity-v2-potential-timing",
               "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
               "legacy_capture_model": "legacy-complete-source-capture-v1",
               "layers": ["LEGACY", "STOCKSCOUT"],
@@ -235,9 +239,11 @@ jobs:
             echo ""
             echo "**Fundamentals:** full analyzed universe, target cache age <=7 days"
             echo ""
-            echo "**Fundamental Evidence:** transparent v1 score + separate coverage/confidence; does not affect Opportunity"
+            echo "**Opportunity v2:** 55% structural Potential + 45% current Timing; calibrated on the live universe with bounded caps"
             echo ""
-            echo "**Group Leadership:** confidence-weighted behavioral proxies; weak/noisy relationships are pulled toward neutral; Opportunity/Confluence unchanged"
+            echo "**Fundamental Evidence:** transparent v1 score + confidence; used only as a bounded +/-5 Opportunity v2 modifier"
+            echo ""
+            echo "**Group Leadership:** confidence-weighted behavioral proxies; used only as a bounded +/-5 Opportunity v2 modifier"
             echo ""
             echo '```text'
             head -n 80 data/daily_scans/latest_optimized_scan.txt
