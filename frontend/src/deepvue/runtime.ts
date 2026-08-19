@@ -26,6 +26,11 @@ type RetryOptions={
 
 const sleep:SleepLike=(ms)=>new Promise(resolve=>setTimeout(resolve,ms))
 
+function cacheBust(url:string,attempt:number){
+  const join=url.includes('?')?'&':'?'
+  return `${url}${join}_cb=${Date.now()}-${attempt}`
+}
+
 export async function fetchJsonWithRetry<T>(
   url:string,
   options:RetryOptions={},
@@ -34,10 +39,14 @@ export async function fetchJsonWithRetry<T>(
 ):Promise<T>{
   const attempts=Math.max(1,Math.floor(options.attempts??3))
   const baseDelayMs=Math.max(0,Math.floor(options.baseDelayMs??250))
+  const cacheMode=options.cache??'no-store'
   let lastError:unknown=new Error('request failed')
   for(let attempt=1;attempt<=attempts;attempt++){
     try{
-      const response=await fetcher(url,{cache:options.cache??'force-cache'})
+      // Chart shards may previously have returned a cached GitHub Pages 404.
+      // no-store + a unique URL forces the browser/CDN to revalidate the current deploy.
+      const requestUrl=cacheMode==='no-store'?cacheBust(url,attempt):url
+      const response=await fetcher(requestUrl,{cache:cacheMode})
       if(!response.ok)throw new Error(`HTTP ${response.status}`)
       return await response.json() as T
     }catch(error){
@@ -57,7 +66,7 @@ export class RetryJsonCache<T>{
   constructor(
     fetcher:FetchLike=fetch,
     sleeper:SleepLike=sleep,
-    options:RetryOptions={attempts:3,baseDelayMs:250,cache:'force-cache'},
+    options:RetryOptions={attempts:3,baseDelayMs:250,cache:'no-store'},
   ){
     this.fetcher=fetcher
     this.sleeper=sleeper
