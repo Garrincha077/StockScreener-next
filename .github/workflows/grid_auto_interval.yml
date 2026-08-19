@@ -13,11 +13,8 @@ permissions:
   id-token: write
 
 jobs:
-  patch-build-deploy:
+  patch:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,10 +85,18 @@ jobs:
         working-directory: frontend
         run: npm run check
 
-      - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist
+
+  deploy:
+    needs: patch
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/configure-pages@v5
       - name: Deploy Pages
         id: deployment
         uses: actions/deploy-pages@v4
