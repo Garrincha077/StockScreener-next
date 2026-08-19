@@ -1,8 +1,8 @@
 {
   "workflow": "StockScout Full Validation",
-  "run_id": 32247835070,
-  "conclusion": "success",
-  "head_sha": "ef311dd6853adffa2e3aabfe376d4442d98bbd4a",
-  "run_url": "https://github.com/Garrincha077/stock-screener2/actions/runs/32247835070",
-  "updated_at": "2026-08-19T12:26:25Z"
+  "run_id": 32269146282,
+  "conclusion": "failure",
+  "head_sha": "ac76c42589637e87d3a3961d150eb05bdc58e221",
+  "run_url": "https://github.com/Garrincha077/stock-screener2/actions/runs/32269146282",
+  "updated_at": "2026-08-19T15:23:27Z"
 }
