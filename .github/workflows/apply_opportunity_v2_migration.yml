@@ -1,0 +1,109 @@
+name: Apply Opportunity v2 migration
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/opportunity_v2_migration_trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Apply integration patch
+        run: python scripts/patch_opportunity_v2_integration.py
+
+      - name: Verify Opportunity v2 scoring
+        run: |
+          python -m py_compile compute_opportunity_v2.py compute_daily_changes.py
+          python -m pytest tests/test_opportunity_v2.py -q
+
+      - name: Recalculate current canonical snapshot
+        run: |
+          python compute_opportunity_v2.py
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          path = Path('frontend/public/data/latest.json')
+          payload = json.loads(path.read_text(encoding='utf-8'))
+          for row in payload.get('universe') or []:
+              row['opportunityDelta'] = 0
+              row['changeLabels'] = [
+                  label for label in (row.get('changeLabels') or [])
+                  if not str(label).startswith('Score ')
+              ]
+          daily = payload.setdefault('market', {}).setdefault('dailyChanges', {})
+          daily['opportunityComparable'] = False
+          path.write_text(
+              json.dumps(payload, separators=(',', ':'), ensure_ascii=False),
+              encoding='utf-8',
+          )
+          PY
+          python validate_canonical_dataset.py
+          python prepare_frontend_payloads.py
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test, typecheck and build frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run check
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+
+      - name: Commit integrated model and refreshed data
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git rm -f .github/workflows/patch_opportunity_v2_fixed.yml || true
+          git rm -f .github/workflows/apply_opportunity_v2_migration.yml
+          git rm -f .github/opportunity_v2_migration_trigger
+          git rm -f scripts/patch_opportunity_v2_integration.py
+          git add compute_opportunity_v2.py tests/test_opportunity_v2.py compute_daily_changes.py
+          git add .github/workflows/daily_screening_git_storage.yml
+          git add frontend/src/DeepVueTerminal.tsx frontend/src/deepvue/filterEngine.ts
+          git add -f frontend/public/data/latest.json frontend/public/data/core.json frontend/public/data/manifest.json
+          git commit -m "feat: integrate Opportunity v2 scoring"
+          git pull --rebase origin main
+          git push origin HEAD:main
+
+  deploy-pages:
+    needs: migrate-build
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy Opportunity v2 terminal to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
