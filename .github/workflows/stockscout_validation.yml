@@ -79,8 +79,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Restore validated 5Y production snapshot for PR calibration
-        if: github.event_name == 'pull_request'
+      - name: Restore validated 5Y production snapshot
         uses: actions/download-artifact@v4
         with:
           name: github-pages
@@ -89,8 +88,7 @@ jobs:
           run-id: ${{ env.VALIDATED_SOURCE_RUN_ID }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Install production data + chart shards in PR workspace
-        if: github.event_name == 'pull_request'
+      - name: Install production data + chart shards in validation workspace
         shell: bash
         run: |
           set -euo pipefail
@@ -106,7 +104,7 @@ jobs:
           test "$CHARTS" -gt 0
           rm -rf frontend/public/data
           cp -a /tmp/stockscout-site/data frontend/public/data
-          echo "PR calibration restored $CHARTS real 5Y chart shards"
+          echo "Validation restored $CHARTS real 5Y chart shards"
           python - <<'PY'
           import json
           p=json.load(open('frontend/public/data/latest.json'))
@@ -158,7 +156,7 @@ jobs:
 
       - name: MA Cluster timing audit
         env:
-          MA_CLUSTER_REQUIRE_COVERAGE: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+          MA_CLUSTER_REQUIRE_COVERAGE: '1'
         run: python audit_ma_cluster_breakout.py
 
       - name: Scout Tier audit
