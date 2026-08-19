@@ -12,20 +12,16 @@ permissions:
   pages: write
   id-token: write
 
-concurrency:
-  group: stockscout-pages-deploy
-  cancel-in-progress: false
-
 jobs:
-  patch-build-deploy:
+  patch:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Sync latest main
+        run: git pull --rebase origin main
 
       - name: Add EMA/SMA freshness sort mode
         shell: bash
@@ -37,34 +33,34 @@ jobs:
           text = path.read_text(encoding='utf-8')
 
           old = "const opp=(s:Stock)=>s.opportunityScore??s.score??0\nfunction loadLocal<T>(key:string,fallback:T):T{try{const x=JSON.parse(localStorage.getItem(key)||'null');return x??fallback}catch{return fallback}}\nfunction sortValue(stock:Stock,id:string):any{if(id==='opportunityScore')return opp(stock);if(id==='primarySetup')return setupOf(stock);return(stock as any)[id]}"
-          new = "const opp=(s:Stock)=>s.opportunityScore??s.score??0\nconst EMA_FRESH_SORT='ema10d20dFresh',SMA_FRESH_SORT='sma10w20wFresh'\nconst isFreshMaSort=(id:string)=>id===EMA_FRESH_SORT||id===SMA_FRESH_SORT\nconst maBaseSortId=(id:string)=>id===EMA_FRESH_SORT?'ema10d20dSpreadPct':id===SMA_FRESH_SORT?'sma10w20wSpreadPct':id\nconst maFreshSortId=(id:string)=>id==='ema10d20dSpreadPct'?EMA_FRESH_SORT:id==='sma10w20wSpreadPct'?SMA_FRESH_SORT:null\nfunction loadLocal<T>(key:string,fallback:T):T{try{const x=JSON.parse(localStorage.getItem(key)||'null');return x??fallback}catch{return fallback}}\nfunction sortValue(stock:Stock,id:string):any{\n  if(id===EMA_FRESH_SORT){const age=stock.ema10d20dCrossAge,cross=stock.ema10d20dCross;return typeof age==='number'&&cross?-age+(cross==='BULL'?.25:0):-1e9}\n  if(id===SMA_FRESH_SORT){const age=stock.sma10w20wCrossAge,cross=stock.sma10w20wCross;return typeof age==='number'&&cross?-age+(cross==='BULL'?.25:0):-1e9}\n  if(id==='opportunityScore')return opp(stock);if(id==='primarySetup')return setupOf(stock);return(stock as any)[id]\n}"
-          if old not in text:
-              raise SystemExit('sortValue anchor not found')
-          text = text.replace(old, new, 1)
+          new = "const opp=(s:Stock)=>s.opportunityScore??s.score??0\nconst EMA_FRESH_SORT='ema10d20dFresh',SMA_FRESH_SORT='sma10w20wFresh'\nconst isFreshMaSort=(id:string)=>id===EMA_FRESH_SORT||id===SMA_FRESH_SORT\nconst maBaseSortId=(id:string)=>id===EMA_FRESH_SORT?'ema10d20dSpreadPct':id===SMA_FRESH_SORT?'sma10w20wSpreadPct':id\nconst maFreshSortId=(id:string)=>id==='ema10d20dSpreadPct'?EMA_FRESH_SORT:id==='sma10w20wSpreadPct'?SMA_FRESH_SORT:null\nfunction loadLocal<T>(key:string,fallback:T):T{try{const x=JSON.parse(localStorage.getItem(key)||'null');return x??fallback}catch{return fallback}}\nfunction sortValue(stock:Stock,id:string):any{\n  if(id===EMA_FRESH_SORT){const age=stock.ema10d20dCrossAge,cross=stock.ema10d20dCross;return typeof age==='number'&&cross?-age+(cross==='BULL'?0.25:0):-1e9}\n  if(id===SMA_FRESH_SORT){const age=stock.sma10w20wCrossAge,cross=stock.sma10w20wCross;return typeof age==='number'&&cross?-age+(cross==='BULL'?0.25:0):-1e9}\n  if(id==='opportunityScore')return opp(stock);if(id==='primarySetup')return setupOf(stock);return(stock as any)[id]\n}"
+          if 'ema10d20dFresh' not in text:
+              if old not in text: raise SystemExit('sortValue anchor not found')
+              text = text.replace(old, new, 1)
 
           old = "helper.accessor('ema10d20dSpreadPct',{header:'EMA 10/20',cell:i=>{const state=i.row.original.ema10d20dState;const v=i.getValue();return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}</b>}}),\n    helper.accessor('sma10w20wSpreadPct',{header:'SMA 10/20',cell:i=>{const state=i.row.original.sma10w20wState;const v=i.getValue();return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}</b>}}),"
           new = "helper.accessor('ema10d20dSpreadPct',{header:'EMA 10/20',cell:i=>{const state=i.row.original.ema10d20dState,v=i.getValue(),age=i.row.original.ema10d20dCrossAge;return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}{typeof age==='number'?` · ${age}d`:''}</b>}}),\n    helper.accessor('sma10w20wSpreadPct',{header:'SMA 10/20',cell:i=>{const state=i.row.original.sma10w20wState,v=i.getValue(),age=i.row.original.sma10w20wCrossAge;return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}{typeof age==='number'?` · ${age}w`:''}</b>}}),"
-          if old not in text:
-              raise SystemExit('promoted MA cell block not found')
-          text = text.replace(old, new, 1)
+          if '`${age}d`' not in text:
+              if old not in text: raise SystemExit('promoted MA cell block not found')
+              text = text.replace(old, new, 1)
 
           old = "  const cycleSort=(id:string)=>setSorting(prev=>{const i=prev.findIndex(x=>x.id===id);if(i<0)return[...prev,{id,desc:true}];if(prev[i].desc)return prev.map((x,n)=>n===i?{...x,desc:false}:x);return prev.filter((_,n)=>n!==i)})"
           new = "  const cycleSort=(id:string)=>setSorting(prev=>{\n    const base=maBaseSortId(id),fresh=maFreshSortId(base)\n    if(!fresh){const i=prev.findIndex(x=>x.id===id);if(i<0)return[...prev,{id,desc:true}];if(prev[i].desc)return prev.map((x,n)=>n===i?{...x,desc:false}:x);return prev.filter((_,n)=>n!==i)}\n    const i=prev.findIndex(x=>x.id===base||x.id===fresh)\n    if(i<0)return[...prev,{id:base,desc:true}]\n    const current=prev[i]\n    if(current.id===fresh)return prev.filter((_,n)=>n!==i)\n    if(current.desc)return prev.map((x,n)=>n===i?{id:base,desc:false}:x)\n    return prev.map((x,n)=>n===i?{id:fresh,desc:true}:x)\n  })"
-          if old not in text:
-              raise SystemExit('cycleSort anchor not found')
-          text = text.replace(old, new, 1)
+          if 'const base=maBaseSortId(id)' not in text:
+              if old not in text: raise SystemExit('cycleSort anchor not found')
+              text = text.replace(old, new, 1)
 
           old = "<section className=\"dv-sortbar\"><span>BALANCED MIX</span>{sorting.length?sorting.map((s,i)=><div className=\"dv-sortchip\" key={s.id}><b>{i+1}</b><em>{String(table.getColumn(s.id)?.columnDef.header||s.id)}</em><button onClick={()=>cycleSort(s.id)}>{s.desc?'↓':'↑'}</button>"
           new = "<section className=\"dv-sortbar\"><span>BALANCED MIX</span>{sorting.length?sorting.map((s,i)=><div className=\"dv-sortchip\" key={s.id}><b>{i+1}</b><em>{s.id===EMA_FRESH_SORT?'EMA 10/20 · Fresh':s.id===SMA_FRESH_SORT?'SMA 10/20 · Fresh':String(table.getColumn(s.id)?.columnDef.header||s.id)}</em><button title={isFreshMaSort(s.id)?'Fresh crossover first':s.desc?'Strength descending':'Strength ascending'} onClick={()=>cycleSort(s.id)}>{isFreshMaSort(s.id)?'✨':s.desc?'↓':'↑'}</button>"
-          if old not in text:
-              raise SystemExit('sortbar anchor not found')
-          text = text.replace(old, new, 1)
+          if "EMA 10/20 · Fresh" not in text:
+              if old not in text: raise SystemExit('sortbar anchor not found')
+              text = text.replace(old, new, 1)
 
           old = "{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const si=sorting.findIndex(s=>s.id===h.column.id),ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}"
           new = "{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const fid=maFreshSortId(h.column.id),si=sorting.findIndex(s=>s.id===h.column.id||(fid!==null&&s.id===fid)),ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss&&isFreshMaSort(ss.id)?'✨':ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}"
-          if old not in text:
-              raise SystemExit('table header sort anchor not found')
-          text = text.replace(old, new, 1)
+          if 'const fid=maFreshSortId(h.column.id)' not in text:
+              if old not in text: raise SystemExit('table header sort anchor not found')
+              text = text.replace(old, new, 1)
 
           path.write_text(text, encoding='utf-8')
           PY
@@ -80,6 +76,10 @@ jobs:
         run: |
           npm ci
           npm run check
+          grep -q "EMA 10/20 · Fresh" src/DeepVueTerminal.tsx
+          grep -q "SMA 10/20 · Fresh" src/DeepVueTerminal.tsx
+          grep -q "ema10d20dFresh" src/DeepVueTerminal.tsx
+          grep -q "sma10w20wFresh" src/DeepVueTerminal.tsx
 
       - name: Commit source fix
         shell: bash
@@ -90,6 +90,20 @@ jobs:
           git add frontend/src/DeepVueTerminal.tsx .github/workflows/add_ma_fresh_sort.yml
           git commit -m "feat: add freshness sort for EMA and SMA cross columns"
           git push origin HEAD:main
+
+  deploy:
+    needs: patch
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stockscout-pages-deploy
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
 
       - name: Build current client data and charts
         shell: bash
@@ -104,14 +118,19 @@ jobs:
           fi
           python validate_frontend_charts.py frontend/public
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
       - name: Build Pages artifact
         working-directory: frontend
         run: |
+          npm ci
           npm run check
           grep -q "EMA 10/20 · Fresh" src/DeepVueTerminal.tsx
           grep -q "SMA 10/20 · Fresh" src/DeepVueTerminal.tsx
-          grep -q "ema10d20dFresh" src/DeepVueTerminal.tsx
-          grep -q "sma10w20wFresh" src/DeepVueTerminal.tsx
 
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
