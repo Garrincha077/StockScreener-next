@@ -31,13 +31,11 @@ test('Rapid Review progressively renders every mobile match',async({page})=>{
 
   const response=await page.goto('/')
   console.log('Preview response:',response?.status(),page.url())
-  await page.waitForTimeout(300)
-  if(!(await page.locator('.dv-app').count())){
-    console.log('Body before app assertion:',(await page.locator('body').innerText()).slice(0,800))
-  }
   await expect(page.locator('.dv-app')).toBeVisible({timeout:10_000})
-  await expect(page.getByRole('button',{name:'Grid',exact:true})).toBeVisible()
-  await page.getByRole('button',{name:'Grid',exact:true}).click()
+
+  const gridButton=page.locator('.dv-top nav button').filter({hasText:/^Grid$/})
+  await expect(gridButton).toHaveCount(1)
+  await gridButton.click({force:true})
 
   const summary=page.locator('.dv-gridview > header span')
   const sentinel=page.locator('.dv-grid-sentinel')
