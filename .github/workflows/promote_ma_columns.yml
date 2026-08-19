@@ -1,0 +1,73 @@
+name: Promote MA columns in screener
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/promote_ma_columns.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Move EMA/SMA 10/20 columns next to Opportunity
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('frontend/src/DeepVueTerminal.tsx')
+          text = path.read_text(encoding='utf-8')
+
+          # Force a fresh column layout so an older mobile localStorage layout cannot hide these.
+          text = text.replace("loadLocal('dv-cols-v4',defaultVisibility)", "loadLocal('dv-cols-v5',defaultVisibility)")
+          text = text.replace("localStorage.setItem('dv-cols-v4'", "localStorage.setItem('dv-cols-v5'")
+
+          # Remove the old deep-in-the-table spread columns; we'll reinsert compact versions near the front.
+          text = re.sub(
+              r"\s*helper\.accessor\('ema10d20dSpreadPct',\{header:'D EMA 10/20'.*?\}\),",
+              '', text, count=1
+          )
+          text = re.sub(
+              r"\s*helper\.accessor\('sma10w20wSpreadPct',\{header:'W SMA 10/20'.*?\}\),",
+              '', text, count=1
+          )
+
+          marker = "helper.accessor(s=>opp(s),{id:'opportunityScore',header:'Opportunity',cell:i=><b className=\"dv-score\">{fmt(i.getValue(),0)}</b>}),"
+          if marker not in text:
+              raise SystemExit('Opportunity column marker not found')
+
+          promoted = marker + "\n    helper.accessor('ema10d20dSpreadPct',{header:'EMA 10/20',cell:i=>{const state=i.row.original.ema10d20dState;const v=i.getValue();return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}</b>}}),\n    helper.accessor('sma10w20wSpreadPct',{header:'SMA 10/20',cell:i=>{const state=i.row.original.sma10w20wState;const v=i.getValue();return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}</b>}}),"
+          text = text.replace(marker, promoted, 1)
+
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Verify frontend
+        working-directory: frontend
+        run: |
+          npm install
+          npm run check
+
+      - name: Commit and remove one-shot workflow
+        shell: bash
+        run: |
+          rm -f .github/workflows/promote_ma_columns.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add frontend/src/DeepVueTerminal.tsx .github/workflows/promote_ma_columns.yml
+          git commit -m "fix: surface EMA and SMA 10/20 columns near ticker"
+          git push origin HEAD:main
