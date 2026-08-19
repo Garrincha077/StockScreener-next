@@ -35,7 +35,44 @@
     },
     "inventory_qoq_change": 11.14,
     "inventory_to_sales_ratio": 0.332,
-    "inventory_breakdown_available": false
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_cash": {
+      "2024-12-31 00:00:00": 11296000000.0,
+      "2025-06-30 00:00:00": 7267000000.0,
+      "2025-12-31 00:00:00": 11838000000.0,
+      "2026-06-30 00:00:00": 7906000000.0
+    },
+    "cash_latest": 7906000000.0,
+    "quarterly_total_debt": {
+      "2024-12-31 00:00:00": 72170000000.0,
+      "2025-06-30 00:00:00": 75580000000.0,
+      "2025-12-31 00:00:00": 73027000000.0,
+      "2026-06-30 00:00:00": 72317000000.0
+    },
+    "total_debt_latest": 72317000000.0,
+    "total_debt_qoq_change": -0.9722431429471292,
+    "total_debt_yoy_change": null,
+    "net_debt_latest": 64411000000.0,
+    "quarterly_shares_outstanding": {
+      "2024-12-31 00:00:00": 1975432021.0,
+      "2025-06-30 00:00:00": 1952641906.0,
+      "2025-12-31 00:00:00": 1950752219.0,
+      "2026-06-30 00:00:00": 1749527247.0
+    },
+    "shares_outstanding_latest": 1749527247.0,
+    "share_dilution_yoy_change": null,
+    "fundamental_periods": [
+      "2024-12-31",
+      "2025-03-31",
+      "2025-06-30",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-03-31",
+      "2026-06-30"
+    ]
   },
-  "fetched_at": "2026-08-13T13:36:40.940155"
+  "fetched_at": "2026-08-13T13:36:40.940155",
+  "extended_fetched_at": "2026-08-19T11:41:08.173079"
 }

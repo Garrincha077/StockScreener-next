@@ -21,7 +21,64 @@
     "eps_qoq_change": null,
     "eps_yoy_change": 3729.7640653357535,
     "operating_margin": 0,
-    "inventory_breakdown_available": false
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_operating_cash_flow": {
+      "2025-03-31 00:00:00": 0.0,
+      "2025-06-30 00:00:00": 0.0,
+      "2025-09-30 00:00:00": -293043.0,
+      "2025-12-31 00:00:00": -204401.0,
+      "2026-03-31 00:00:00": -187758.0
+    },
+    "operating_cash_flow_qoq_change": 8.142328070802002,
+    "operating_cash_flow_yoy_change": null,
+    "quarterly_free_cash_flow": {
+      "2025-03-31 00:00:00": 0.0,
+      "2025-06-30 00:00:00": 0.0,
+      "2025-09-30 00:00:00": -293043.0,
+      "2025-12-31 00:00:00": -204401.0,
+      "2026-03-31 00:00:00": -187758.0
+    },
+    "free_cash_flow_qoq_change": 8.142328070802002,
+    "free_cash_flow_yoy_change": null,
+    "free_cash_flow_margin": null,
+    "quarterly_cash": {
+      "2025-03-31 00:00:00": NaN,
+      "2025-06-30 00:00:00": NaN,
+      "2025-09-30 00:00:00": 741229.0,
+      "2025-12-31 00:00:00": 383075.0,
+      "2026-03-31 00:00:00": 191060.0
+    },
+    "cash_latest": 191060.0,
+    "quarterly_total_debt": {
+      "2025-03-31 00:00:00": 125648.0,
+      "2025-06-30 00:00:00": 242532.0,
+      "2025-09-30 00:00:00": NaN,
+      "2025-12-31 00:00:00": NaN,
+      "2026-03-31 00:00:00": NaN
+    },
+    "total_debt_latest": 242532.0,
+    "total_debt_qoq_change": 93.02495861454221,
+    "total_debt_yoy_change": null,
+    "net_debt_latest": 51472.0,
+    "quarterly_shares_outstanding": {
+      "2025-03-31 00:00:00": 18750000.0,
+      "2025-06-30 00:00:00": 19312500.0,
+      "2025-09-30 00:00:00": 21562500.0,
+      "2025-12-31 00:00:00": 21562500.0,
+      "2026-03-31 00:00:00": 21562500.0
+    },
+    "shares_outstanding_latest": 21562500.0,
+    "share_dilution_yoy_change": 15.0,
+    "fundamental_periods": [
+      "2025-03-31",
+      "2025-06-30",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-03-31"
+    ]
   },
-  "fetched_at": "2026-08-17T13:38:53.179403"
+  "fetched_at": "2026-08-17T13:38:53.179403",
+  "extended_fetched_at": "2026-08-19T12:06:04.309002"
 }

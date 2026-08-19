@@ -36,7 +36,70 @@
     },
     "inventory_qoq_change": 4.22,
     "inventory_to_sales_ratio": 0.343,
-    "inventory_breakdown_available": false
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_operating_cash_flow": {
+      "2025-03-31 00:00:00": -143000000.0,
+      "2026-03-31 00:00:00": 141000000.0
+    },
+    "operating_cash_flow_qoq_change": 198.6013986013986,
+    "operating_cash_flow_yoy_change": null,
+    "quarterly_capex": {
+      "2025-03-31 00:00:00": -263000000.0,
+      "2026-03-31 00:00:00": -145000000.0
+    },
+    "quarterly_free_cash_flow": {
+      "2025-03-31 00:00:00": -406000000.0,
+      "2026-03-31 00:00:00": -4000000.0
+    },
+    "free_cash_flow_qoq_change": 99.01477832512316,
+    "free_cash_flow_yoy_change": null,
+    "free_cash_flow_margin": -0.08708116138403316,
+    "quarterly_cash": {
+      "2024-12-31 00:00:00": NaN,
+      "2025-03-31 00:00:00": NaN,
+      "2025-06-30 00:00:00": 1165526000.0,
+      "2025-09-30 00:00:00": 1197717000.0,
+      "2025-12-31 00:00:00": 1822000000.0,
+      "2026-03-31 00:00:00": 687000000.0,
+      "2026-06-30 00:00:00": 653684000.0
+    },
+    "cash_latest": 653684000.0,
+    "quarterly_total_debt": {
+      "2024-12-31 00:00:00": 6700000000.0,
+      "2025-03-31 00:00:00": NaN,
+      "2025-06-30 00:00:00": NaN,
+      "2025-09-30 00:00:00": NaN,
+      "2025-12-31 00:00:00": 6779000000.0,
+      "2026-03-31 00:00:00": 6859000000.0,
+      "2026-06-30 00:00:00": NaN
+    },
+    "total_debt_latest": 6859000000.0,
+    "total_debt_qoq_change": 1.1801150612184688,
+    "total_debt_yoy_change": null,
+    "net_debt_latest": 6205316000.0,
+    "quarterly_shares_outstanding": {
+      "2024-12-31 00:00:00": NaN,
+      "2025-03-31 00:00:00": NaN,
+      "2025-06-30 00:00:00": 43524984744.0,
+      "2025-09-30 00:00:00": 43524984744.0,
+      "2025-12-31 00:00:00": 43524984744.0,
+      "2026-03-31 00:00:00": 43288573611.0,
+      "2026-06-30 00:00:00": 43524984744.0
+    },
+    "shares_outstanding_latest": 43524984744.0,
+    "share_dilution_yoy_change": 0.0,
+    "fundamental_periods": [
+      "2024-12-31",
+      "2025-03-31",
+      "2025-06-30",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-03-31",
+      "2026-06-30"
+    ]
   },
-  "fetched_at": "2026-08-13T13:42:36.348888"
+  "fetched_at": "2026-08-13T13:42:36.348888",
+  "extended_fetched_at": "2026-08-19T11:45:26.617459"
 }

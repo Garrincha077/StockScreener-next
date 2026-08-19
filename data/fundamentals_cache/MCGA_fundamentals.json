@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "MCGA",
-    "fetch_date": "2026-08-10T13:59:39.926905",
+    "fetch_date": "2026-08-19T11:59:11.065704",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 0.0,
       "2025-09-30 00:00:00": 0.0,
@@ -15,7 +15,60 @@
     },
     "eps_qoq_change": 300.0,
     "operating_margin": 0,
-    "inventory_breakdown_available": false
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_operating_cash_flow": {
+      "2026-03-31 00:00:00": -401838.0
+    },
+    "operating_cash_flow_qoq_change": null,
+    "operating_cash_flow_yoy_change": null,
+    "quarterly_free_cash_flow": {
+      "2026-03-31 00:00:00": -401838.0
+    },
+    "free_cash_flow_qoq_change": null,
+    "free_cash_flow_yoy_change": null,
+    "free_cash_flow_margin": null,
+    "quarterly_cash": {
+      "2025-02-28 00:00:00": NaN,
+      "2025-03-31 00:00:00": NaN,
+      "2025-06-30 00:00:00": 1467830.0,
+      "2025-09-30 00:00:00": 290238.0,
+      "2025-12-31 00:00:00": 212099.0,
+      "2026-03-31 00:00:00": 60261.0
+    },
+    "cash_latest": 60261.0,
+    "quarterly_total_debt": {
+      "2025-02-28 00:00:00": NaN,
+      "2025-03-31 00:00:00": NaN,
+      "2025-06-30 00:00:00": 124723.0,
+      "2025-09-30 00:00:00": NaN,
+      "2025-12-31 00:00:00": NaN,
+      "2026-03-31 00:00:00": 250000.0
+    },
+    "total_debt_latest": 250000.0,
+    "total_debt_qoq_change": 100.44418431243636,
+    "total_debt_yoy_change": null,
+    "net_debt_latest": 189739.0,
+    "quarterly_shares_outstanding": {
+      "2025-02-28 00:00:00": NaN,
+      "2025-03-31 00:00:00": 21275000.0,
+      "2025-06-30 00:00:00": 23525000.0,
+      "2025-09-30 00:00:00": 23581250.0,
+      "2025-12-31 00:00:00": 23581250.0,
+      "2026-03-31 00:00:00": 23581250.0
+    },
+    "shares_outstanding_latest": 23581250.0,
+    "share_dilution_yoy_change": 10.840188014101058,
+    "fundamental_periods": [
+      "2025-02-28",
+      "2025-03-31",
+      "2025-06-30",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-03-31"
+    ]
   },
-  "fetched_at": "2026-08-10T13:59:39.927762"
+  "fetched_at": "2026-08-19T11:59:11.115200",
+  "extended_fetched_at": "2026-08-19T11:59:11.115200"
 }

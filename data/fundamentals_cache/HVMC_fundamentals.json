@@ -19,7 +19,59 @@
     "gross_margin": 0,
     "margin_change": 0,
     "operating_margin": 0,
-    "inventory_breakdown_available": false
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_operating_cash_flow": {
+      "2025-06-30 00:00:00": 0.0,
+      "2025-09-30 00:00:00": -378260.0,
+      "2025-12-31 00:00:00": -128600.0,
+      "2026-03-31 00:00:00": -192839.0
+    },
+    "operating_cash_flow_qoq_change": -49.95256609642302,
+    "operating_cash_flow_yoy_change": null,
+    "quarterly_free_cash_flow": {
+      "2025-06-30 00:00:00": 0.0,
+      "2025-09-30 00:00:00": -378260.0,
+      "2025-12-31 00:00:00": -128600.0,
+      "2026-03-31 00:00:00": -192839.0
+    },
+    "free_cash_flow_qoq_change": -49.95256609642302,
+    "free_cash_flow_yoy_change": null,
+    "free_cash_flow_margin": null,
+    "quarterly_cash": {
+      "2025-04-30 00:00:00": NaN,
+      "2025-06-30 00:00:00": NaN,
+      "2025-09-30 00:00:00": 1029296.0,
+      "2026-03-31 00:00:00": 732517.0
+    },
+    "cash_latest": 732517.0,
+    "quarterly_total_debt": {
+      "2025-04-30 00:00:00": 3020.0,
+      "2025-06-30 00:00:00": 37237.0,
+      "2025-09-30 00:00:00": NaN,
+      "2026-03-31 00:00:00": NaN
+    },
+    "total_debt_latest": 37237.0,
+    "total_debt_qoq_change": 1133.0132450331125,
+    "total_debt_yoy_change": null,
+    "net_debt_latest": -695280.0,
+    "quarterly_shares_outstanding": {
+      "2025-04-30 00:00:00": 26350000.0,
+      "2025-06-30 00:00:00": 26350000.0,
+      "2025-09-30 00:00:00": 29410000.0,
+      "2026-03-31 00:00:00": 29410000.0
+    },
+    "shares_outstanding_latest": 29410000.0,
+    "share_dilution_yoy_change": null,
+    "fundamental_periods": [
+      "2025-04-30",
+      "2025-06-30",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-03-31"
+    ]
   },
-  "fetched_at": "2026-08-13T13:54:53.471328"
+  "fetched_at": "2026-08-13T13:54:53.471328",
+  "extended_fetched_at": "2026-08-19T11:54:00.627010"
 }

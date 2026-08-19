@@ -19,7 +19,65 @@
     "gross_margin": 85.59,
     "margin_change": 5.11,
     "operating_margin": -24.38,
-    "inventory_breakdown_available": false
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_operating_cash_flow": {
+      "2024-12-31 00:00:00": 26000.0,
+      "2025-03-31 00:00:00": 1258000.0,
+      "2025-12-31 00:00:00": 16378000.0,
+      "2026-03-31 00:00:00": 13235000.0
+    },
+    "operating_cash_flow_qoq_change": -19.190377335449995,
+    "operating_cash_flow_yoy_change": null,
+    "quarterly_capex": {
+      "2024-12-31 00:00:00": -445000.0,
+      "2025-03-31 00:00:00": -697000.0,
+      "2025-12-31 00:00:00": -8548000.0,
+      "2026-03-31 00:00:00": -8931000.0
+    },
+    "quarterly_free_cash_flow": {
+      "2024-12-31 00:00:00": -419000.0,
+      "2025-03-31 00:00:00": 561000.0,
+      "2025-12-31 00:00:00": 7830000.0,
+      "2026-03-31 00:00:00": 4304000.0
+    },
+    "free_cash_flow_qoq_change": -45.03192848020434,
+    "free_cash_flow_yoy_change": null,
+    "free_cash_flow_margin": 39.28441036874772,
+    "quarterly_cash": {
+      "2024-12-31 00:00:00": 335000.0,
+      "2025-09-30 00:00:00": 3608000.0,
+      "2025-12-31 00:00:00": 9747000.0,
+      "2026-03-31 00:00:00": 13241000.0
+    },
+    "cash_latest": 13241000.0,
+    "quarterly_total_debt": {
+      "2024-12-31 00:00:00": 4842000.0,
+      "2025-09-30 00:00:00": 48668000.0,
+      "2025-12-31 00:00:00": 46010000.0,
+      "2026-03-31 00:00:00": 205701000.0
+    },
+    "total_debt_latest": 205701000.0,
+    "total_debt_qoq_change": 347.07889589219735,
+    "total_debt_yoy_change": null,
+    "net_debt_latest": 192460000.0,
+    "quarterly_shares_outstanding": {
+      "2024-12-31 00:00:00": 48778674.0,
+      "2025-09-30 00:00:00": 48778674.0,
+      "2025-12-31 00:00:00": 48778674.0,
+      "2026-03-31 00:00:00": 48778674.0
+    },
+    "shares_outstanding_latest": 48778674.0,
+    "share_dilution_yoy_change": null,
+    "fundamental_periods": [
+      "2024-12-31",
+      "2025-03-31",
+      "2025-09-30",
+      "2025-12-31",
+      "2026-03-31"
+    ]
   },
-  "fetched_at": "2026-08-13T13:36:17.920443"
+  "fetched_at": "2026-08-13T13:36:17.920443",
+  "extended_fetched_at": "2026-08-19T11:40:56.605280"
 }

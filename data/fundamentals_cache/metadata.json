@@ -7768,8 +7768,8 @@
     "in_earnings_season": false
   },
   "MCGA": {
-    "last_updated": "2026-08-10T13:59:39.929274",
-    "in_earnings_season": true
+    "last_updated": "2026-08-19T11:59:11.117243",
+    "in_earnings_season": false
   },
   "MP": {
     "last_updated": "2026-08-18T22:01:47.871168",
@@ -8245,6 +8245,10 @@
   },
   "SPRY": {
     "last_updated": "2026-08-18T22:02:08.746896",
+    "in_earnings_season": false
+  },
+  "NAVN": {
+    "last_updated": "2026-08-19T11:34:53.883905",
     "in_earnings_season": false
   }
 }
