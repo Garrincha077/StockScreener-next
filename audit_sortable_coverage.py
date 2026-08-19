@@ -20,13 +20,22 @@ FILTER_ENGINE = ROOT / "frontend" / "src" / "deepvue" / "filterEngine.ts"
 REPORT = ROOT / "data" / "daily_scans" / "latest_data_quality.json"
 MODEL = "sortable-coverage-v1"
 
-CRITICAL_FIELDS = (
+# Global coverage gate: fields that should exist for essentially every analyzed ticker.
+CORE_CRITICAL_FIELDS = (
     "price", "stage", "opportunityScore", "rsRank", "rsAcceleration",
     "volumeRatio", "distance10w", "distance30w", "trendTemplatePasses",
     "atrCompression", "tightRange20", "return3m",
+)
+
+# MA values are eligibility-aware. A recent IPO may legitimately lack 20 weeks of
+# history, so these are reported row-by-row but gated by market.maCrossCoverage,
+# which uses only tickers with enough history for that indicator family.
+MA_FIELDS = (
     "ema10d", "ema20d", "ema10d20dSpreadPct", "ema10d20dState",
     "sma10w", "sma20w", "sma10w20wSpreadPct", "sma10w20wState",
 )
+CRITICAL_FIELDS = CORE_CRITICAL_FIELDS  # compatibility for tests/importers
+
 MIN_CRITICAL_FIELD_COVERAGE_PCT = 98.0
 MIN_ALL_CRITICAL_COMPLETE_PCT = 95.0
 MIN_MA_ELIGIBLE_COVERAGE_PCT = 99.0
@@ -63,8 +72,9 @@ def build_report(payload: dict[str, Any]) -> dict[str, Any]:
     rows = [r for r in (payload.get("universe") or []) if isinstance(r, dict)]
     filterable_ids = [f["id"] for f in frontend_fields()]
     coverage = {field: field_coverage(rows, field) for field in filterable_ids}
-    critical = {field: field_coverage(rows, field) for field in CRITICAL_FIELDS}
-    complete_rows = sum(all(valid(row.get(field)) for field in CRITICAL_FIELDS) for row in rows)
+    critical = {field: field_coverage(rows, field) for field in CORE_CRITICAL_FIELDS}
+    ma_fields = {field: field_coverage(rows, field) for field in MA_FIELDS}
+    complete_rows = sum(all(valid(row.get(field)) for field in CORE_CRITICAL_FIELDS) for row in rows)
     complete_pct = round(100.0 * complete_rows / len(rows), 2) if rows else 0.0
 
     ma_cov = (payload.get("market") or {}).get("maCrossCoverage") or {}
@@ -87,7 +97,8 @@ def build_report(payload: dict[str, Any]) -> dict[str, Any]:
         "model": MODEL,
         "rows": len(rows),
         "filterableFieldCount": len(filterable_ids),
-        "criticalFieldCount": len(CRITICAL_FIELDS),
+        "criticalFieldCount": len(CORE_CRITICAL_FIELDS),
+        "maFieldCount": len(MA_FIELDS),
         "allCriticalComplete": complete_rows,
         "allCriticalCompletePct": complete_pct,
         "thresholds": {
@@ -96,6 +107,7 @@ def build_report(payload: dict[str, Any]) -> dict[str, Any]:
             "maEligibleCoveragePct": MIN_MA_ELIGIBLE_COVERAGE_PCT,
         },
         "critical": critical,
+        "maFields": ma_fields,
         "lowestFilterableCoverage": lowest,
         "maCrossCoverage": ma_cov,
         "status": "PASS" if not failures else "FAIL",
@@ -112,7 +124,9 @@ def audit(dataset_path: Path = DATASET, report_path: Path = REPORT, fail_on_gate
     tmp.replace(dataset_path)
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    print(f"Data quality {report['status']}: rows={report['rows']} critical-complete={report['allCriticalCompletePct']:.2f}% filterable-fields={report['filterableFieldCount']}")
+    print(f"Data quality {report['status']}: rows={report['rows']} core-complete={report['allCriticalCompletePct']:.2f}% filterable-fields={report['filterableFieldCount']}")
+    ma_cov = report.get("maCrossCoverage") or {}
+    print("  MA eligible coverage:", "daily", (ma_cov.get("daily") or {}).get("coveragePct"), "weekly", (ma_cov.get("weekly") or {}).get("coveragePct"))
     for item in report["lowestFilterableCoverage"][:10]:
         print(f"  {item['field']}: {item['coveragePct']:.2f}% ({item['missing']} missing)")
     for failure in report["failures"]:
