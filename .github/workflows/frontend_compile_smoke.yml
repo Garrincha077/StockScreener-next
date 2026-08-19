@@ -73,9 +73,17 @@ jobs:
         working-directory: frontend
         run: npm run check
 
-      - name: Install Playwright Chromium
+      - name: Prepare browser for Playwright
         working-directory: frontend
-        run: npx playwright install --with-deps chromium
+        shell: bash
+        run: |
+          if command -v google-chrome >/dev/null 2>&1; then
+            google-chrome --version
+            echo "PW_CHANNEL=chrome" >> "$GITHUB_ENV"
+          else
+            echo "System Chrome not found; installing Playwright Chromium fallback"
+            npx playwright install --with-deps chromium
+          fi
 
       - name: Mobile Rapid Review browser smoke
         working-directory: frontend
