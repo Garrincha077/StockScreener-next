@@ -105,7 +105,7 @@ function DeepVueTerminal(){
   const[payload,setPayload]=useState<Payload|null>(null),[error,setError]=useState('')
   const[page,setPage]=useState<Page>('Screener'),[recipe,setRecipe]=useState('All'),[query,setQuery]=useState('')
   const[sorting,setSorting]=useState<SortingState>(()=>loadLocal('dv-sorts-v1',[{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}]))
-  const[visibility,setVisibility]=useState<VisibilityState>(()=>loadLocal('dv-cols-v4',defaultVisibility))
+  const[visibility,setVisibility]=useState<VisibilityState>(()=>loadLocal('dv-cols-v5',defaultVisibility))
   const[pagination,setPagination]=useState<PaginationState>({pageIndex:0,pageSize:100})
   const[rootLogic,setRootLogic]=useState<Logic>(()=>loadLocal('dv-root-logic','ALL'))
   const[groups,setGroups]=useState<RuleGroup[]>(()=>loadLocal('dv-groups-v1',[]))
@@ -135,7 +135,7 @@ function DeepVueTerminal(){
   },[])
   useEffect(()=>{load()},[load])
   useEffect(()=>localStorage.setItem('dv-sorts-v1',JSON.stringify(sorting)),[sorting])
-  useEffect(()=>localStorage.setItem('dv-cols-v4',JSON.stringify(visibility)),[visibility])
+  useEffect(()=>localStorage.setItem('dv-cols-v5',JSON.stringify(visibility)),[visibility])
   useEffect(()=>localStorage.setItem('dv-root-logic',JSON.stringify(rootLogic)),[rootLogic])
   useEffect(()=>localStorage.setItem('dv-groups-v1',JSON.stringify(groups)),[groups])
   useEffect(()=>localStorage.setItem('dv-custom-screens-v1',JSON.stringify(customScreens)),[customScreens])
@@ -171,6 +171,8 @@ function DeepVueTerminal(){
     helper.display({id:'watch',header:'',enableSorting:false,cell:({row})=><button className={`dv-star ${watchlist.includes(row.original.ticker)?'on':''}`} onClick={e=>{e.stopPropagation();toggleWatch(row.original.ticker)}}>★</button>}),
     helper.accessor('ticker',{header:'Ticker',cell:i=><b className="dv-ticker">{i.getValue()}</b>}),
     helper.accessor(s=>opp(s),{id:'opportunityScore',header:'Opportunity',cell:i=><b className="dv-score">{fmt(i.getValue(),0)}</b>}),
+    helper.accessor('ema10d20dSpreadPct',{header:'EMA 10/20',cell:i=>{const state=i.row.original.ema10d20dState;const v=i.getValue();return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}</b>}}),
+    helper.accessor('sma10w20wSpreadPct',{header:'SMA 10/20',cell:i=>{const state=i.row.original.sma10w20wState;const v=i.getValue();return <b className={num(v)>0?'dv-good':num(v)<0?'dv-bad':''}>{state||'—'} {signed(v,2)}</b>}}),
     helper.accessor('opportunityTier',{header:'Tier',cell:i=><b>{i.getValue()||'—'}</b>}),
     helper.accessor('opportunityRank',{header:'Opp Rank',cell:i=><b className={num(i.getValue())>=95?'dv-good':''}>{fmt(i.getValue(),0)}</b>}),
     helper.accessor('opportunityPotential',{header:'Potential',cell:i=>fmt(i.getValue(),0)}),
@@ -210,11 +212,9 @@ function DeepVueTerminal(){
     helper.accessor('ema10d',{header:'EMA 10D',cell:i=>fmt(i.getValue(),2)}),
     helper.accessor('ema20d',{header:'EMA 20D',cell:i=>fmt(i.getValue(),2)}),
     helper.accessor('ema10d20dCrossAge',{header:'D EMA X',cell:i=>{const cross=i.row.original.ema10d20dCross;return cross?<b className={cross==='BULL'?'dv-good':'dv-bad'}>{cross} {fmt(i.getValue(),0)}d</b>:'—'}}),
-    helper.accessor('ema10d20dSpreadPct',{header:'D EMA 10/20',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue(),2)}</span>}),
     helper.accessor('sma10w',{header:'SMA 10W',cell:i=>fmt(i.getValue(),2)}),
     helper.accessor('sma20w',{header:'SMA 20W',cell:i=>fmt(i.getValue(),2)}),
     helper.accessor('sma10w20wCrossAge',{header:'W SMA X',cell:i=>{const cross=i.row.original.sma10w20wCross;return cross?<b className={cross==='BULL'?'dv-good':'dv-bad'}>{cross} {fmt(i.getValue(),0)}w</b>:'—'}}),
-    helper.accessor('sma10w20wSpreadPct',{header:'W SMA 10/20',cell:i=><span className={num(i.getValue())>0?'dv-good':num(i.getValue())<0?'dv-bad':''}>{signed(i.getValue(),2)}</span>}),
     helper.accessor('return3m',{header:'3M',cell:i=>signed(i.getValue())}),helper.accessor('prior9mReturn',{header:'Prior 9M',cell:i=>signed(i.getValue())}),
     helper.accessor('volumeRatio',{header:'Vol x',cell:i=><span className={num(i.getValue())>=1.5?'dv-good':''}>{fmt(i.getValue(),2)}x</span>}),helper.accessor('breakoutPct',{header:'Breakout',cell:i=>signed(i.getValue())}),
     helper.accessor('vcpScore',{header:'VCP',cell:i=>fmt(i.getValue(),0)}),helper.accessor('atrCompression',{header:'ATR comp',cell:i=>`${fmt(i.getValue(),0)}%`}),helper.accessor('tightRange20',{header:'20D range',cell:i=>`${fmt(i.getValue(),1)}%`}),
