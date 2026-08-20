@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {RetryJsonCache,fetchJsonWithRetry,nextGridCount} from './runtime.ts'
+import {RetryJsonCache,fetchJsonWithRetry,mergeLegacyConfirmationSidecar,nextGridCount} from './runtime.ts'
 
 test('nextGridCount advances in bounded batches',()=>{
   assert.equal(nextGridCount(16,123),32)
@@ -43,4 +43,32 @@ test('RetryJsonCache evicts a rejected promise so a later request can recover',a
   const value=await cache.load('snapshot:001','/chart.json')
   assert.deepEqual(value,{rows:[1,2,3]})
   assert.equal(calls,2)
+})
+
+test('LEGACY sidecar merge adds only transparent status fields',()=>{
+  const stocks=[{ticker:'AAA',opportunityScore:82},{ticker:'BBB',opportunityScore:75}]
+  const merged=mergeLegacyConfirmationSidecar(stocks,{
+    affectsStockScout:false,
+    source:{generatedAt:'snapshot-1'},
+    byTicker:{AAA:{status:'CONFIRMED',available:true,reasons:['ORIGINAL_RUN_BUY']}},
+  },'snapshot-1')
+  assert.deepEqual(merged[0],{
+    ticker:'AAA',opportunityScore:82,
+    legacyConfirmationStatus:'CONFIRMED',
+    legacyConfirmationReasons:['ORIGINAL_RUN_BUY'],
+  })
+  assert.deepEqual(merged[1],stocks[1])
+  assert.equal(stocks[0].opportunityScore,82)
+  assert.equal('legacyConfirmationStatus' in stocks[0],false)
+})
+
+test('LEGACY sidecar merge refuses a stale snapshot',()=>{
+  const stocks=[{ticker:'AAA',opportunityScore:82}]
+  const merged=mergeLegacyConfirmationSidecar(stocks,{
+    affectsStockScout:false,
+    source:{generatedAt:'old-snapshot'},
+    byTicker:{AAA:{status:'RISK',available:true,reasons:['ORIGINAL_RUN_SELL']}},
+  },'new-snapshot')
+  assert.equal(merged,stocks)
+  assert.equal('legacyConfirmationStatus' in merged[0],false)
 })
