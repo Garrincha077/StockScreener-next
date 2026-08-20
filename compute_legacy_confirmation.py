@@ -257,14 +257,35 @@ def project_captured_legacy_confirmation(
     }
 
 
+def compact_legacy_confirmation(projection: Mapping[str, Any]) -> dict[str, Any]:
+    """Drop duplicated evidence while keeping pointers to its canonical sources."""
+    return {
+        "model": deepcopy(projection.get("model")),
+        "version": deepcopy(projection.get("version")),
+        "status": deepcopy(projection.get("status")),
+        "available": deepcopy(projection.get("available")),
+        "provenance": deepcopy(projection.get("provenance")),
+        "sourceModel": deepcopy(projection.get("sourceModel")),
+        "captureModel": deepcopy(projection.get("captureModel")),
+        "classificationBasis": deepcopy(projection.get("classificationBasis")),
+        "affectsStockScout": False,
+        "reasons": deepcopy(projection.get("reasons") or []),
+        "evidenceRefs": {
+            "market": "market.originalSignalGate",
+            "candidate": "originalEngine",
+        },
+    }
+
+
 def enrich_candidate_from_captured_legacy(
     candidate: Mapping[str, Any],
     *,
     market: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Return a copy with captured frozen LEGACY confirmation appended."""
+    """Return a copy with a compact, append-only confirmation projection."""
     enriched = deepcopy(dict(candidate))
-    enriched["legacyConfirmation"] = project_captured_legacy_confirmation(candidate, market=market)
+    detailed = project_captured_legacy_confirmation(candidate, market=market)
+    enriched["legacyConfirmation"] = compact_legacy_confirmation(detailed)
     return enriched
 
 
