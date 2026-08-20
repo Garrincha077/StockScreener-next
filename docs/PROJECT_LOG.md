@@ -61,3 +61,47 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Map the actual already-captured frozen LEGACY fields into this adapter, then run the adapter against a canonical payload in shadow mode and verify exact before/after core invariance before any UI badge/filter wiring.
+
+## 2026-08-20 — Captured LEGACY mapping + canonical shadow invariance gate
+
+**Branch / commits**
+- Branch: `next-dev`.
+- Captured-output classifier: `ddd29e5429dc44cb7df119113f8e5e1bfa38604d`.
+- Expanded regression tests: `56b3df25938f845ed33b6fe5b74369c856f006a1`.
+- Read-only canonical audit: `2c33403783e16bc6add7efc940c2e2afee6fdb91`.
+- Compact persistence refactor: `8990ae9d84d960badb13f203111e670e1f24078e`.
+
+**What changed / why**
+- Mapped the confirmation layer to already-captured frozen outputs under `originalEngine` and the flat `original*` fields; no frozen LEGACY function or threshold was modified.
+- Added deterministic non-numeric status precedence: emitted original SELL -> `RISK`; emitted original BUY -> `CONFIRMED`; raw original BUY/SELL not emitted -> `CONFLICT`; frozen Trend Template/VCP/breakout booleans -> `EARLY`; otherwise captured rows -> `NEUTRAL`; missing capture -> `UNAVAILABLE`.
+- Detailed in-memory evidence exposes original market gate, Minervini TT, VCP contraction anatomy, A/D volume, breakout, original R/R/risk and SELL/failed-breakout evidence.
+- Persistable `legacyConfirmation` is intentionally compact and points back to `market.originalSignalGate` / `originalEngine` instead of duplicating the full evidence tree.
+- Added `audit_legacy_confirmation_shadow.py`, which enriches only in memory and fails on any protected StockScout or chart-mapping drift.
+
+**Affected files / components**
+- `compute_legacy_confirmation.py`.
+- `tests/test_compute_legacy_confirmation.py`.
+- `audit_legacy_confirmation_shadow.py`.
+- No scanner, canonical writer, frontend, workflow or frozen LEGACY source was changed.
+
+**Scoring / behavior impact**
+- `legacyConfirmation` remains shadow-only and explicitly carries `affectsStockScout: false`.
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, Stage, RS, default rank or chart mapping was changed.
+- Canonical `frontend/public/data/latest.json` was not written or committed by this work.
+
+**Tests / audits / CI**
+- Targeted local pytest after captured-field mapping: `15 passed`.
+- Read-only audit was run against the real GitHub Pages snapshot produced by successful Stable Full Validation run `32314809594` (head SHA `fa2739c5463739389c05a7479d859063729a328c`, generatedAt `2026-08-19T23:57:38.758884+00:00`).
+- Snapshot: 2,013 universe rows; frozen LEGACY complete-source coverage 2,013/2,013; capture errors 0; original-run BUY 620; original-run SELL 173.
+- Shadow result: `CONFIRMED 620`, `EARLY 236`, `NEUTRAL 984`, `RISK 173`, `CONFLICT 0`, `UNAVAILABLE 0`.
+- Core-invariance errors: `0`; chart shard mapping identical; source payload remained unchanged in memory.
+- Compact append-only serialization estimate: +0.884 MB (~2.14%) versus +3.48 MB for duplicated detailed evidence.
+- This was not a fresh Full Validation run of the new adapter code; CI is therefore not claimed green.
+
+**Risk / decision**
+- Do not persist duplicated detailed evidence into the already-large canonical payload; reuse existing `originalEngine` as the drill-down source.
+- Keep confirmation classification boolean/emission-based. No new composite score or threshold calibration was introduced.
+- Stable was only read via its successful Pages artifact; `stock-screener2` was not modified. Next nightly scheduling remains disabled.
+
+**Next logical step**
+- Materialize the compact confirmation as a separate reversible shadow artifact/sidecar (preferred over inflating canonical `latest.json`), validate it against the same canonical input, then wire one read-only badge/filter in the frontend before broader Phase 4 UX work.
