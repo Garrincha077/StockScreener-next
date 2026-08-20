@@ -10,11 +10,14 @@ permissions:
 
 jobs:
   record:
+    if: ${{ github.event.workflow_run.head_repository.full_name == github.repository && github.event.workflow_run.head_branch != '' }}
     runs-on: ubuntu-latest
+    env:
+      TARGET_BRANCH: ${{ github.event.workflow_run.head_branch }}
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: main
+          ref: ${{ github.event.workflow_run.head_branch }}
           fetch-depth: 0
       - name: Write status
         env:
@@ -38,15 +41,15 @@ jobs:
           }
           Path("data/daily_scans/full_validation_status.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
           PY
-      - name: Commit status
+      - name: Commit status to source branch
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -f data/daily_scans/full_validation_status.json
           git commit -m "ci: record full validation status" || exit 0
           for attempt in 1 2 3; do
-            git fetch origin main
-            if git rebase origin/main && git push origin HEAD:main; then exit 0; fi
+            git fetch origin "$TARGET_BRANCH"
+            if git rebase "origin/$TARGET_BRANCH" && git push origin HEAD:"$TARGET_BRANCH"; then exit 0; fi
             git rebase --abort || true
             sleep $((attempt * 2))
           done
