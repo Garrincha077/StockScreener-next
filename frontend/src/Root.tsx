@@ -5,6 +5,7 @@ import GroupsPage from './GroupsPage'
 import OriginalEngineDock from './OriginalEngineDock'
 import LegacyConfirmationBadge from './LegacyConfirmationBadge'
 import Phase4ReviewBar from './Phase4ReviewBar'
+import {useStockScoutData} from './data/StockScoutDataProvider'
 import {resetPanelSizes,useResizablePanels} from './useResizablePanels'
 import './resizable-panels.css'
 import './legacy-confirmation.css'
@@ -28,6 +29,7 @@ function initialLayer():Layer{try{return localStorage.getItem(LAYER_KEY)==='lega
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value))}
 
 export default function Root(){
+  const{selectTicker}=useStockScoutData()
   const[view,setView]=useState<'terminal'|'groups'>('terminal')
   const[layer,setLayer]=useState<Layer>(initialLayer)
   const[engineOpen,setEngineOpen]=useState(false)
@@ -37,7 +39,7 @@ export default function Root(){
   useEffect(()=>{try{localStorage.setItem(LAYER_KEY,layer)}catch{}},[layer])
 
   const chooseLayer=(next:Layer)=>{setLayer(next);setView('terminal');if(next==='legacy')setEngineOpen(false)}
-  const openTicker=(ticker:string)=>{location.hash=ticker;setLayer('stockscout');setView('terminal')}
+  const openTicker=(ticker:string)=>{selectTicker(ticker);setLayer('stockscout');setView('terminal')}
   const maxEngineWidth=()=>Math.min(MAX_ENGINE_WIDTH,Math.max(MIN_ENGINE_WIDTH,window.innerWidth-700))
   const normalizedEngineWidth=(value:number)=>Math.round(clamp(value,MIN_ENGINE_WIDTH,maxEngineWidth()))
   const setAndPersistEngineWidth=(value:number)=>{

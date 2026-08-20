@@ -1,21 +1,14 @@
 import {useEffect,useMemo,useState} from 'react'
 import {buildReviewInbox,dataHealth,explainStock,type ReviewManifest,type ReviewPayload,type ValidationStatus} from './phase4Review'
+import {useStockScoutData} from './data/StockScoutDataProvider'
 
 type InboxMode='today'|'new'|null
 
-async function readJson<T>(url:string):Promise<T|null>{
-  try{
-    const response=await fetch(`${url}${url.includes('?')?'&':'?'}t=${Date.now()}`,{cache:'no-store'})
-    if(!response.ok)return null
-    return await response.json() as T
-  }catch{return null}
-}
-
 export default function Phase4ReviewBar(){
-  const[payload,setPayload]=useState<ReviewPayload|null>(null)
-  const[manifest,setManifest]=useState<ReviewManifest|null>(null)
+  const{core,manifest:selectedManifest,selectedTicker,selectTicker,loadOptional}=useStockScoutData()
+  const payload=core as ReviewPayload|null
+  const manifest=selectedManifest as ReviewManifest|null
   const[validation,setValidation]=useState<ValidationStatus|null>(null)
-  const[selectedTicker,setSelectedTicker]=useState(()=>location.hash.replace('#','').toUpperCase())
   const[inboxMode,setInboxMode]=useState<InboxMode>(null)
   const[queueMode,setQueueMode]=useState<InboxMode>(null)
   const[whyOpen,setWhyOpen]=useState(false)
@@ -23,33 +16,9 @@ export default function Phase4ReviewBar(){
 
   useEffect(()=>{
     let live=true
-    Promise.all([
-      readJson<ReviewPayload>('./data/core.json'),
-      readJson<ReviewManifest>('./data/manifest.json'),
-      readJson<ValidationStatus>('./data/validation-status.json'),
-    ]).then(([core,nextManifest,nextValidation])=>{
-      if(!live)return
-      setPayload(core);setManifest(nextManifest);setValidation(nextValidation)
-    })
+    loadOptional<ValidationStatus>('validation-status.json').then(next=>{if(live)setValidation(next)})
     return()=>{live=false}
-  },[])
-
-  useEffect(()=>{
-    const syncHash=()=>{
-      const next=location.hash.replace('#','').toUpperCase()
-      setSelectedTicker(current=>current===next?current:next)
-    }
-    syncHash()
-    window.addEventListener('hashchange',syncHash)
-    // DeepVueTerminal uses history.replaceState for normal row/grid selection,
-    // which does not emit hashchange. Keep the review surface synchronized
-    // without coupling the terminal to Phase 4 state.
-    const timer=window.setInterval(syncHash,250)
-    return()=>{
-      window.removeEventListener('hashchange',syncHash)
-      window.clearInterval(timer)
-    }
-  },[])
+  },[loadOptional])
 
   const reviewedStorageKey=payload?.generatedAt?`stockscout-phase4-reviewed:${payload.generatedAt}`:null
   useEffect(()=>{
@@ -85,8 +54,7 @@ export default function Phase4ReviewBar(){
     })
   }
   const openTicker=(ticker:string,mode:InboxMode=null)=>{
-    location.hash=ticker
-    setSelectedTicker(ticker)
+    selectTicker(ticker)
     setInboxMode(null)
     setQueueMode(mode)
     setWhyOpen(true)
@@ -107,7 +75,7 @@ export default function Phase4ReviewBar(){
         <span className="p4-health-dot"/>
         <b>{health.label}</b>
         {health.ageHours!==null&&<small>{Math.round(health.ageHours)}h snapshot</small>}
-        <span>{validation?.conclusion==='success'?`validation #${validation.run_id??'—'}`:'validation status: client unavailable'}</span>
+        <span>{validation?.conclusion==='success'?`validation #${validation.run_id??'—'}`:validation?.conclusion?`validation: ${validation.conclusion}`:'validation status: unknown'}</span>
       </div>
       <div className="p4-inbox-actions">
         <button className={inboxMode==='today'?'active':''} onClick={()=>setInboxMode(mode=>mode==='today'?null:'today')}><b>Today</b><span>{inbox.today.length}<small>{unseenLabel(todayUnseen)}</small></span></button>

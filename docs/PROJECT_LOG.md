@@ -431,3 +431,36 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Verify the `Deploy StockScout Terminal` Pages run from merge commit `d104726...` and use the public Next Pages URL for real-use review. Continue subsequent roadmap work on `next-dev`; use Full Validation for any future scan/data/workflow changes.
+
+## 2026-08-20 — Application/data hardening PR 1
+
+**Branch / scope**
+- Branch: `hardening/app-data-v2`, based on current `main` (`e956e11c`).
+- This is the first of two reviewable hardening PRs. It changes only client projection, frontend behavior, tests and frontend dependency installation; the scan/scoring implementation and frozen LEGACY methodology remain untouched.
+
+**What changed / why**
+- Added one application-wide `StockScoutDataProvider`. Manifest/core requests are promise-deduplicated, rejected promises are evicted, selected ticker state is centralized, and Review/Groups/badge/Original/LEGACY navigation no longer polls the URL hash or refetches the canonical payload.
+- Introduced manifest v2 with source/publication provenance and versioned `core`, `legacyIndex`, `legacyDetails`, `legacyConfirmation` and `charts` assets. Each descriptor carries a path, SHA-256, byte size and coverage.
+- Replaced the implicit “everything except three nested keys” projection with the explicit Filter Builder field contract plus the small set of rendered fields. Nulls are omitted. The real repository snapshot now projects from 43.31 MB canonical bytes to a 7.95 MB `core.json` hard-capped at 8,000,000 bytes.
+- Derived a 1.01 MB `legacy/index.json` and exactly 128 deterministic `legacy/details/*.json` shards. LEGACY and Original Engine use the same cached shard. `latest.json` remains byte-identical as an audit/recovery file, while the Vite output explicitly excludes it.
+- Paginated LEGACY at 100 DOM rows, aligned detail selection with the active filter, and added index/detail retry states.
+- Invalid Filter Builder rules now show an inline error, are ignored rather than treated as match-all predicates, and disable saved-screen creation until fixed.
+- Balanced multi-sort now keeps percentile/mix values in a separate map and never adds temporary properties to source stock rows.
+- Chart presentation now distinguishes loading, ready, unavailable and request error. Versioned successful shards remain cacheable; only a user retry after an observed failure gets a cache-busting request.
+- Health is green only for aligned provenance, the last completed NYSE session (including normal exchange holidays) and a published successful validation. Unknown validation is neutral.
+- Added `frontend/package-lock.json`, changed frontend workflow installation to `npm ci`, removed the unused alternate `DataScreener` implementation that still fetched `latest.json`, and moved the mobile Original dock above the fixed navigation.
+
+**Scoring / behavior impact**
+- No StockScout score, Opportunity v2 input/weight, default ranking, scanner output or frozen LEGACY rule/threshold changed.
+- The canonical `frontend/public/data/latest.json` bytes and protected StockScout invariance tests remain unchanged.
+- Stable `Garrincha077/stock-screener2` is not in scope. No scheduled workflow was added or enabled.
+
+**Tests / local verification**
+- `python -m pytest tests/test_prepare_frontend_payloads.py tests/test_next_core_invariance.py -q`: **5 passed**.
+- `npm run check`: **24 passed**, TypeScript clean, Vite production build successful; `dist/data/latest.json` is absent.
+- Playwright hardening coverage passes on Pixel 5 and Desktop Chrome for shared core fetch, filter error/save gate, chart 503 retry, unavailable chart, 100-row LEGACY DOM and shared detail shard.
+- Existing Phase 4 Rapid Review and Phase 5 cohort browser tests also pass in both projects.
+- Independent `agent-browser` smoke against the unmocked local production artifact reported `HAS_CONTENT`, `OK` for framework overlays, no page errors, and a populated interactive snapshot.
+
+**Next logical step**
+- Complete CI on the draft PR, then layer PR 2 for immutable validated snapshots, fail-closed publication/deployment, a single reusable Pages path, locked Python CI dependencies and repository governance. Keep `schedule:` absent until 10 explicitly run production-style Full Validations are green.

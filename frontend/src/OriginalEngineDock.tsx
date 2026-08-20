@@ -1,4 +1,5 @@
 import {useEffect,useMemo,useState} from 'react'
+import {useStockScoutData} from './data/StockScoutDataProvider'
 import './original-engine.css'
 
 type EngineRow={
@@ -23,7 +24,6 @@ type EngineRow={
   phaseConfidence?:number
   originalEngine?:any
 }
-type Payload={market?:any;universe?:EngineRow[];originalEngineModel?:string}
 type Props={open:boolean;onOpenChange:(open:boolean)=>void;embedded?:boolean}
 
 const fmt=(v:any,d=1)=>typeof v==='number'&&Number.isFinite(v)?v.toFixed(d):'—'
@@ -42,33 +42,27 @@ const criteriaLabels:Record<string,string>={
 }
 
 export default function OriginalEngineDock({open,onOpenChange,embedded=false}:Props){
-  const[payload,setPayload]=useState<Payload|null>(null)
+  const{core,selectedTicker:ticker,loadLegacyDetail}=useStockScoutData()
+  const[detail,setDetail]=useState<EngineRow|null>(null)
   const[loading,setLoading]=useState(false)
   const[loadError,setLoadError]=useState('')
-  const[ticker,setTicker]=useState(()=>location.hash.replace('#','').toUpperCase())
+  const[retry,setRetry]=useState<{ticker:string;nonce:number}|null>(null)
 
   useEffect(()=>{
-    if(!open||payload||loading||loadError)return
+    if(!open||!ticker)return
     let live=true
-    setLoading(true)
-    fetch(`./data/latest.json?t=${Date.now()}`,{cache:'no-store'})
-      .then(r=>{if(!r.ok)throw new Error(`HTTP ${r.status}`);return r.json()})
-      .then((data:Payload)=>{if(live)setPayload(data)})
+    const force=retry?.ticker===ticker
+    setLoading(true);setLoadError('');setDetail(null)
+    loadLegacyDetail(ticker,force)
+      .then(row=>{if(live){setDetail(row as EngineRow|null);if(force)setRetry(null)}})
       .catch(error=>{if(live)setLoadError(String(error))})
       .finally(()=>{if(live)setLoading(false)})
     return()=>{live=false}
-  },[open,payload,loading,loadError])
-  useEffect(()=>{
-    let last=location.hash
-    const timer=window.setInterval(()=>{
-      if(location.hash!==last){last=location.hash;setTicker(location.hash.replace('#','').toUpperCase())}
-    },250)
-    return()=>window.clearInterval(timer)
-  },[])
+  },[open,ticker,retry?.nonce,loadLegacyDetail])
 
-  const row=useMemo(()=>payload?.universe?.find(x=>x.ticker===ticker)||payload?.universe?.[0],[payload,ticker])
+  const row=useMemo(()=>detail||(core?.universe.find(x=>x.ticker===ticker) as EngineRow|undefined),[detail,core,ticker])
   const e=row?.originalEngine
-  const gate=payload?.market?.originalSignalGate?.gate
+  const gate=core?.market?.originalSignalGate?.gate
   const criteria=e?.minervini?.criteria||{}
   const components=e?.buy?.components||{}
   const contractions=e?.vcp?.contractions||[]
@@ -78,7 +72,7 @@ export default function OriginalEngineDock({open,onOpenChange,embedded=false}:Pr
     {!open&&<button className={`oe-launch ${qualified?'qualified':''}`} onClick={()=>onOpenChange(true)} title="Open repository source signal engine" aria-expanded={false}>ORIGINAL {row?.originalBuyScore!=null?fmt(row.originalBuyScore,0):''}</button>}
     {open&&<aside className={`oe-dock ${embedded?'embedded':''}`}>
       <header><div><small>SOURCE METHODOLOGY</small><b>ORIGINAL ENGINE · {row?.ticker||ticker||'—'}</b></div><button onClick={()=>onOpenChange(false)} aria-label="Close Original Engine">×</button></header>
-      {loading?<div className="oe-empty">Loading complete source payload…</div>:loadError?<div className="oe-empty">Unable to load source payload. <button onClick={()=>{setLoadError('');setPayload(null)}}>Retry</button></div>:!e?<div className="oe-empty">Original-engine fields are not present in this dataset yet.</div>:<div className="oe-body">
+      {loading?<div className="oe-empty">Loading source detail shard…</div>:loadError?<div className="oe-empty">Unable to load source detail. <button onClick={()=>setRetry({ticker,nonce:Date.now()})}>Retry</button></div>:!e?<div className="oe-empty">Original-engine detail is unavailable for this ticker.</div>:<div className="oe-body">
         <section className="oe-summary">
           <div><small>BUY SCORE</small><strong>{fmt(e.buy?.score,0)}<em>/125</em></strong></div>
           <div><small>MARKET GATE</small><strong className={gate?.should_generate_buys?'good':'warn'}>{gate?.should_generate_buys?'ON':'OFF'}</strong></div>

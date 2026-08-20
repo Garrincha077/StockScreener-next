@@ -176,7 +176,28 @@ const scalar=(stock:any,field:string)=>{
 const textValue=(value:any)=>Array.isArray(value)?value.join(' | '):String(value??'')
 const asNumber=(value:any)=>{const n=Number(value);return Number.isFinite(n)?n:NaN}
 
+export function validateRule(rule:Rule):string|null{
+  const def=fieldDefs.find(field=>field.id===rule.field)
+  if(!def)return'Unknown field'
+  if(def.kind==='boolean')return null
+  const input=rule.value.trim()
+  if(!input)return'Enter a value'
+  if(def.kind==='text')return null
+  if(rule.op==='between'){
+    const parts=input.split(',').map(value=>value.trim())
+    if(parts.length!==2||parts.some(value=>!value||!Number.isFinite(Number(value))))return'Use two numbers separated by a comma'
+    return null
+  }
+  if(!Number.isFinite(Number(input)))return'Enter a valid number'
+  return null
+}
+
+export function invalidRules(groups:RuleGroup[]){
+  return groups.flatMap(group=>group.rules.filter(rule=>validateRule(rule)!==null))
+}
+
 export function matchesRule(stock:any,rule:Rule):boolean{
+  if(validateRule(rule))return false
   const raw=scalar(stock,rule.field)
   if(rule.op==='true')return raw===true
   if(rule.op==='false')return raw===false
@@ -184,21 +205,19 @@ export function matchesRule(stock:any,rule:Rule):boolean{
   const def=fieldDefs.find(x=>x.id===rule.field)
   if(def?.kind==='text'){
     const left=textValue(raw).toLowerCase(),right=rule.value.trim().toLowerCase()
-    if(!right)return true
     return rule.op==='!='?left!==right:left===right
   }
-  if(def?.kind==='number'&&!rule.value.trim())return true
   const left=asNumber(raw)
   if(!Number.isFinite(left))return false
   if(rule.op==='between'){
     const parts=rule.value.split(',').map(x=>x.trim())
-    if(parts.length!==2||parts.some(x=>!x))return true
+    if(parts.length!==2||parts.some(x=>!x))return false
     const [a,b]=parts.map(Number)
-    if(!Number.isFinite(a)||!Number.isFinite(b))return true
+    if(!Number.isFinite(a)||!Number.isFinite(b))return false
     return left>=Math.min(a,b)&&left<=Math.max(a,b)
   }
   const right=Number(rule.value)
-  if(!Number.isFinite(right))return true
+  if(!Number.isFinite(right))return false
   if(rule.op==='>')return left>right
   if(rule.op==='>=')return left>=right
   if(rule.op==='<')return left<right
@@ -208,7 +227,7 @@ export function matchesRule(stock:any,rule:Rule):boolean{
 }
 
 export function matchesGroups(stock:any,groups:RuleGroup[],rootLogic:Logic):boolean{
-  const active=groups.filter(g=>g.rules.length)
+  const active=groups.map(group=>({...group,rules:group.rules.filter(rule=>!validateRule(rule))})).filter(group=>group.rules.length)
   if(!active.length)return true
   const groupMatch=(g:RuleGroup)=>g.logic==='ALL'?g.rules.every(r=>matchesRule(stock,r)):g.rules.some(r=>matchesRule(stock,r))
   return rootLogic==='ALL'?active.every(groupMatch):active.some(groupMatch)
