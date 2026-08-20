@@ -331,3 +331,51 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Continue Phase 4 with one more frontend-only usability slice: add a compact reviewed/progress state for Today/New (local/session only) so the user can distinguish unseen vs reviewed candidates during a session, without writing scan data or changing StockScout scores. Defer live validation-status artifact wiring unless its operational value justifies a separate data/workflow change and Full Validation.
+
+## 2026-08-20 — Phase 4 reviewed progress + mobile/desktop gate closed
+
+**Branch / commits**
+- Branch: `next-dev`.
+- Snapshot-scoped reviewed state: `74f4442edbc995b62eb3f98bd929a26174cca17e`.
+- Reviewed/unseen styling: `0ea6303ff4f3a82012db68734067a71c79414bc7`.
+- Reviewed-progress browser coverage: `36e44ca2e17309428706e16b431765bc9742723d`.
+- Mobile + desktop Playwright projects: `facf798a5b647c2419f151a881026b770a7459e2`.
+- Desktop stacking fix: `6cbf49b459682d5b13362d8d145947b2e0dd40e9`.
+- Viewport-aware Rapid Review test: `45ae494ebce282d6e73d592d7345a3d1381646e9`.
+
+**What changed / why**
+- Today/New now shows `N unseen` / `all seen`; opening a queue candidate marks it reviewed, reviewed rows are visibly marked, and Prev/Next navigation advances review progress.
+- Reviewed state is stored only in `sessionStorage`, under a key scoped to the current `generatedAt` snapshot. A new scan snapshot therefore starts with clean review progress automatically; nothing is written to canonical scan data, ranking, saved screens or server state.
+- Playwright now runs the same Phase 4 review workflow in both `mobile-pixel-5` and `desktop-chrome` projects. This was added because the Phase 4 roadmap gate explicitly requires mobile + desktop review behavior, while prior browser coverage was mobile-only.
+- The first desktop browser run exposed a real stacking bug: the Why-panel Next button was under the sticky terminal header, so the terminal `3h old` element intercepted pointer events. Raising the Phase 4 review stacking context from z-index 44 to 60 fixed the actual UI instead of forcing the test click.
+- After that fix, desktop progressed through the queue correctly but the test still assumed an initial 16-card grid. A large desktop viewport legitimately places the IntersectionObserver sentinel in range and can advance the lazy loader to 32 immediately. The final test therefore keeps the strict initial `16` assertion for Pixel 5, while desktop asserts that the displayed count matches the actual rendered card count; both projects must still end at all 50 matches.
+
+**Affected files / components**
+- `frontend/src/Phase4ReviewBar.tsx`.
+- `frontend/src/phase4-review.css`.
+- `frontend/e2e/mobile-rapid-review.spec.ts`.
+- `frontend/playwright.config.ts`.
+- No scanner, canonical writer, GitHub Actions workflow, StockScout model, scoring field, filter engine or frozen LEGACY source changed.
+
+**Scoring / behavior impact**
+- None. Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, Stage, RS, chart mapping and default ranking remain unchanged.
+- LEGACY remains frozen/shadow-only and cannot affect StockScout scoring.
+- Reviewed/unseen state is transient human-review state only and resets by browser session / new `generatedAt` snapshot.
+- Stable `Garrincha077/stock-screener2` was not modified; Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Reviewed/unseen slice: Frontend Compile Smoke `32362909506` (#34) **success** and StockScout Validation `32362909656` (#50) **success** on `36e44ca...`. The browser test verified `3 unseen -> 2 unseen -> 1 unseen`, two reviewed row markers, queue navigation, active ticker sync and full Rapid Review rendering.
+- Initial dual-viewport Compile Smoke `32363099208` (#35) failed only in `desktop-chrome` because the real Why-panel stacking bug caused the terminal header to intercept the Next click; `mobile-pixel-5` passed.
+- Compile Smoke `32363306754` (#36) after the stacking fix reached and passed the queue interaction on desktop, then failed only because the test expected `16 of 50` while desktop had legitimately auto-advanced to `32 of 50` through IntersectionObserver.
+- Final Frontend Compile Smoke `32363419613` (#37) on `45ae494...`: **success**. The job log explicitly reports `Running 2 tests using 2 workers` and `2 passed`; Pixel 5 and Desktop Chrome both complete Today/reviewed/Why/queue/ticker-sync/Rapid Review behavior.
+- Final StockScout Validation `32363419707` (#54) on `45ae494...`: **success**. Frozen LEGACY baseline, regression/integration suite, current model stack, Opportunity/model compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance, frontend Node tests and TypeScript/Vite build all passed.
+- Full Validation was not run because these changes are frontend/test-configuration only and do not alter scan/data/workflow behavior.
+
+**Risk / decision**
+- Phase 4 Review UX v2 functional gate is now closed: Today/New inbox, transparent Why explanation, health banner, LEGACY shadow confirmation, Rapid Review, reviewed progress, and mobile + desktop review are all represented and browser-validated.
+- Keep live validation-status publishing deferred. The health banner must continue to say client validation status is unavailable rather than presenting a stale/frozen green claim. If live status is later published through data/workflow, treat it as a separate change and run Full Validation.
+- Keep the 250 ms hash observer local to the Phase 4 review bar until/unless application-wide selected-ticker state is intentionally centralized.
+- PR #1 remains draft/unmerged; closing the Phase 4 functional gate is not a promotion decision.
+
+**Next logical step**
+- Phase 4 is ready for real-use feedback on `next-dev`. Continue to the next roadmap phase only with the same rule: preserve StockScout Core and LEGACY shadow-only behavior, use small reversible changes, and require Full Validation for any scan/data/workflow modification.
