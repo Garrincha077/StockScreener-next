@@ -11,9 +11,13 @@ on:
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
       - 'frontend/playwright.config.ts'
+      - 'compute_legacy_confirmation.py'
+      - 'build_legacy_confirmation_sidecar.py'
       - 'prepare_frontend_payloads.py'
       - 'hydrate_frontend_charts_readonly.py'
       - 'compute_ma_crosses.py'
+      - 'tests/test_compute_legacy_confirmation.py'
+      - 'tests/test_build_legacy_confirmation_sidecar.py'
       - 'tests/test_prepare_frontend_payloads.py'
       - 'tests/test_readonly_chart_snapshot.py'
       - 'tests/test_ma_crosses.py'
@@ -28,9 +32,13 @@ on:
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
       - 'frontend/playwright.config.ts'
+      - 'compute_legacy_confirmation.py'
+      - 'build_legacy_confirmation_sidecar.py'
       - 'prepare_frontend_payloads.py'
       - 'hydrate_frontend_charts_readonly.py'
       - 'compute_ma_crosses.py'
+      - 'tests/test_compute_legacy_confirmation.py'
+      - 'tests/test_build_legacy_confirmation_sidecar.py'
       - 'tests/test_prepare_frontend_payloads.py'
       - 'tests/test_readonly_chart_snapshot.py'
       - 'tests/test_ma_crosses.py'
@@ -51,10 +59,10 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Client payload, snapshot and MA cross tests
+      - name: Client payload, LEGACY shadow, snapshot and MA cross tests
         run: |
           python -m pip install --upgrade pip pytest pandas yfinance
-          python -m pytest tests/test_prepare_frontend_payloads.py tests/test_readonly_chart_snapshot.py tests/test_ma_crosses.py -q
+          python -m pytest tests/test_compute_legacy_confirmation.py tests/test_build_legacy_confirmation_sidecar.py tests/test_prepare_frontend_payloads.py tests/test_readonly_chart_snapshot.py tests/test_ma_crosses.py -q
 
       - name: Project the current canonical snapshot
         run: |
@@ -63,6 +71,18 @@ jobs:
           AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           test "$BEFORE" = "$AFTER"
           test -s frontend/public/data/core.json
+          test -s frontend/public/data/shadow/legacy-confirmation.json
+          python - <<'PY'
+          import json
+          core=json.load(open('frontend/public/data/core.json'))
+          manifest=json.load(open('frontend/public/data/manifest.json'))
+          shadow=json.load(open('frontend/public/data/shadow/legacy-confirmation.json'))
+          assert core.get('generatedAt') == manifest.get('generatedAt') == (shadow.get('source') or {}).get('generatedAt')
+          assert len(core.get('universe') or []) == manifest.get('universe') == shadow.get('total')
+          assert all(row.get('legacyConfirmationStatus') for row in core.get('universe') or [])
+          assert shadow.get('affectsStockScout') is False
+          print('LEGACY shadow counts:', shadow.get('counts'))
+          PY
           cat frontend/public/data/manifest.json
 
       - uses: actions/setup-node@v4

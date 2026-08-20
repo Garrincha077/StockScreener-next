@@ -9,6 +9,8 @@ on:
       - 'frontend/package.json'
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
+      - 'compute_legacy_confirmation.py'
+      - 'build_legacy_confirmation_sidecar.py'
       - 'prepare_frontend_payloads.py'
       - 'hydrate_frontend_charts_readonly.py'
       - 'validate_frontend_charts.py'
@@ -36,12 +38,26 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Build lightweight client payload
+      - name: Build lightweight client payload + LEGACY shadow
         run: |
           test -s frontend/public/data/latest.json
+          BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           python prepare_frontend_payloads.py
+          AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          test "$BEFORE" = "$AFTER"
           test -s frontend/public/data/core.json
           test -s frontend/public/data/manifest.json
+          test -s frontend/public/data/shadow/legacy-confirmation.json
+          python - <<'PY'
+          import json
+          core=json.load(open('frontend/public/data/core.json'))
+          manifest=json.load(open('frontend/public/data/manifest.json'))
+          shadow=json.load(open('frontend/public/data/shadow/legacy-confirmation.json'))
+          assert core.get('generatedAt') == manifest.get('generatedAt') == (shadow.get('source') or {}).get('generatedAt')
+          assert len(core.get('universe') or []) == manifest.get('universe') == shadow.get('total')
+          assert shadow.get('affectsStockScout') is False
+          print('LEGACY shadow counts:', shadow.get('counts'))
+          PY
 
       - name: Build read-only adjusted 5Y chart shards (best effort)
         shell: bash
