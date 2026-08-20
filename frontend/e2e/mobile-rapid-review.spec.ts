@@ -33,7 +33,7 @@ const payload=JSON.stringify({
 })
 const manifest=JSON.stringify({generatedAt,universe:50})
 
-test('Phase 4 inbox, why panel and Rapid Review work on mobile',async({page})=>{
+test('Phase 4 inbox, review queue, ticker sync and Rapid Review work on mobile',async({page})=>{
   page.on('pageerror',error=>console.error('PAGE ERROR:',error.message))
   page.on('console',message=>{
     if(message.type()==='error')console.error('BROWSER CONSOLE:',message.text())
@@ -56,9 +56,17 @@ test('Phase 4 inbox, why panel and Rapid Review work on mobile',async({page})=>{
   await expect(page.locator('.p4-inbox-drawer')).toContainText('3 candidates')
 
   await page.locator('.p4-inbox-list button').first().click()
-  await expect(page.locator('.p4-why')).toBeVisible()
-  await expect(page.locator('.p4-why')).toContainText('transparent decomposition')
-  await expect(page.locator('.p4-why')).toContainText('Opportunity')
+  const why=page.locator('.p4-why')
+  await expect(why).toBeVisible()
+  await expect(why).toContainText('WHY T001?')
+  await expect(why).toContainText('Review 1 / 3')
+  await expect(why).toContainText('transparent decomposition')
+  await expect(why).toContainText('Opportunity')
+
+  await page.locator('.p4-next').click()
+  await expect(why).toContainText('WHY T002?')
+  await expect(why).toContainText('Review 2 / 3')
+  await page.getByRole('button',{name:'Close why panel'}).click()
 
   const gridButton=page.locator('.dv-top nav button').filter({hasText:/^Grid$/})
   await expect(gridButton).toHaveCount(1)
@@ -68,6 +76,15 @@ test('Phase 4 inbox, why panel and Rapid Review work on mobile',async({page})=>{
   const sentinel=page.locator('.dv-grid-sentinel')
   await expect(summary).toContainText('16 of 50')
   await expect(page.locator('.dv-minicard')).toHaveCount(16)
+
+  // A normal Grid selection uses history.replaceState, not hashchange. The
+  // Phase 4 review bar must still follow the active StockScout ticker.
+  await page.locator('.dv-minicard').nth(3).click()
+  const whyButton=page.locator('.p4-inbox-actions button').filter({hasText:/Why this stock\?/})
+  await expect(whyButton).toContainText('T004',{timeout:2_000})
+  await whyButton.click()
+  await expect(page.locator('.p4-why')).toContainText('WHY T004?')
+  await page.getByRole('button',{name:'Close why panel'}).click()
 
   for(let attempt=0;attempt<5;attempt++){
     if((await summary.textContent())?.includes('50 of 50'))break
