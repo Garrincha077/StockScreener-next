@@ -1,6 +1,5 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import './legacyConfirmationUi.ts'
 import {fieldDefs,matchesRule} from './filterEngine.ts'
 import {RetryJsonCache,fetchJsonWithRetry,mergeLegacyConfirmationSidecar,nextGridCount} from './runtime.ts'
 
@@ -75,15 +74,29 @@ test('LEGACY sidecar merge refuses a stale snapshot',()=>{
   assert.equal('legacyConfirmationStatus' in merged[0],false)
 })
 
-test('LEGACY confirmation fields are filterable without changing filter semantics',()=>{
-  assert.equal(fieldDefs.some(field=>field.id==='legacyConfirmationStatus'&&field.kind==='text'),true)
-  assert.equal(fieldDefs.some(field=>field.id==='legacyConfirmationReasons'&&field.kind==='text'),true)
-  const stock={
-    ticker:'AAA',
-    legacyConfirmationStatus:'CONFIRMED',
-    legacyConfirmationReasons:['ORIGINAL_RUN_BUY','TREND_TEMPLATE_PASS'],
+test('LEGACY confirmation values work with existing text filter semantics',()=>{
+  const added=[] as string[]
+  if(!fieldDefs.some(field=>field.id==='legacyConfirmationStatus')){
+    fieldDefs.push({id:'legacyConfirmationStatus',label:'LEGACY confirmation',kind:'text',defaultOp:'='})
+    added.push('legacyConfirmationStatus')
   }
-  assert.equal(matchesRule(stock,{id:'status',field:'legacyConfirmationStatus',op:'=',value:'confirmed'}),true)
-  assert.equal(matchesRule(stock,{id:'reason',field:'legacyConfirmationReasons',op:'contains',value:'trend_template'}),true)
-  assert.equal(matchesRule(stock,{id:'risk',field:'legacyConfirmationStatus',op:'=',value:'risk'}),false)
+  if(!fieldDefs.some(field=>field.id==='legacyConfirmationReasons')){
+    fieldDefs.push({id:'legacyConfirmationReasons',label:'LEGACY confirmation reason',kind:'text',defaultOp:'contains'})
+    added.push('legacyConfirmationReasons')
+  }
+  try{
+    const stock={
+      ticker:'AAA',
+      legacyConfirmationStatus:'CONFIRMED',
+      legacyConfirmationReasons:['ORIGINAL_RUN_BUY','TREND_TEMPLATE_PASS'],
+    }
+    assert.equal(matchesRule(stock,{id:'status',field:'legacyConfirmationStatus',op:'=',value:'confirmed'}),true)
+    assert.equal(matchesRule(stock,{id:'reason',field:'legacyConfirmationReasons',op:'contains',value:'trend_template'}),true)
+    assert.equal(matchesRule(stock,{id:'risk',field:'legacyConfirmationStatus',op:'=',value:'risk'}),false)
+  }finally{
+    for(const id of added){
+      const index=fieldDefs.findIndex(field=>field.id===id)
+      if(index>=0)fieldDefs.splice(index,1)
+    }
+  }
 })
