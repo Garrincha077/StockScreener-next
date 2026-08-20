@@ -4,9 +4,11 @@ import LegacyTerminal from './LegacyTerminal'
 import GroupsPage from './GroupsPage'
 import OriginalEngineDock from './OriginalEngineDock'
 import LegacyConfirmationBadge from './LegacyConfirmationBadge'
+import Phase4ReviewBar from './Phase4ReviewBar'
 import {resetPanelSizes,useResizablePanels} from './useResizablePanels'
 import './resizable-panels.css'
 import './legacy-confirmation.css'
+import './phase4-review.css'
 
 const ENGINE_WIDTH_KEY='stockscout-original-pane-width-v1'
 const LAYER_KEY='stockscout-active-layer-v1'
@@ -76,12 +78,15 @@ export default function Root(){
     setAndPersistEngineWidth(engineWidth+(event.key==='ArrowLeft'?step:-step))
   }
 
-  const stockscout=view==='groups'?<GroupsPage onBack={()=>setView('terminal')} onOpenTicker={openTicker}/>:<div className={`ss-root-shell ${engineOpen?'oe-open':''}`} style={{'--oe-pane-width':`${engineWidth}px`} as CSSProperties}>
-    <div className="ss-terminal-host"><DeepVueTerminal/></div>
-    {engineOpen&&<div className="oe-pane-splitter" role="separator" aria-label="Resize LEGACY source inspector" aria-orientation="vertical" tabIndex={0} onPointerDown={startEngineResize} onKeyDown={resizeWithKeyboard} onDoubleClick={()=>setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)} title="Drag left/right to resize · double-click to reset"><span>↔</span></div>}
-    <OriginalEngineDock open={engineOpen} onOpenChange={setEngineOpen} embedded={engineOpen}/>
-    <button className="dv-groups-launch" onClick={()=>setView('groups')}>◎ Groups</button>
-  </div>
+  const stockscout=view==='groups'?<GroupsPage onBack={()=>setView('terminal')} onOpenTicker={openTicker}/>:<>
+    <Phase4ReviewBar/>
+    <div className={`ss-root-shell ${engineOpen?'oe-open':''}`} style={{'--oe-pane-width':`${engineWidth}px`} as CSSProperties}>
+      <div className="ss-terminal-host"><DeepVueTerminal/></div>
+      {engineOpen&&<div className="oe-pane-splitter" role="separator" aria-label="Resize LEGACY source inspector" aria-orientation="vertical" tabIndex={0} onPointerDown={startEngineResize} onKeyDown={resizeWithKeyboard} onDoubleClick={()=>setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)} title="Drag left/right to resize · double-click to reset"><span>↔</span></div>}
+      <OriginalEngineDock open={engineOpen} onOpenChange={setEngineOpen} embedded={engineOpen}/>
+      <button className="dv-groups-launch" onClick={()=>setView('groups')}>◎ Groups</button>
+    </div>
+  </>
 
   return <>
     <div className="ss-layer-switch" aria-label="Signal layer">
