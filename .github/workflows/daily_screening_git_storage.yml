@@ -1,9 +1,8 @@
 name: Daily Stock Screening (Post-Market)
 
+# StockScout Next development mode: full scans are manual/reusable only.
+# The stable production repository remains responsible for the scheduled nightly scan.
 on:
-  schedule:
-    # 21:45 UTC is safely after the 16:00 ET regular close in both US DST regimes.
-    - cron: '45 21 * * 1-5'
   workflow_dispatch:
     inputs:
       force_full_refresh:
