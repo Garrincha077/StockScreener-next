@@ -56,19 +56,22 @@ on:
       - 'audit_frontend_dataset.py'
       - 'frontend/src/**'
       - 'frontend/package-lock.json'
+      - 'requirements-ci.lock'
       - '.github/workflows/stockscout_validation.yml'
   pull_request:
     branches: [main]
   workflow_dispatch:
 
-permissions:
-  contents: read
-  actions: read
+permissions: {}
 
 jobs:
   validate:
+    name: StockScout validation
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -78,11 +81,10 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+          cache-dependency-path: requirements-ci.lock
 
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+        run: python -m pip install --require-hashes -r requirements-ci.lock
 
       - name: Resolve latest non-expired Stable Pages artifact run
         id: source-run

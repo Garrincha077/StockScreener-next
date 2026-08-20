@@ -464,3 +464,30 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Complete CI on the draft PR, then layer PR 2 for immutable validated snapshots, fail-closed publication/deployment, a single reusable Pages path, locked Python CI dependencies and repository governance. Keep `schedule:` absent until 10 explicitly run production-style Full Validations are green.
+
+## 2026-08-21 — GitHub Actions and daily workflow hardening PR 2
+
+**Branch / scope**
+- Branch: `hardening/github-workflow-v2`, stacked on draft PR 1 until PR 1 merges; retarget to `main` after that merge.
+- Workflow/data-publication hardening only. StockScout scoring, Opportunity v2, default ranking, frozen LEGACY methodology and Stable `stock-screener2` remain untouched.
+
+**What changed / why**
+- Removed `direct_pages_redeploy.yml`, `force_current_pages.yml`, `rebuild_pages_now.yml` and the bot-commit `full_validation_status.yml` recorder.
+- Rebuilt the daily workflow around immutable artifacts. It never commits/pushes scan outputs; after audits, tests, strict snapshot validation and frontend build it may publish `validated-scan-snapshot` for 90 days, while `scan-recovery-*` remains available on failures and feature branches.
+- Added explicit boolean inputs `force_full_refresh`, `allow_prior_session_backfill`, `publish_snapshot` and `deploy_pages`. Publication/deployment steps are hard-gated to `refs/heads/main`; no `schedule:` exists.
+- Replaced workflow-name backfill inference with `ALLOW_PRIOR_SESSION_BACKFILL`. Ordinary pre-16:30 ET validation is fail-closed, an explicit prior-session run is accepted, and a current-session pre-close payload is still rejected.
+- Added `validate_snapshot_artifact.py`: canonical/source/publication SHA checks, manifest v2/asset byte+hash verification, exact core/index/detail ticker identity, Pages exclusion of `latest.json`, exact frontend source commit and a hard chart coverage threshold of 98%.
+- Frontend-only Pages builds now fetch the latest successful main `validated-scan-snapshot`; missing, corrupt or incomplete snapshots fail deployment and no Yahoo chart hydration runs.
+- Added one reusable Pages deploy job with concurrency `stockscout-pages-deploy`, a pre-deploy canonical/frontend-SHA guard and a live manifest/core/detail/chart smoke.
+- Full Validation now publishes the commit status `stockscout/full-validation` with a status-only permission; it creates no source-branch commit.
+- Generated universal Python 3.11 `requirements-ci.lock` with hashes and converted every CI pip install to `--require-hashes`. Added weekly Dependabot coverage for Actions/npm/pip and job-scoped token permissions.
+- Added an active main-ruleset definition plus a guarded post-merge apply script. The checked-in contract requires PRs, zero approvals, resolved conversations, Frontend/StockScout checks, and blocks force-push/deletion. Activation is intentionally refused until the hardened workflow exists on `main`.
+
+**Tests / local verification**
+- `uv pip install --dry-run --python-platform x86_64-unknown-linux-gnu --python-version 3.11 --require-hashes -r requirements-ci.lock`: resolves successfully.
+- Session, snapshot and workflow hardening suite: **17 passed**; combined targeted projection/invariance suite: **39 passed**. Coverage includes pre-close failure, explicit backfill, corrupt snapshot, <98% coverage, changed SHA, feature-branch deploy denial, single deploy owner, scoped permissions and dependency/ruleset contracts.
+- Every remaining workflow passes `actionlint` 1.7.12 and YAML parsing; only `pages_deploy.yml` owns `actions/deploy-pages`, and no workflow contains `schedule:` or generated-data `git commit`/`git push` behavior.
+- Draft PR 1 checks completed green before stacking PR 2: Frontend Compile Smoke plus both StockScout validation runs passed.
+
+**Rollout note**
+- Do not activate the live main ruleset before PR 2 is merged. After merge, apply `.github/rulesets/main.json`, run a production-style Full Validation on `main` with snapshot publication/deployment enabled, and verify the reusable job's live smoke. Cron remains a separate decision after ten consecutive green runs.

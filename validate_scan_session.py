@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Fail closed when the nightly price cache is not a completed, coherent US session.
+"""Fail closed when the price cache is not a completed, coherent US session.
 
-Scheduled/normal publishes require >=16:30 ET. The dedicated StockScout Full
-Validation caller is allowed to re-run the latest already-completed US session
-before the current session closes. That exception is intentionally narrow and
-still requires the same freshness/coherence checks below.
+Normal runs require >=16:30 ET. A caller may explicitly set
+``ALLOW_PRIOR_SESSION_BACKFILL=true`` to validate an already-completed prior
+session before today's close. Workflow names and event types never grant this
+exception implicitly.
 """
 from __future__ import annotations
 
@@ -35,29 +35,32 @@ def last_date(frame: pd.DataFrame | None):
         return None
 
 
-def manual_backfill_allowed() -> bool:
-    event = os.getenv("GITHUB_EVENT_NAME", "").lower()
-    workflow = os.getenv("GITHUB_WORKFLOW", "").lower()
-    workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "").lower()
-    return event == "push" and (
-        workflow == "stockscout full validation"
-        or "stockscout_full_validation.yml" in workflow_ref
-    )
+def prior_session_backfill_allowed() -> bool:
+    return os.getenv("ALLOW_PRIOR_SESSION_BACKFILL", "false").strip().lower() in {
+        "1", "true", "yes", "on"
+    }
 
 
-def main() -> None:
-    now_utc = datetime.now(timezone.utc)
+def validate_session(
+    *,
+    now_utc: datetime | None = None,
+    price_cache: Path = PRICE_CACHE,
+    allow_prior_session_backfill: bool | None = None,
+) -> None:
+    now_utc = now_utc or datetime.now(timezone.utc)
+    if now_utc.tzinfo is None:
+        now_utc = now_utc.replace(tzinfo=timezone.utc)
     now_et = now_utc.astimezone(ZoneInfo("America/New_York"))
     minutes_et = now_et.hour * 60 + now_et.minute
-    backfill = manual_backfill_allowed()
+    backfill = prior_session_backfill_allowed() if allow_prior_session_backfill is None else allow_prior_session_backfill
     if minutes_et < EARLIEST_PUBLISH_MINUTES_ET and not backfill:
         raise SystemExit(
             f"Refusing publish before completed regular US session: now {now_et.isoformat()}, require >=16:30 ET"
         )
 
-    if not PRICE_CACHE.exists():
-        raise SystemExit(f"Missing canonical price cache: {PRICE_CACHE}")
-    with PRICE_CACHE.open("rb") as fh:
+    if not price_cache.exists():
+        raise SystemExit(f"Missing canonical price cache: {price_cache}")
+    with price_cache.open("rb") as fh:
         price_history: dict[str, pd.DataFrame] = pickle.load(fh)
 
     spy_date = last_date(price_history.get("SPY"))
@@ -90,6 +93,10 @@ def main() -> None:
         f"US session invariant OK ({mode}): SPY={spy_date}; now={now_et.strftime('%Y-%m-%d %H:%M %Z')}; "
         f"universe coherence={mode_count}/{len(dates)} ({coherent:.1%})"
     )
+
+
+def main() -> None:
+    validate_session()
 
 
 if __name__ == "__main__":

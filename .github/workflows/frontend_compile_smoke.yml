@@ -22,6 +22,7 @@ on:
       - 'tests/test_prepare_frontend_payloads.py'
       - 'tests/test_readonly_chart_snapshot.py'
       - 'tests/test_ma_crosses.py'
+      - 'requirements-ci.lock'
       - '.github/workflows/frontend_compile_smoke.yml'
   pull_request:
     branches: [main]
@@ -44,8 +45,11 @@ on:
       - 'tests/test_prepare_frontend_payloads.py'
       - 'tests/test_readonly_chart_snapshot.py'
       - 'tests/test_ma_crosses.py'
+      - 'requirements-ci.lock'
       - '.github/workflows/frontend_compile_smoke.yml'
   workflow_dispatch:
+
+permissions: {}
 
 concurrency:
   group: frontend-compile-smoke-${{ github.ref }}
@@ -53,17 +57,22 @@ concurrency:
 
 jobs:
   build:
+    name: Frontend validation
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements-ci.lock
 
       - name: Client payload, LEGACY shadow, snapshot and MA cross tests
         run: |
-          python -m pip install --upgrade pip pytest pandas yfinance
+          python -m pip install --require-hashes -r requirements-ci.lock
           python -m pytest tests/test_compute_legacy_confirmation.py tests/test_build_legacy_confirmation_sidecar.py tests/test_prepare_frontend_payloads.py tests/test_readonly_chart_snapshot.py tests/test_ma_crosses.py -q
 
       - name: Project the current canonical snapshot
