@@ -180,3 +180,40 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Verify the final Full Validation run conclusion; then isolate `full_validation_status.yml` so non-main validation cannot mutate `main`. If green, Phase 3 can be considered validated and work can proceed to Phase 4 review UX without promoting LEGACY into StockScout scoring.
+
+## 2026-08-20 — Phase 3 clean Full Validation gate closed
+
+**Branch / PR / validated SHA**
+- Development branch: `next-dev`; clean validation branch: `phase3-clean-validation`.
+- Draft PR: `#1` remains open/draft and unmerged.
+- Clean validated feature SHA: `ac7e66f6babf35de8616a1928ebabc4ffaf62a9a`.
+- Full Validation run `32355696983`: **success**, run number 5, source branch `phase3-clean-validation`, exact head SHA `ac7e66f6babf35de8616a1928ebabc4ffaf62a9a`.
+
+**Workflow hardening / cleanup**
+- Full Validation now calls the reusable full scan with `persist_outputs: false` and `deploy_pages: false`, so validation computes/audits/builds without committing generated scan data or publishing Pages.
+- `full_validation_status.yml` is branch-isolated: the recorder targets `workflow_run.head_branch` with a same-repository guard instead of hardcoding Next `main`.
+- A prior validation-generated data commit was removed from the feature branch history; the clean PR diff no longer includes canonical scan snapshots, scan metadata or fundamentals-cache artifacts.
+- Next `main` received only CI-governance/status cleanup (`23e0048...`, then baseline status restore `9b8b2f9...`); no product scoring/data methodology was promoted.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, Stage, RS, chart mapping or default StockScout ranking changed.
+- Frozen LEGACY remains unchanged and shadow-only; `affectsStockScout: false` remains enforced.
+- Next scheduled nightly scan remains disabled.
+- Stable `Garrincha077/stock-screener2` was not modified; its `main` remained at `ff2484303d1954480265c348c7be74126409e338` during this work.
+
+**Tests / audits / CI**
+- Clean Full Validation `32355696983`: **success** from `2026-08-20T09:47:45Z` to `2026-08-20T09:58:28Z`.
+- `legacy-shadow-unit`: success.
+- `full-scan / screen-stocks`: success.
+- Passed: frozen LEGACY baseline verification, fast-engine regression tests, completed-session guard, optimized full scan, rich fundamentals hydration, rich LEGACY + STOCKSCOUT export, canonical dataset invariants, Opportunity v2/model compatibility audit, Fundamental Evidence audit, post-enrichment frozen LEGACY verification, lightweight client + LEGACY sidecar build, chart coverage, frontend runtime/tests/TypeScript/Vite build, built Pages chart validation and recovery-artifact generation.
+- Validation-side persistence/publish steps were intentionally skipped: `Commit cache and canonical outputs`, `Sync persistent outputs to source branch`, `Upload Pages artifact`, and the entire `deploy-pages` job.
+- PR-level checks on the same clean SHA were also green: StockScout Validation `32355798584` and Frontend Compile Smoke `32355798992`.
+- Earlier read-only Full Validation `32354799196` on `72e6234...` was also success; the relevant workflow/test blobs were verified identical to the clean `ac7e66f...` versions. The clean rerun is the authoritative Phase 3 gate because it excludes accidental generated-data history.
+
+**Risk / decision**
+- Phase 3 validation gate is closed. Do not promote LEGACY into StockScout scoring; keep confirmation as transparent shadow evidence only.
+- Keep PR #1 unmerged until an explicit promotion/merge decision; validation is sufficient to continue experimental work on `next-dev`.
+- Full Validation is now a read-only validation gate by default for the Phase 3 caller; normal manual scan behavior retains persistence/deploy defaults unless explicitly disabled.
+
+**Next logical step**
+- Begin Phase 4 Review UX v2 on `next-dev`: prioritize Today/New Since Last Scan inbox, Rapid Review usability, a concise `Why this stock?` explanation, one LEGACY confirmation badge and a data/scan health banner. Avoid introducing new opaque composite scores.
