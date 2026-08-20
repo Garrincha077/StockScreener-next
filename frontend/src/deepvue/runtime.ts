@@ -1,6 +1,33 @@
 export const GRID_STEP=16
 export const CHART_SHARD_COUNT=128
 
+export type LegacyConfirmationStatus='CONFIRMED'|'EARLY'|'NEUTRAL'|'CONFLICT'|'RISK'|'UNAVAILABLE'
+export type LegacyConfirmationSidecar={
+  affectsStockScout:false
+  source?:{generatedAt?:string|null}
+  byTicker?:Record<string,{status:LegacyConfirmationStatus;available:boolean;reasons?:string[]}>
+}
+
+export function mergeLegacyConfirmationSidecar<T extends {ticker:string}>(
+  universe:T[],
+  sidecar:LegacyConfirmationSidecar|null|undefined,
+  generatedAt:string,
+):Array<T&{legacyConfirmationStatus?:LegacyConfirmationStatus;legacyConfirmationReasons?:string[]}>
+{
+  if(!sidecar||sidecar.affectsStockScout!==false)return universe
+  if(!sidecar.source?.generatedAt||sidecar.source.generatedAt!==generatedAt)return universe
+  const entries=sidecar.byTicker||{}
+  return universe.map(stock=>{
+    const confirmation=entries[stock.ticker.toUpperCase()]
+    if(!confirmation)return stock
+    return {
+      ...stock,
+      legacyConfirmationStatus:confirmation.status,
+      legacyConfirmationReasons:[...(confirmation.reasons||[])],
+    }
+  })
+}
+
 export function chartShardFor(ticker:string,shardCount=CHART_SHARD_COUNT){
   const normalized=ticker.trim().toUpperCase()
   let value=0
