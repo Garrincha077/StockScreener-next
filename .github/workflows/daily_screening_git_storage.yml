@@ -10,7 +10,26 @@ on:
         required: false
         type: boolean
         default: false
+      persist_outputs:
+        description: 'Persist generated scan outputs to the source branch'
+        required: false
+        type: boolean
+        default: true
+      deploy_pages:
+        description: 'Publish the validated terminal to GitHub Pages'
+        required: false
+        type: boolean
+        default: true
   workflow_call:
+    inputs:
+      persist_outputs:
+        required: false
+        type: boolean
+        default: true
+      deploy_pages:
+        required: false
+        type: boolean
+        default: true
 
 concurrency:
   group: daily-stock-screening
@@ -179,6 +198,7 @@ jobs:
           python prepare_frontend_payloads.py
           test -s frontend/public/data/core.json
           test -s frontend/public/data/manifest.json
+          test -s frontend/public/data/shadow/legacy-confirmation.json
 
       - name: Validate chart coverage before publish
         shell: bash
@@ -256,6 +276,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit cache and canonical outputs
+        if: ${{ inputs.persist_outputs }}
         id: commit
         shell: bash
         run: |
@@ -267,6 +288,7 @@ jobs:
           git add -f frontend/public/data/latest.json
           git add -f frontend/public/data/core.json
           git add -f frontend/public/data/manifest.json
+          git add -f frontend/public/data/shadow/legacy-confirmation.json
 
           if git diff --staged --quiet; then
             echo "No persistent changes to commit"
@@ -277,8 +299,8 @@ jobs:
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - name: Sync persistent outputs to main
-        if: steps.commit.outputs.has_changes == 'true'
+      - name: Sync persistent outputs to source branch
+        if: ${{ inputs.persist_outputs && steps.commit.outputs.has_changes == 'true' }}
         shell: bash
         run: |
           pushed=false
@@ -310,6 +332,7 @@ jobs:
             frontend/public/data/latest.json
             frontend/public/data/core.json
             frontend/public/data/manifest.json
+            frontend/public/data/shadow/legacy-confirmation.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -332,6 +355,7 @@ jobs:
           python validate_frontend_charts.py frontend/dist
 
       - name: Upload Pages artifact
+        if: ${{ inputs.deploy_pages }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist
@@ -360,6 +384,7 @@ jobs:
           fi
 
   deploy-pages:
+    if: ${{ inputs.deploy_pages }}
     needs: screen-stocks
     runs-on: ubuntu-latest
     concurrency:
