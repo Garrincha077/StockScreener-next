@@ -379,3 +379,55 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Phase 4 is ready for real-use feedback on `next-dev`. Continue to the next roadmap phase only with the same rule: preserve StockScout Core and LEGACY shadow-only behavior, use small reversible changes, and require Full Validation for any scan/data/workflow modification.
+
+## 2026-08-20 — Phase 5 built-in discovery cohorts + Next main promotion
+
+**Branch / commits / promotion**
+- Development branch: `next-dev`.
+- Cohort definitions: `5155a3a6b4de196dd336c24cb6fd90b543e9f4c8`.
+- Client registration: `e2cf2bf7c18791efe6d17bc31b171ef97d6beca2`.
+- Unit coverage: `175a9c3224b0e7725d76c55cddd7fc78149ce38b` and package wiring `98d9c44e9a1a7444269eedf45d99576b99713609`.
+- Browser coverage: `df9388d2ad09f9343ded7657426a245f120b69cc`.
+- Native Node TypeScript import repair: `7f50efda288c71e73efcc37d5cf2b0f14a406e64`, `cfbd969bb1a26e1b8c0484ebbee2a34d37f4e9e1`, `28946abf4f880cf3a7c081de9f96cf5c7abbc5bf`.
+- PR #1 promoted to ready and merged into StockScreener-next `main` as merge commit `d104726cd56f7d0f100b2bbd6a75857e20a2f7e2` after explicit user approval to publish/merge for review.
+
+**What changed / why**
+- Added five built-in discovery screens from the roadmap: `Early Leaders`, `Confirmed Leaders`, `Ahead of Minervini`, `Breakout Confirmed`, and `Watchlist Risk`.
+- `Early Leaders`, `Confirmed Leaders`, and `Breakout Confirmed` reuse the existing `Prime / Ready Opportunities` StockScout definition (`Opportunity >=80`, `Opportunity Rank >=90`, `extended=false`) rather than inventing a second strong-candidate threshold.
+- `Early Leaders` then explicitly selects non-confirmed shadow states (`EARLY`, `NEUTRAL`, `CONFLICT`); `Confirmed Leaders` requires `CONFIRMED`.
+- `Ahead of Minervini` uses existing `emergingLeaderCandidate`, original Trend Template passes `<7`, `extended=false`, and excludes LEGACY `RISK`.
+- `Breakout Confirmed` adds the already-captured boolean `originalBreakoutVolumeConfirmed=true`.
+- `Watchlist Risk` is a direct read-only screen over `originalRunSellSignal=true`.
+- Added only the three missing transparent Filter Builder field registrations needed by these screens; default screen and default ranking remain unchanged.
+
+**Affected files / components**
+- `frontend/src/deepvue/phase5Cohorts.ts`.
+- `frontend/src/deepvue/phase5Cohorts.test.ts`.
+- `frontend/src/deepvue/legacyConfirmationUi.ts`.
+- `frontend/src/main.tsx`.
+- `frontend/package.json`.
+- `frontend/tsconfig.json`.
+- Phase 5 browser coverage under `frontend/e2e/`.
+- No scanner, canonical writer, scoring/model module, daily-scan workflow or frozen LEGACY implementation was changed by Phase 5.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping or default ranking change.
+- No new composite score or hidden LEGACY modifier was introduced.
+- LEGACY remains shadow-only; these screens affect results only when a user explicitly selects them.
+- Stable `Garrincha077/stock-screener2` was not modified and its Vercel `frontend` project remains attached to Stable.
+- Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Initial Phase 5 Frontend Compile Smoke `32364338931` (#43) and StockScout Validation `32364338997` (#63) failed before browser/build completion because native Node TypeScript tests could not resolve the extensionless `./filterEngine` import from `phase5Cohorts.ts`.
+- The repair made only TypeScript module-resolution compatibility changes: explicit `.ts` imports in the tested modules plus `allowImportingTsExtensions` with `noEmit`; cohort rules and application semantics did not change.
+- Final Frontend Compile Smoke `32369432855` (#46) on `28946ab...`: **success**, including client/shadow snapshot checks, Node tests, TypeScript/Vite build and Playwright browser smoke.
+- Final StockScout Validation `32369432770` (#68) on `28946ab...`: **success**, including Stable snapshot restore, frozen LEGACY baseline, regression/integration suite, current model stack, compatibility audits, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend build.
+- Phase 4/5 promotion did not require another Full Validation because all changes after the already-clean Phase 3 Full Validation were frontend/test-only and did not alter scan/data/workflow behavior.
+
+**Risk / decision**
+- Promotion is to StockScreener-next `main` only so GitHub Pages can expose the validated UI for human review; this is not a production cutover and does not re-enable nightly scanning.
+- Keep `next-dev` as the experimental branch for future roadmap work; `main` is now the controlled review baseline containing validated Phase 3-5 behavior.
+- Do not merge any of this work into Stable `stock-screener2` unless separately and explicitly requested.
+
+**Next logical step**
+- Verify the `Deploy StockScout Terminal` Pages run from merge commit `d104726...` and use the public Next Pages URL for real-use review. Continue subsequent roadmap work on `next-dev`; use Full Validation for any future scan/data/workflow changes.
