@@ -83,21 +83,21 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Resolve latest non-expired Pages artifact run
+      - name: Resolve latest non-expired Stable Pages artifact run
         id: source-run
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          RUN_ID=$(gh api "/repos/${GITHUB_REPOSITORY}/actions/artifacts?name=github-pages&per_page=100" \
+          RUN_ID=$(gh api "/repos/Garrincha077/stock-screener2/actions/artifacts?name=github-pages&per_page=100" \
             --jq '.artifacts | map(select(.expired == false)) | sort_by(.created_at) | reverse | .[0].workflow_run.id')
           if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-            echo "::error::No non-expired github-pages artifact is available for validation."
+            echo "::error::No non-expired Stable github-pages artifact is available for validation."
             exit 1
           fi
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "Using latest non-expired github-pages artifact from run $RUN_ID"
+          echo "Using latest non-expired Stable github-pages artifact from run $RUN_ID"
 
       - name: Restore validated 5Y production snapshot
         uses: actions/download-artifact@v4
@@ -256,3 +256,4 @@ jobs:
             frontend/public/data/manifest.json
             frontend/public/data/shadow/legacy-confirmation.json
           if-no-files-found: error
+          retention-days: 14
