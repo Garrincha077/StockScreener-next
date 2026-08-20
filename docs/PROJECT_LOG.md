@@ -292,3 +292,42 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Continue Phase 4 in small frontend-only increments: refine the mobile review density/navigation from real use, then consider a separate live validation-status client artifact only if its extra workflow/data complexity is worth it; that separate change would require Full Validation.
+
+## 2026-08-20 — Phase 4 review queue + active-ticker sync
+
+**Branch / commits**
+- Branch: `next-dev`.
+- Review queue / ticker sync: `6fcec036d1993ca294e26fe0e5b42a417d74e1b6`.
+- Queue/mobile controls: `56d4bc558d28c83ec8b3340c6b26d1ce5cf3918d`.
+- Browser regression coverage: `5685714ba0ac029ba99e024be96e7b26c83f700c`.
+
+**What changed / why**
+- Added sequential Prev/Next navigation after opening a candidate from Today or New Since Last Scan, with visible review position (`Review N / total`). This turns the inbox into a lightweight review queue without adding another screener state or score.
+- Fixed a Phase 4 selection-sync gap: normal Screener/Grid selection updates the URL through `history.replaceState`, which does not emit `hashchange`; the review bar now observes the hash at a low-frequency 250 ms interval in addition to `hashchange`, so `Why this stock?` follows the active StockScout ticker without coupling DeepVueTerminal to Phase 4 state.
+- Closing the Why panel exits queue mode; selecting a ticker outside the current queue also drops queue navigation instead of presenting misleading Prev/Next context.
+- Tightened mobile Why-header controls and kept them sticky inside the bottom review panel.
+
+**Affected files / components**
+- `frontend/src/Phase4ReviewBar.tsx`.
+- `frontend/src/phase4-review.css`.
+- `frontend/e2e/mobile-rapid-review.spec.ts`.
+- No scanner, canonical writer, workflow, StockScout model, filter engine, saved-screen state or frozen LEGACY source changed.
+
+**Scoring / behavior impact**
+- None. Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, Stage, RS, chart mapping and default ranking are unchanged.
+- LEGACY remains frozen/shadow-only and has no scoring path.
+- Existing screener filters are not cleared or rewritten when the review queue is used.
+- Stable `Garrincha077/stock-screener2` was not modified; Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke run `32362506757` (#30) on `5685714...`: **success**. Client payload/shadow checks, runtime tests, TypeScript/Vite build and mobile Playwright all passed.
+- Mobile Playwright now covers Today queue start, `Review 1 / 3` -> Next -> `Review 2 / 3`, normal Grid selection via `history.replaceState` synchronizing `Why this stock?` to `T004`, and progressive Rapid Review 16 -> 50 rendering.
+- StockScout Validation run `32362506816` (#44) on `5685714...`: **success**. Frozen LEGACY baseline, regression/integration tests, model compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance, frontend runtime tests and build all passed.
+- Full Validation was not run because this slice is frontend-only and does not alter scan/data/workflow behavior.
+
+**Risk / decision**
+- The 250 ms hash observer is intentionally local to the Phase 4 review bar and avoids modifying the existing terminal selection contract. If review state later becomes first-class shared application state, replace polling with an explicit selection event/store rather than widening this workaround.
+- Do not deepen Today/New into default scoring or ranking; the value here is faster human review.
+
+**Next logical step**
+- Continue Phase 4 with one more frontend-only usability slice: add a compact reviewed/progress state for Today/New (local/session only) so the user can distinguish unseen vs reviewed candidates during a session, without writing scan data or changing StockScout scores. Defer live validation-status artifact wiring unless its operational value justifies a separate data/workflow change and Full Validation.
