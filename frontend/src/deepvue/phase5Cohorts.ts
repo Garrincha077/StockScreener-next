@@ -1,5 +1,5 @@
-import {builtInScreens,fieldDefs,type FieldDef,type Rule,type RuleGroup,type ScreenState} from './filterEngine'
-import {installLegacyConfirmationFields} from './legacyConfirmationUi'
+import {builtInScreens,fieldDefs,type FieldDef,type Rule,type RuleGroup,type ScreenState} from './filterEngine.ts'
+import {installLegacyConfirmationFields} from './legacyConfirmationUi.ts'
 
 const COHORT_NAMES=[
   'Early Leaders',
