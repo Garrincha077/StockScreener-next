@@ -1,4 +1,4 @@
-import {fieldDefs} from './filterEngine'
+import {fieldDefs} from './filterEngine.ts'
 
 const STATUS_FIELD='legacyConfirmationStatus'
 const REASON_FIELD='legacyConfirmationReasons'
