@@ -33,7 +33,7 @@ const payload=JSON.stringify({
 })
 const manifest=JSON.stringify({generatedAt,universe:50})
 
-test('Phase 4 inbox, reviewed progress, queue, ticker sync and Rapid Review work on mobile',async({page})=>{
+test('Phase 4 inbox, reviewed progress, queue, ticker sync and Rapid Review work across viewports',async({page},testInfo)=>{
   page.on('pageerror',error=>console.error('PAGE ERROR:',error.message))
   page.on('console',message=>{
     if(message.type()==='error')console.error('BROWSER CONSOLE:',message.text())
@@ -81,13 +81,17 @@ test('Phase 4 inbox, reviewed progress, queue, ticker sync and Rapid Review work
   await gridButton.click({force:true})
 
   const summary=page.locator('.dv-gridview > header span')
+  const cards=page.locator('.dv-minicard')
   const sentinel=page.locator('.dv-grid-sentinel')
-  await expect(summary).toContainText('16 of 50')
-  await expect(page.locator('.dv-minicard')).toHaveCount(16)
+  const initialCount=await cards.count()
+  expect(initialCount).toBeGreaterThanOrEqual(16)
+  expect(initialCount).toBeLessThanOrEqual(50)
+  await expect(summary).toContainText(`${initialCount} of 50`)
+  if(testInfo.project.name==='mobile-pixel-5')expect(initialCount).toBe(16)
 
   // A normal Grid selection uses history.replaceState, not hashchange. The
   // Phase 4 review bar must still follow the active StockScout ticker.
-  await page.locator('.dv-minicard').nth(3).click()
+  await cards.nth(3).click()
   const whyButton=page.locator('.p4-inbox-actions button').filter({hasText:/Why this stock\?/})
   await expect(whyButton).toContainText('T004',{timeout:2_000})
   await whyButton.click()
@@ -101,5 +105,5 @@ test('Phase 4 inbox, reviewed progress, queue, ticker sync and Rapid Review work
   }
 
   await expect(summary).toContainText('50 of 50')
-  await expect(page.locator('.dv-minicard')).toHaveCount(50)
+  await expect(cards).toHaveCount(50)
 })
