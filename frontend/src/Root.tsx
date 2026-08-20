@@ -3,8 +3,10 @@ import DeepVueTerminal from './DeepVueTerminal'
 import LegacyTerminal from './LegacyTerminal'
 import GroupsPage from './GroupsPage'
 import OriginalEngineDock from './OriginalEngineDock'
+import LegacyConfirmationBadge from './LegacyConfirmationBadge'
 import {resetPanelSizes,useResizablePanels} from './useResizablePanels'
 import './resizable-panels.css'
+import './legacy-confirmation.css'
 
 const ENGINE_WIDTH_KEY='stockscout-original-pane-width-v1'
 const LAYER_KEY='stockscout-active-layer-v1'
@@ -86,6 +88,7 @@ export default function Root(){
       <button className={layer==='stockscout'?'active':''} onClick={()=>chooseLayer('stockscout')}>STOCKSCOUT</button>
       <button className={`legacy ${layer==='legacy'?'active':''}`} onClick={()=>chooseLayer('legacy')}>LEGACY</button>
     </div>
+    {layer==='stockscout'&&view==='terminal'&&<LegacyConfirmationBadge/>}
     {layer==='legacy'?<LegacyTerminal/>:stockscout}
     <button className="ss-layout-reset" onClick={()=>{resetPanelSizes();setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)}} title="Reset all resized panels to their default size">↺ Reset layout</button>
   </>
