@@ -266,3 +266,29 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Verify the current PR checks. If green, tighten mobile layout based on the Playwright result and then decide whether to wire a live validation-status client artifact in a separate scan/data change requiring Full Validation.
+
+## 2026-08-20 — Phase 4 first-slice CI closure
+
+**Branch / commits / PR**
+- Branch: `next-dev`.
+- Dependency repair: `2486acf8b55210cd195c955c45c4d45326be812d`.
+- Draft PR #1 renamed to `Next: LEGACY shadow + Phase 4 Review UX v2`; it remains draft/unmerged.
+
+**What happened / fix**
+- Initial Phase 4 StockScout Validation runs `32360678250` / `32360832466` reached the frontend build after all backend/model/shadow audits passed, then failed because `@vitejs/plugin-react` had accidentally been omitted from `frontend/package.json` while extending the test script.
+- Restored the pre-existing `@vitejs/plugin-react` `6.0.4` dev dependency only. No application logic, scanner, workflow, data artifact or model code changed in the repair.
+
+**Tests / audits / CI**
+- StockScout Validation run `32360966564` (#38) on `2486acf8...`: **success**.
+- The successful run includes 73 regression/integration Python tests, frozen LEGACY baseline verification, Opportunity/model compatibility, MA Cluster, Scout Tier, exact LEGACY shadow/Core invariance, frontend Node tests, TypeScript and Vite build.
+- Frontend Compile Smoke run `32360966434` (#26) on `2486acf8...`: **success**.
+- Compile smoke passed client payload + shadow snapshot checks, runtime tests, TypeScript/Vite build, browser setup and the Phase 4 mobile Playwright smoke covering Today inbox, `Why this stock?` and progressive Rapid Review 16 -> 50 rendering.
+- Full Validation was not run for this Phase 4 slice because neither the UX work nor the dependency repair changes scan/data/workflow behavior.
+
+**Scoring / behavior impact**
+- No StockScout scoring/ranking/model behavior changed.
+- LEGACY remains frozen and shadow-only; exact invariance audit passed with zero Core drift.
+- Stable `Garrincha077/stock-screener2` was not modified; Next scheduled nightly scan remains disabled.
+
+**Next logical step**
+- Continue Phase 4 in small frontend-only increments: refine the mobile review density/navigation from real use, then consider a separate live validation-status client artifact only if its extra workflow/data complexity is worth it; that separate change would require Full Validation.
