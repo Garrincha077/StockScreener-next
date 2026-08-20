@@ -217,3 +217,52 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Begin Phase 4 Review UX v2 on `next-dev`: prioritize Today/New Since Last Scan inbox, Rapid Review usability, a concise `Why this stock?` explanation, one LEGACY confirmation badge and a data/scan health banner. Avoid introducing new opaque composite scores.
+
+## 2026-08-20 — Phase 4 Review UX v2 first slice
+
+**Branch / commits**
+- Branch: `next-dev`.
+- Review derivations: `f3672ff21887de05760b7c73ae2a646b96bb4f41`.
+- Review bar: `da2164c658d3bbf715e734a6c22f3792f141eaec`.
+- Responsive/Rapid Review CSS: `0118d53b34cc347e41de744996ec47851fc46e77`.
+- Root wiring: `278cb757efad790a262f825391949fdff83e76dd`.
+- Unit-test registration: `8f677c75f1400cb4de91618690849f6431fbbe19`, `1f73da3589b1c185d247435a501cdd4781405fef`.
+- Mobile review E2E: `d3c078bd1385a4213e1bc70c747c9cd850d2230b`.
+
+**What changed / why**
+- Added a compact Phase 4 review strip above the StockScout terminal with `Today`, `New since last scan`, `Why this stock?`, data-health and Rapid Review context.
+- Today/New inboxes are derived only from existing `changedToday`, `newUniverseMember`, `changeImpact`, `changeLabels` and existing Opportunity fields; no new signal or score is created.
+- `Why this stock?` is a transparent textual decomposition of existing setup, Stage, Opportunity, Potential/Timing, RS, Group, Fundamentals, volume and recent-change fields. It explicitly labels itself as `no new score`.
+- Health logic checks `core.json` vs `manifest.json` snapshot/cardinality consistency and snapshot age. Validation status is optional/fail-open; the UI explicitly reports `validation status: client unavailable` instead of claiming green when no client-side validation artifact exists.
+- Existing Rapid Review lazy loading is preserved. CSS now makes the review header sticky, increases mobile chart/card height, keeps continuous scroll loading, and uses `content-visibility` to reduce rendering pressure on large candidate sets.
+
+**Affected files / components**
+- `frontend/src/phase4Review.ts`.
+- `frontend/src/Phase4ReviewBar.tsx`.
+- `frontend/src/phase4-review.css`.
+- `frontend/src/Root.tsx`.
+- `frontend/src/phase4Review.test.ts`.
+- `frontend/package.json`.
+- `frontend/e2e/mobile-rapid-review.spec.ts`.
+- No scanner, canonical writer, workflow, StockScout model module or frozen LEGACY source was modified.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, Stage, RS, chart mapping or default sorting/ranking change.
+- LEGACY remains shadow-only and its existing badge/source inspector behavior is unchanged.
+- The Phase 4 strip reads `core.json`/`manifest.json` only and does not write or mutate candidate data.
+- `stock-screener2` remains untouched; Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Added targeted Node tests for inbox derivation, explanation transparency, snapshot mismatch handling and fail-open validation status.
+- Expanded the mobile Playwright smoke to cover Phase 4 review bar visibility, Today count/list, `Why this stock?`, and the existing 16 -> 50 progressive Rapid Review render path.
+- GitHub Actions were triggered automatically for the current PR head: StockScout Validation run `32360678250` and Frontend Compile Smoke run `32360678238`.
+- At the time of this log entry both current runs were still in progress/pending, so CI is **not yet claimed green**.
+- Full Validation was not triggered because this slice is frontend-only and does not change scan/data/workflow behavior.
+
+**Risk / decision**
+- Do not publish a static/frozen validation claim into the frontend. Until the validation status is intentionally exposed as a client artifact, the health bar must distinguish `data healthy` from `validation status unavailable`.
+- Keep Today/New as a read-only review inbox first; integrate it deeper into terminal filtering only if usability warrants it, rather than introducing another stateful screen model prematurely.
+- Preserve the existing Rapid Review progressive loader; Phase 4 should optimize the review surface before replacing its data flow.
+
+**Next logical step**
+- Verify the current PR checks. If green, tighten mobile layout based on the Playwright result and then decide whether to wire a live validation-status client artifact in a separate scan/data change requiring Full Validation.
