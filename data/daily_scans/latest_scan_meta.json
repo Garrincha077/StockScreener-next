@@ -1,8 +1,8 @@
 {
-  "generated_at_utc": "2026-08-19T12:25:19.960379+00:00",
-  "workflow_run_id": "32247835070",
+  "generated_at_utc": "2026-08-20T00:00:33.218500+00:00",
+  "workflow_run_id": "32314809594",
   "workflow_run_attempt": "1",
-  "source_commit": "ef311dd6853adffa2e3aabfe376d4442d98bbd4a",
+  "source_commit": "fa2739c5463739389c05a7479d859063729a328c",
   "report": "data/daily_scans/latest_optimized_scan.txt",
   "frontend_data": "frontend/public/data/latest.json",
   "frontend_client_data": "frontend/public/data/core.json",
@@ -17,6 +17,7 @@
   "client_payload_model": "stockscout-client-core-v1",
   "fundamentals_policy": "full-analyzed-universe-max-7d",
   "fundamental_evidence_model": "stockscout-fundamental-evidence-v1",
+  "opportunity_model": "stockscout-opportunity-v2-potential-timing",
   "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
   "legacy_capture_model": "legacy-complete-source-capture-v1",
   "layers": [
