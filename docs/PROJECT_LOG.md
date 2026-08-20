@@ -105,3 +105,38 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Materialize the compact confirmation as a separate reversible shadow artifact/sidecar (preferred over inflating canonical `latest.json`), validate it against the same canonical input, then wire one read-only badge/filter in the frontend before broader Phase 4 UX work.
+
+## 2026-08-20 — Compact LEGACY confirmation sidecar foundation
+
+**Branch / commits**
+- Branch: `next-dev`.
+- Sidecar builder: `ef672ebeb023c844e0a2167dba827541542beadc`.
+- Sidecar tests: `7917efaa3c883b5fd6ba0dd2dd0dfab73cf1aefb`.
+
+**What changed / why**
+- Added `build_legacy_confirmation_sidecar.py` to build a separate compact shadow artifact from the canonical payload without modifying it.
+- Sidecar stores only ticker -> `status`, `available`, `reasons`, plus source metadata and market-gate state; detailed evidence remains in canonical `originalEngine`.
+- Atomic writer is available for later pipeline wiring, but no generated sidecar data was committed and no workflow invokes it yet.
+
+**Affected files / components**
+- `build_legacy_confirmation_sidecar.py`.
+- `tests/test_legacy_confirmation_sidecar.py`.
+- No scanner, canonical dataset, frontend or GitHub Actions workflow changed.
+
+**Scoring / behavior impact**
+- None. Sidecar is read-only shadow metadata with `affectsStockScout: false` and has no ranking/scoring path.
+
+**Tests / audits / CI**
+- Combined targeted local suite: `17 passed`.
+- Built the sidecar locally from the same real 2,013-row Full Validation snapshot used by the canonical shadow audit.
+- Result size: `166,859 bytes` (~163 KB), with counts `CONFIRMED 620`, `EARLY 236`, `NEUTRAL 984`, `RISK 173`.
+- Source canonical payload remained unchanged; no generated sidecar file was committed.
+- No fresh Full Validation and no GitHub Actions CI run of these new files is claimed.
+
+**Risk / decision**
+- Prefer sidecar delivery over adding ~0.884 MB of repeated confirmation metadata to the already-large canonical `latest.json`.
+- Keep drill-down sourced from existing `originalEngine`; do not duplicate evidence in the sidecar.
+- Stable remains untouched and Next scheduled nightly scan remains disabled.
+
+**Next logical step**
+- Wire sidecar generation into the Next-only deploy/validation path and add a single read-only LEGACY confirmation badge/filter in the frontend. Because this touches workflow/frontend behavior, require a fresh Full Validation before treating the integration as validated.
