@@ -1,5 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
+import './legacyConfirmationUi.ts'
+import {fieldDefs,matchesRule} from './filterEngine.ts'
 import {RetryJsonCache,fetchJsonWithRetry,mergeLegacyConfirmationSidecar,nextGridCount} from './runtime.ts'
 
 test('nextGridCount advances in bounded batches',()=>{
@@ -71,4 +73,17 @@ test('LEGACY sidecar merge refuses a stale snapshot',()=>{
   },'new-snapshot')
   assert.equal(merged,stocks)
   assert.equal('legacyConfirmationStatus' in merged[0],false)
+})
+
+test('LEGACY confirmation fields are filterable without changing filter semantics',()=>{
+  assert.equal(fieldDefs.some(field=>field.id==='legacyConfirmationStatus'&&field.kind==='text'),true)
+  assert.equal(fieldDefs.some(field=>field.id==='legacyConfirmationReasons'&&field.kind==='text'),true)
+  const stock={
+    ticker:'AAA',
+    legacyConfirmationStatus:'CONFIRMED',
+    legacyConfirmationReasons:['ORIGINAL_RUN_BUY','TREND_TEMPLATE_PASS'],
+  }
+  assert.equal(matchesRule(stock,{id:'status',field:'legacyConfirmationStatus',op:'=',value:'confirmed'}),true)
+  assert.equal(matchesRule(stock,{id:'reason',field:'legacyConfirmationReasons',op:'contains',value:'trend_template'}),true)
+  assert.equal(matchesRule(stock,{id:'risk',field:'legacyConfirmationStatus',op:'=',value:'risk'}),false)
 })
