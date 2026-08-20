@@ -1,0 +1,79 @@
+name: Reusable validated Pages deploy
+
+on:
+  workflow_call:
+    inputs:
+      artifact_name:
+        required: true
+        type: string
+      expected_canonical_sha:
+        required: true
+        type: string
+      expected_frontend_commit:
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  deploy:
+    if: ${{ github.ref == 'refs/heads/main' }}
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stockscout-pages-deploy
+      cancel-in-progress: false
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Checkout the exact frontend source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.expected_frontend_commit }}
+          persist-credentials: false
+
+      - name: Refuse deployment after main advances
+        shell: bash
+        env:
+          EXPECTED_FRONTEND_COMMIT: ${{ inputs.expected_frontend_commit }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$EXPECTED_FRONTEND_COMMIT"
+          git fetch --no-tags origin main
+          test "$(git rev-parse FETCH_HEAD)" = "$EXPECTED_FRONTEND_COMMIT"
+
+      - name: Download the immutable validated artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ inputs.artifact_name }}
+          path: ${{ runner.temp }}/validated-snapshot
+
+      - name: Verify canonical SHA, asset hashes and publication gates
+        env:
+          EXPECTED_CANONICAL_SHA: ${{ inputs.expected_canonical_sha }}
+          EXPECTED_FRONTEND_COMMIT: ${{ inputs.expected_frontend_commit }}
+        run: |
+          python validate_snapshot_artifact.py \
+            --data-root "$RUNNER_TEMP/validated-snapshot/data" \
+            --site-root "$RUNNER_TEMP/validated-snapshot/site" \
+            --metadata "$RUNNER_TEMP/validated-snapshot/snapshot-metadata.json" \
+            --min-chart-coverage 98 \
+            --expected-canonical-sha "$EXPECTED_CANONICAL_SHA" \
+            --expected-frontend-commit "$EXPECTED_FRONTEND_COMMIT"
+
+      - name: Upload the exact verified Pages tree
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ${{ runner.temp }}/validated-snapshot/site
+
+      - name: Deploy verified Pages artifact
+        id: deployment
+        uses: actions/deploy-pages@v4
+
+      - name: Live manifest, core, detail and chart smoke
+        run: python smoke_pages_deploy.py "${{ steps.deployment.outputs.page_url }}"
