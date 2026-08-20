@@ -33,7 +33,7 @@ const payload=JSON.stringify({
 })
 const manifest=JSON.stringify({generatedAt,universe:50})
 
-test('Phase 4 inbox, review queue, ticker sync and Rapid Review work on mobile',async({page})=>{
+test('Phase 4 inbox, reviewed progress, queue, ticker sync and Rapid Review work on mobile',async({page})=>{
   page.on('pageerror',error=>console.error('PAGE ERROR:',error.message))
   page.on('console',message=>{
     if(message.type()==='error')console.error('BROWSER CONSOLE:',message.text())
@@ -51,9 +51,10 @@ test('Phase 4 inbox, review queue, ticker sync and Rapid Review work on mobile',
   await expect(page.locator('.p4-health')).toContainText('Data healthy')
 
   const todayButton=page.locator('.p4-inbox-actions button').filter({hasText:/Today/})
-  await expect(todayButton).toContainText('3')
+  await expect(todayButton).toContainText('3 unseen')
   await todayButton.click()
   await expect(page.locator('.p4-inbox-drawer')).toContainText('3 candidates')
+  await expect(page.locator('.p4-inbox-drawer')).toContainText('3 unseen')
 
   await page.locator('.p4-inbox-list button').first().click()
   const why=page.locator('.p4-why')
@@ -62,11 +63,18 @@ test('Phase 4 inbox, review queue, ticker sync and Rapid Review work on mobile',
   await expect(why).toContainText('Review 1 / 3')
   await expect(why).toContainText('transparent decomposition')
   await expect(why).toContainText('Opportunity')
+  await expect(todayButton).toContainText('2 unseen')
 
   await page.locator('.p4-next').click()
   await expect(why).toContainText('WHY T002?')
   await expect(why).toContainText('Review 2 / 3')
+  await expect(todayButton).toContainText('1 unseen')
   await page.getByRole('button',{name:'Close why panel'}).click()
+
+  await todayButton.click()
+  await expect(page.locator('.p4-inbox-list button.reviewed')).toHaveCount(2)
+  await expect(page.locator('.p4-inbox-list button').first()).toContainText('reviewed')
+  await page.getByRole('button',{name:'Close review inbox'}).click()
 
   const gridButton=page.locator('.dv-top nav button').filter({hasText:/^Grid$/})
   await expect(gridButton).toHaveCount(1)
