@@ -1,6 +1,7 @@
 name: Deploy StockScout Terminal
 
 # Temporary Phase 3 review branch is allowed to publish for user acceptance review only.
+# Retry after github-pages environment allowed phase3-review-pages.
 on:
   push:
     branches: [main, phase3-review-pages]
