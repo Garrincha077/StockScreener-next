@@ -1,5 +1,6 @@
 import json
 import shutil
+from pathlib import Path
 
 import pytest
 
@@ -74,6 +75,15 @@ def test_valid_snapshot_and_pages_artifact_pass(tmp_path):
         expected_canonical_sha=json.loads(metadata.read_text())["canonicalSha256"],
         expected_frontend_commit="frontend-sha",
     )
+    assert result["chartCoveragePct"] == 100.0
+
+
+def test_valid_snapshot_accepts_relative_data_root(tmp_path, monkeypatch):
+    build_snapshot(tmp_path)
+    monkeypatch.chdir(tmp_path)
+
+    result = validate_snapshot(Path("data"))
+
     assert result["chartCoveragePct"] == 100.0
 
 

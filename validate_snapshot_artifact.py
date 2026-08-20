@@ -53,8 +53,9 @@ def verify_file(data_root: Path, descriptor: dict[str, Any], label: str) -> Path
 
 
 def aggregate(files: list[Path], data_root: Path) -> dict[str, Any]:
+    resolved_root = data_root.resolve()
     records = [
-        {"path": path.relative_to(data_root).as_posix(), "sha256": digest(path.read_bytes())}
+        {"path": path.resolve().relative_to(resolved_root).as_posix(), "sha256": digest(path.read_bytes())}
         for path in sorted(files)
     ]
     return {
