@@ -1,4 +1,14 @@
 import { createClient } from 'npm:@supabase/supabase-js@2'
+import {
+  barsForAlertInterval,
+  evaluateAlertGeometry,
+  type AlertBasis,
+  type AlertCondition,
+  type AlertInterval,
+  type AlertLifecycle,
+  type GeometryBar as Bar,
+  type GeometryPoint as Point,
+} from '../_shared/chartAlertGeometryContract.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -12,7 +22,6 @@ const PAGES_BASE = (Deno.env.get('STOCKSCOUT_NEXT_PAGES_BASE') ?? 'https://garri
 const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
 const api = db.schema('stockscout_api')
 
-type Point = { time: string; price: number }
 type AlertRow = {
   id: string
   owner_key: string
@@ -24,7 +33,26 @@ type AlertRow = {
   created_at: string
   updated_at: string
 }
-type Bar = { time: string; open: number; high: number; low: number; close: number }
+
+type EvaluatorRow = {
+  rule_id: string
+  drawing_id: string
+  legacy_alert_id: string | null
+  owner_key: string
+  ticker: string
+  kind: 'trendline' | 'horizontal'
+  interval: AlertInterval
+  points: [Point, Point]
+  extension: 'ray_right' | 'pane'
+  metadata?: Record<string, unknown>
+  condition: AlertCondition
+  source: AlertBasis
+  lifecycle: AlertLifecycle
+  enabled: boolean
+  notify_in_app: boolean
+  notify_telegram: boolean
+  updated_at: string
+}
 
 type Snapshot = { alerts?: AlertRow[]; events?: unknown[] }
 
@@ -90,35 +118,6 @@ function toBar(raw: any): Bar | null {
   return null
 }
 
-function dayValue(iso: string) {
-  return Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / 86400000
-}
-
-function projectLine(points: [Point, Point], atTime: string) {
-  const [a, b] = points
-  const t1 = dayValue(a.time), t2 = dayValue(b.time), at = dayValue(atTime)
-  if (![t1, t2, at, a.price, b.price].every(Number.isFinite)) return null
-  if (t1 === t2) return b.price
-  return a.price + ((b.price - a.price) / (t2 - t1)) * (at - t1)
-}
-
-function evaluateAlert(alert: AlertRow, bars: Bar[]) {
-  if (bars.length < 2) return null
-  const prev = bars[bars.length - 2]
-  const last = bars[bars.length - 1]
-  const prevLine = projectLine(alert.points, prev.time)
-  const line = projectLine(alert.points, last.time)
-  if (prevLine == null || line == null) return null
-  let fired = false
-  if (alert.mode === 'break_up') fired = prev.close <= prevLine && last.close > line
-  else if (alert.mode === 'break_down') fired = prev.close >= prevLine && last.close < line
-  else fired = last.low <= line && line <= last.high
-  if (!fired) return null
-  const label = alert.mode === 'break_up' ? '📈 crossed above' : alert.mode === 'break_down' ? '📉 crossed below' : '🎯 touched'
-  const message = `✏️ ${alert.ticker} ${label} your line ~${line.toFixed(2)} (close ${last.close.toFixed(2)}, ${last.time})\n${PAGES_BASE}#${alert.ticker}`
-  return { line, last, message }
-}
-
 async function readSecret(name: string) {
   const envName = name === 'stockscout_next_telegram_bot_token'
     ? 'STOCKSCOUT_NEXT_TELEGRAM_BOT_TOKEN'
@@ -151,6 +150,36 @@ async function sendTelegram(text: string) {
   }
 }
 
+function triggerLabel(condition: AlertCondition) {
+  return condition === 'cross_above' ? '📈 crossed above' : condition === 'cross_below' ? '📉 crossed below' : '🎯 touched'
+}
+
+function reviewReason(alert: EvaluatorRow, geometryReason?: string) {
+  if (alert.kind === 'trendline' && alert.metadata?.legacyIntervalUnknown === true) return 'legacy_interval_not_persisted'
+  return geometryReason ?? 'geometry_unavailable'
+}
+
+async function updateStatus(alert: EvaluatorRow, values: {
+  state: 'active' | 'triggered' | 'needs_review'
+  reason?: string | null
+  line?: number | null
+  latest?: Bar | null
+  distancePct?: number | null
+}) {
+  return api.rpc('next_chart_alert_status_update', {
+    p_rule_id: alert.rule_id,
+    p_state: values.state,
+    p_review_reason: values.reason ?? null,
+    p_projected_line_price: values.line ?? null,
+    p_latest_close: values.latest?.close ?? null,
+    p_latest_high: values.latest?.high ?? null,
+    p_latest_low: values.latest?.low ?? null,
+    p_distance_pct: values.distancePct ?? null,
+    p_latest_market_date: values.latest?.time ?? null,
+    p_evaluated_at: new Date().toISOString(),
+  })
+}
+
 async function evaluateAll(req: Request) {
   const evaluatorKey = req.headers.get('x-stockscout-evaluator-key') ?? ''
   const evaluatorHash = await sha256(evaluatorKey)
@@ -168,59 +197,126 @@ async function evaluateAll(req: Request) {
   if (!coreResponse.ok) return json({ error: `Core HTTP ${coreResponse.status}` }, 502)
   const core = await coreResponse.json()
 
-  const { data: enabledAlerts, error: alertsError } = await api.rpc('next_chart_alert_enabled')
+  const { data: enabledRows, error: alertsError } = await api.rpc('next_chart_alert_v2_enabled')
   if (alertsError) return json({ error: alertsError.message }, 500)
-  const alerts = Array.isArray(enabledAlerts) ? enabledAlerts as AlertRow[] : []
-  if (!alerts.length) return json({ ok: true, generatedAt: manifest.generatedAt, evaluated: 0, fired: 0 })
+  const alerts = Array.isArray(enabledRows) ? enabledRows as EvaluatorRow[] : []
+  if (!alerts.length) return json({ ok: true, engine: 'v2-trading-bars', generatedAt: manifest.generatedAt, evaluated: 0, fired: 0, needsReview: 0 })
 
   const shardCache = new Map<string, any>()
   let fired = 0
+  let needsReview = 0
   const failures: string[] = []
+
   for (const alert of alerts) {
     try {
       const shard = core?.chartShards?.[alert.ticker]
-      if (!shard) { failures.push(`${alert.ticker}: no chart shard`); continue }
+      if (!shard) {
+        needsReview += 1
+        await updateStatus(alert, { state: 'needs_review', reason: 'chart_shard_missing' })
+        failures.push(`${alert.ticker}: no chart shard`)
+        continue
+      }
+
       let payload = shardCache.get(shard)
       if (!payload) {
         const response = await fetch(`${PAGES_BASE}data/${chartAsset.path}/${shard}?v=${encodeURIComponent(chartAsset.sha256 ?? manifest.generatedAt)}`, { cache: 'no-store' })
-        if (!response.ok) { failures.push(`${alert.ticker}: chart HTTP ${response.status}`); continue }
+        if (!response.ok) {
+          needsReview += 1
+          await updateStatus(alert, { state: 'needs_review', reason: `chart_http_${response.status}` })
+          failures.push(`${alert.ticker}: chart HTTP ${response.status}`)
+          continue
+        }
         payload = await response.json()
         shardCache.set(shard, payload)
       }
-      const bars = (Array.isArray(payload?.[alert.ticker]) ? payload[alert.ticker] : []).map(toBar).filter(Boolean) as Bar[]
-      const hit = evaluateAlert(alert, bars)
-      if (!hit) continue
 
+      const bars = (Array.isArray(payload?.[alert.ticker]) ? payload[alert.ticker] : []).map(toBar).filter(Boolean) as Bar[]
+      const frame = barsForAlertInterval(bars, alert.interval)
+      const latest = frame.length ? frame[frame.length - 1] : null
+
+      if (alert.kind === 'trendline' && alert.metadata?.legacyIntervalUnknown === true) {
+        needsReview += 1
+        await updateStatus(alert, { state: 'needs_review', reason: 'legacy_interval_not_persisted', latest })
+        continue
+      }
+
+      const geometry = evaluateAlertGeometry({
+        points: alert.points,
+        interval: alert.interval,
+        condition: alert.condition,
+        basis: alert.source,
+      }, bars)
+
+      if (!geometry.valid || !latest || geometry.line == null) {
+        needsReview += 1
+        await updateStatus(alert, {
+          state: 'needs_review',
+          reason: reviewReason(alert, geometry.reason),
+          line: geometry.line,
+          latest,
+        })
+        continue
+      }
+
+      const distancePct = geometry.line !== 0 ? ((latest.close - geometry.line) / geometry.line) * 100 : null
+      await updateStatus(alert, {
+        state: geometry.fired ? 'triggered' : 'active',
+        reason: null,
+        line: geometry.line,
+        latest,
+        distancePct,
+      })
+      if (!geometry.fired) continue
+
+      const message = `✏️ ${alert.ticker} ${alert.interval} ${triggerLabel(alert.condition)} your ${alert.kind} ~${geometry.line.toFixed(2)} (${alert.source}; close ${latest.close.toFixed(2)}, ${latest.time})\n${PAGES_BASE}#${alert.ticker}`
       const initialTelegramStatus = alert.notify_telegram ? 'pending' : 'not_configured'
-      const { data: eventId, error: insertError } = await api.rpc('next_chart_alert_event_insert', {
-        p_alert_id: alert.id,
-        p_event_type: alert.mode,
+      const { data: eventId, error: insertError } = await api.rpc('next_chart_alert_v2_event_insert', {
+        p_rule_id: alert.rule_id,
         p_scan_generated_at: manifest.generatedAt,
-        p_market_date: hit.last.time,
-        p_line_price: Number(hit.line.toFixed(6)),
-        p_close_price: hit.last.close,
-        p_message: hit.message,
+        p_market_date: latest.time,
+        p_prev_line_price: geometry.prevLine == null ? null : Number(geometry.prevLine.toFixed(6)),
+        p_current_line_price: Number(geometry.line.toFixed(6)),
+        p_close_price: latest.close,
+        p_message: message,
         p_telegram_status: initialTelegramStatus,
       })
-      if (insertError) { failures.push(`${alert.ticker}: ${insertError.message}`); continue }
-      if (typeof eventId !== 'string' || !eventId) continue
-      fired += 1
+      if (insertError) {
+        failures.push(`${alert.ticker}: ${insertError.message}`)
+        continue
+      }
 
-      if (alert.notify_telegram) {
-        const telegram = await sendTelegram(hit.message)
-        const { error: updateError } = await api.rpc('next_chart_alert_event_telegram_update', {
-          p_id: eventId,
-          p_status: telegram.status,
-          p_error: telegram.error || null,
-          p_sent_at: telegram.status === 'sent' ? new Date().toISOString() : null,
-        })
-        if (updateError) failures.push(`${alert.ticker}: telegram status update ${updateError.message}`)
+      if (typeof eventId === 'string' && eventId) {
+        fired += 1
+        if (alert.notify_telegram) {
+          const telegram = await sendTelegram(message)
+          const { error: updateError } = await api.rpc('next_chart_alert_event_telegram_update', {
+            p_id: eventId,
+            p_status: telegram.status,
+            p_error: telegram.error || null,
+            p_sent_at: telegram.status === 'sent' ? new Date().toISOString() : null,
+          })
+          if (updateError) failures.push(`${alert.ticker}: telegram status update ${updateError.message}`)
+        }
+      }
+
+      if (alert.lifecycle === 'one_shot') {
+        const { error: disableError } = await api.rpc('next_chart_alert_rule_disable_after_fire', { p_rule_id: alert.rule_id })
+        if (disableError) failures.push(`${alert.ticker}: one-shot disable ${disableError.message}`)
       }
     } catch (error) {
       failures.push(`${alert.ticker}: ${String(error)}`)
     }
   }
-  return json({ ok: true, generatedAt: manifest.generatedAt, evaluated: alerts.length, fired, failures: failures.slice(0, 20) })
+
+  return json({
+    ok: true,
+    engine: 'v2-trading-bars',
+    generatedAt: manifest.generatedAt,
+    evaluated: alerts.length,
+    fired,
+    needsReview,
+    failures: failures.slice(0, 20),
+  })
 }
 
 Deno.serve(async (req: Request) => {
