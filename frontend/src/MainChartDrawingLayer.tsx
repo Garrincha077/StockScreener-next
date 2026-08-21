@@ -161,7 +161,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
   useEffect(()=>()=>stopWindowDrag(),[stopWindowDrag])
 
   const beginDrag=useCallback((event:ReactPointerEvent<SVGElement>|ReactMouseEvent<SVGElement>,drawing:ChartDrawing,kind:DragKind)=>{
-    if(tool!=='cursor'||busy||dragRef.current)return
+    if(tool!=='cursor'||dragRef.current)return
     const start=logicalAndPriceFromClient(event.clientX,event.clientY)
     const indexes:[number,number]=[frameTimes.indexOf(drawing.points[0].time),frameTimes.indexOf(drawing.points[1].time)]
     if(!start||indexes.some(index=>index<0))return
@@ -211,7 +211,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
     window.addEventListener('pointercancel',pointerUp,true)
     window.addEventListener('mousemove',mouseMove,true)
     window.addEventListener('mouseup',mouseUp,true)
-  },[tool,busy,logicalAndPriceFromClient,frameTimes,selectDrawing,showEditing,pointFromClient,frame,stopWindowDrag,upsertDrawing,clearEditing])
+  },[tool,logicalAndPriceFromClient,frameTimes,selectDrawing,showEditing,pointFromClient,frame,stopWindowDrag,upsertDrawing,clearEditing])
 
   const chooseTool=useCallback((next:'cursor'|'trendline'|'horizontal')=>{
     setTool(next);setFirstPoint(null);setHoverPoint(null);clearEditing()
