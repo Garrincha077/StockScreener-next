@@ -13,6 +13,14 @@ on:
       - 'build_legacy_confirmation_sidecar.py'
       - 'compute_legacy_confirmation.py'
       - 'audit_legacy_confirmation_shadow.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate_stable_snapshot_sync.yml'
+      - 'prepare_frontend_payloads.py'
+      - 'build_legacy_confirmation_sidecar.py'
+      - 'compute_legacy_confirmation.py'
+      - 'audit_legacy_confirmation_shadow.py'
 
 permissions:
   contents: read
