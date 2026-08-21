@@ -28,7 +28,9 @@ FILTER_ENGINE = ROOT / "frontend" / "src" / "deepvue" / "filterEngine.ts"
 MODEL = "stockscout-client-core-v2"
 MANIFEST_VERSION = 2
 LEGACY_SHARD_COUNT = 128
-MAX_CORE_BYTES = 8_000_000
+# Keep a hard client-payload ceiling while allowing the three compact
+# Fundamental Evidence dimensions used by the existing detail panel.
+MAX_CORE_BYTES = 8_050_000
 
 # These fields are rendered outside Filter Builder. Filter Builder's explicit
 # fieldDefs list is read below and merged into this list, so adding a new filter
