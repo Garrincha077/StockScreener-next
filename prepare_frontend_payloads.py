@@ -28,7 +28,9 @@ FILTER_ENGINE = ROOT / "frontend" / "src" / "deepvue" / "filterEngine.ts"
 MODEL = "stockscout-client-core-v2"
 MANIFEST_VERSION = 2
 LEGACY_SHARD_COUNT = 128
-MAX_CORE_BYTES = 8_000_000
+# Keep a hard client-payload ceiling while allowing the three compact
+# Fundamental Evidence dimensions used by the existing detail panel.
+MAX_CORE_BYTES = 8_050_000
 
 # These fields are rendered outside Filter Builder. Filter Builder's explicit
 # fieldDefs list is read below and merged into this list, so adding a new filter
@@ -41,6 +43,7 @@ CORE_EXTRA_FIELDS = {
     "originalBreakoutVolumeConfirmed", "originalSellScore",
     "originalRunSellSignal", "ema10d", "ema20d", "sma10w", "sma20w",
     "vcpScore", "rsFromHigh", "structureScore", "baseScore", "triggerScore",
+    "fundamentalDims",
 }
 
 LEGACY_INDEX_FIELDS = {
@@ -99,6 +102,13 @@ def build_core_payload(
         if not isinstance(row, dict):
             continue
         projected = projected_row(row, published_fields)
+        fundamental_dims = [
+            row.get("fundamentalGrowthScore"),
+            row.get("fundamentalMarginScore"),
+            row.get("fundamentalInventoryScore"),
+        ]
+        if any(value is not None for value in fundamental_dims):
+            projected["fundamentalDims"] = fundamental_dims
         ticker = str(row.get("ticker") or "").strip().upper()
         confirmation = confirmations.get(ticker)
         if confirmation:

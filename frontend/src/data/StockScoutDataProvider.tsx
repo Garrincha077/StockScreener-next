@@ -86,6 +86,17 @@ function detailShardFor(ticker:string,count=128){
   for(let index=0;index<normalized.length;index++)value+=(index+1)*normalized.charCodeAt(index)
   return String(value%Math.max(1,Math.floor(count))).padStart(3,'0')
 }
+function expandCompactFundamentals(core:StockScoutCore):StockScoutCore{
+  return {...core,universe:core.universe.map(row=>{
+    const dims=row.fundamentalDims
+    if(!Array.isArray(dims))return row
+    return {...row,
+      fundamentalGrowthScore:row.fundamentalGrowthScore??dims[0]??null,
+      fundamentalMarginScore:row.fundamentalMarginScore??dims[1]??null,
+      fundamentalInventoryScore:row.fundamentalInventoryScore??dims[2]??null,
+    }
+  })}
+}
 
 type DataContextValue={
   manifest:StockScoutManifest|null
@@ -131,9 +142,10 @@ export function StockScoutDataProvider({children}:{children:ReactNode}){
       if(nextCore.generatedAt!==nextManifest.generatedAt||nextCore.universe.length!==nextManifest.universe){
         throw new Error('Core dataset does not match manifest')
       }
+      const hydratedCore=expandCompactFundamentals(nextCore)
       if(live){
-        setManifest(nextManifest);setCore(nextCore);setError('')
-        setSelectedTicker(current=>current||nextCore.universe[0].ticker)
+        setManifest(nextManifest);setCore(hydratedCore);setError('')
+        setSelectedTicker(current=>current||hydratedCore.universe[0].ticker)
       }
     })().catch(nextError=>{if(live)setError(String(nextError))}).finally(()=>{if(live)setLoading(false)})
     return()=>{live=false}

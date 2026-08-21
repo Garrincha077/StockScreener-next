@@ -22,6 +22,9 @@ def sample_payload():
             {
                 "ticker": "AAA",
                 "opportunityScore": 81,
+                "fundamentalGrowthScore": 77,
+                "fundamentalMarginScore": 66,
+                "fundamentalInventoryScore": 55,
                 "originalBuyScore": 92,
                 "originalRunBuySignal": True,
                 "originalBreakoutVolumeConfirmed": True,
@@ -69,6 +72,10 @@ def test_core_projection_strips_only_heavy_nested_row_payloads():
 
     assert [row["ticker"] for row in core["universe"]] == ["AAA", "BBB"]
     assert core["universe"][0]["opportunityScore"] == 81
+    assert core["universe"][0]["fundamentalDims"] == [77, 66, 55]
+    assert "fundamentalGrowthScore" not in core["universe"][0]
+    assert "fundamentalMarginScore" not in core["universe"][0]
+    assert "fundamentalInventoryScore" not in core["universe"][0]
     assert core["universe"][0]["originalBuyScore"] == 92
     assert core["universe"][0]["originalBreakoutVolumeConfirmed"] is True
     assert core["universe"][0]["originalRunSellSignal"] is False
