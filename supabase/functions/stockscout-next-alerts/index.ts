@@ -10,13 +10,14 @@ const SUPABASE_URL = Deno.env.get('SUPABASE_URL') ?? ''
 const SERVICE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
 const PAGES_BASE = (Deno.env.get('STOCKSCOUT_NEXT_PAGES_BASE') ?? 'https://garrincha077.github.io/StockScreener-next/').replace(/\/?$/, '/')
 const db = createClient(SUPABASE_URL, SERVICE_KEY, { auth: { persistSession: false } })
+const api = db.schema('stockscout_api')
 
 type Point = { time: string; price: number }
 type AlertRow = {
   id: string
   owner_key: string
   ticker: string
-  points: Point[]
+  points: [Point, Point]
   mode: 'break_up' | 'break_down' | 'touch'
   enabled: boolean
   notify_telegram: boolean
@@ -24,6 +25,8 @@ type AlertRow = {
   updated_at: string
 }
 type Bar = { time: string; open: number; high: number; low: number; close: number }
+
+type Snapshot = { alerts?: AlertRow[]; events?: unknown[] }
 
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -49,12 +52,12 @@ function normalizeAlert(raw: any) {
   const mode = ['break_up', 'break_down', 'touch'].includes(raw?.mode) ? raw.mode : 'touch'
   if (!/^[A-Z0-9.\-]{1,16}$/.test(ticker) || points.length !== 2 || !points.every(validPoint)) throw new Error('Invalid alert geometry')
   return {
+    ...(typeof raw?.id === 'string' && raw.id ? { id: raw.id } : {}),
     ticker,
     points,
     mode,
     enabled: Boolean(raw?.enabled),
-    notify_telegram: raw?.notifyTelegram !== false,
-    updated_at: new Date().toISOString(),
+    notifyTelegram: raw?.notifyTelegram !== false,
   }
 }
 
@@ -91,7 +94,7 @@ function dayValue(iso: string) {
   return Date.parse(`${iso.slice(0, 10)}T00:00:00Z`) / 86400000
 }
 
-function projectLine(points: Point[], atTime: string) {
+function projectLine(points: [Point, Point], atTime: string) {
   const [a, b] = points
   const t1 = dayValue(a.time), t2 = dayValue(b.time), at = dayValue(atTime)
   if (![t1, t2, at, a.price, b.price].every(Number.isFinite)) return null
@@ -117,9 +120,16 @@ function evaluateAlert(alert: AlertRow, bars: Bar[]) {
 }
 
 async function readSecret(name: string) {
-  const envName=name==='stockscout_next_telegram_bot_token'?'STOCKSCOUT_NEXT_TELEGRAM_BOT_TOKEN':name==='stockscout_next_telegram_chat_id'?'STOCKSCOUT_NEXT_TELEGRAM_CHAT_ID':''
-  if(envName){const direct=Deno.env.get(envName);if(direct)return direct}
-  const { data, error } = await db.rpc('stockscout_next_secret', { secret_name: name })
+  const envName = name === 'stockscout_next_telegram_bot_token'
+    ? 'STOCKSCOUT_NEXT_TELEGRAM_BOT_TOKEN'
+    : name === 'stockscout_next_telegram_chat_id'
+      ? 'STOCKSCOUT_NEXT_TELEGRAM_CHAT_ID'
+      : ''
+  if (envName) {
+    const direct = Deno.env.get(envName)
+    if (direct) return direct
+  }
+  const { data, error } = await api.rpc('next_chart_alert_secret', { p_name: name })
   if (error) return ''
   return typeof data === 'string' ? data : ''
 }
@@ -144,8 +154,8 @@ async function sendTelegram(text: string) {
 async function evaluateAll(req: Request) {
   const evaluatorKey = req.headers.get('x-stockscout-evaluator-key') ?? ''
   const evaluatorHash = await sha256(evaluatorKey)
-  const { data: config, error: authError } = await db.from('stockscout_next_runtime_config').select('value').eq('key','evaluator_key_sha256').maybeSingle()
-  if (authError || !config || config.value !== evaluatorHash) return json({ error: 'Unauthorized evaluator' }, 401)
+  const { data: allowed, error: authError } = await api.rpc('next_chart_alert_evaluator_authorized', { p_hash: evaluatorHash })
+  if (authError || allowed !== true) return json({ error: 'Unauthorized evaluator' }, 401)
 
   const manifestResponse = await fetch(`${PAGES_BASE}data/manifest.json?alertEval=${Date.now()}`, { cache: 'no-store' })
   if (!manifestResponse.ok) return json({ error: `Manifest HTTP ${manifestResponse.status}` }, 502)
@@ -158,18 +168,15 @@ async function evaluateAll(req: Request) {
   if (!coreResponse.ok) return json({ error: `Core HTTP ${coreResponse.status}` }, 502)
   const core = await coreResponse.json()
 
-  const { data: alerts, error: alertsError } = await db
-    .from('stockscout_next_chart_alerts')
-    .select('*')
-    .eq('enabled', true)
-    .order('updated_at', { ascending: true })
+  const { data: enabledAlerts, error: alertsError } = await api.rpc('next_chart_alert_enabled')
   if (alertsError) return json({ error: alertsError.message }, 500)
-  if (!alerts?.length) return json({ ok: true, generatedAt: manifest.generatedAt, evaluated: 0, fired: 0 })
+  const alerts = Array.isArray(enabledAlerts) ? enabledAlerts as AlertRow[] : []
+  if (!alerts.length) return json({ ok: true, generatedAt: manifest.generatedAt, evaluated: 0, fired: 0 })
 
   const shardCache = new Map<string, any>()
   let fired = 0
   const failures: string[] = []
-  for (const alert of alerts as AlertRow[]) {
+  for (const alert of alerts) {
     try {
       const shard = core?.chartShards?.[alert.ticker]
       if (!shard) { failures.push(`${alert.ticker}: no chart shard`); continue }
@@ -184,34 +191,30 @@ async function evaluateAll(req: Request) {
       const hit = evaluateAlert(alert, bars)
       if (!hit) continue
 
-      const event = {
-        alert_id: alert.id,
-        owner_key: alert.owner_key,
-        ticker: alert.ticker,
-        event_type: alert.mode,
-        scan_generated_at: manifest.generatedAt,
-        market_date: hit.last.time,
-        line_price: Number(hit.line.toFixed(6)),
-        close_price: hit.last.close,
-        message: hit.message,
-        telegram_status: alert.notify_telegram ? 'pending' : 'not_configured',
-      }
-      const { data: inserted, error: insertError } = await db
-        .from('stockscout_next_alert_events')
-        .upsert(event, { onConflict: 'alert_id,scan_generated_at', ignoreDuplicates: true })
-        .select('id')
-        .maybeSingle()
+      const initialTelegramStatus = alert.notify_telegram ? 'pending' : 'not_configured'
+      const { data: eventId, error: insertError } = await api.rpc('next_chart_alert_event_insert', {
+        p_alert_id: alert.id,
+        p_event_type: alert.mode,
+        p_scan_generated_at: manifest.generatedAt,
+        p_market_date: hit.last.time,
+        p_line_price: Number(hit.line.toFixed(6)),
+        p_close_price: hit.last.close,
+        p_message: hit.message,
+        p_telegram_status: initialTelegramStatus,
+      })
       if (insertError) { failures.push(`${alert.ticker}: ${insertError.message}`); continue }
-      if (!inserted?.id) continue
+      if (typeof eventId !== 'string' || !eventId) continue
       fired += 1
 
       if (alert.notify_telegram) {
         const telegram = await sendTelegram(hit.message)
-        await db.from('stockscout_next_alert_events').update({
-          telegram_status: telegram.status,
-          telegram_sent_at: telegram.status === 'sent' ? new Date().toISOString() : null,
-          telegram_error: telegram.error || null,
-        }).eq('id', inserted.id)
+        const { error: updateError } = await api.rpc('next_chart_alert_event_telegram_update', {
+          p_id: eventId,
+          p_status: telegram.status,
+          p_error: telegram.error || null,
+          p_sent_at: telegram.status === 'sent' ? new Date().toISOString() : null,
+        })
+        if (updateError) failures.push(`${alert.ticker}: telegram status update ${updateError.message}`)
       }
     } catch (error) {
       failures.push(`${alert.ticker}: ${String(error)}`)
@@ -232,34 +235,26 @@ Deno.serve(async (req: Request) => {
     const ownerKey = await sha256(deviceKey)
 
     if (action === 'list') {
-      const [{ data: alerts, error: alertsError }, { data: events, error: eventsError }] = await Promise.all([
-        db.from('stockscout_next_chart_alerts').select('*').eq('owner_key', ownerKey).order('updated_at', { ascending: false }),
-        db.from('stockscout_next_alert_events').select('*').eq('owner_key', ownerKey).order('created_at', { ascending: false }).limit(50),
-      ])
-      if (alertsError || eventsError) return json({ error: alertsError?.message ?? eventsError?.message }, 500)
-      return json({ alerts: (alerts as AlertRow[] ?? []).map(toClientAlert), events: events ?? [] })
+      const { data, error } = await api.rpc('next_chart_alert_snapshot', { p_owner_key: ownerKey })
+      if (error) return json({ error: error.message }, 500)
+      const snapshot = (data && typeof data === 'object' ? data : {}) as Snapshot
+      return json({ alerts: (snapshot.alerts ?? []).map(toClientAlert), events: snapshot.events ?? [] })
     }
 
     if (action === 'upsert') {
       const alert = normalizeAlert(body?.alert)
-      const id = typeof body?.alert?.id === 'string' ? body.alert.id : ''
-      if (id) {
-        const { data, error } = await db.from('stockscout_next_chart_alerts').update(alert).eq('id', id).eq('owner_key', ownerKey).select('*').maybeSingle()
-        if (error) return json({ error: error.message }, 500)
-        if (!data) return json({ error: 'Alert not found' }, 404)
-        return json({ alert: toClientAlert(data as AlertRow) })
-      }
-      const { data, error } = await db.from('stockscout_next_chart_alerts').insert({ ...alert, owner_key: ownerKey }).select('*').single()
-      if (error) return json({ error: error.message }, 500)
-      return json({ alert: toClientAlert(data as AlertRow) }, 201)
+      const { data, error } = await api.rpc('next_chart_alert_upsert', { p_owner_key: ownerKey, p_alert: alert })
+      if (error) return json({ error: error.message }, error.code === 'P0002' ? 404 : 500)
+      if (!data || typeof data !== 'object') return json({ error: 'Alert upsert returned no row' }, 500)
+      return json({ alert: toClientAlert(data as AlertRow) }, alert.id ? 200 : 201)
     }
 
     if (action === 'delete') {
       const id = String(body?.id ?? '')
       if (!id) return json({ error: 'Missing alert id' }, 400)
-      const { error } = await db.from('stockscout_next_chart_alerts').delete().eq('id', id).eq('owner_key', ownerKey)
+      const { data, error } = await api.rpc('next_chart_alert_delete', { p_owner_key: ownerKey, p_id: id })
       if (error) return json({ error: error.message }, 500)
-      return json({ ok: true })
+      return json({ ok: data === true })
     }
 
     return json({ error: 'Unknown action' }, 400)
