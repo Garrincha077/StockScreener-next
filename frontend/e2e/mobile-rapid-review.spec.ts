@@ -74,7 +74,7 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
   await expect(todayButton).toHaveClass(/active/)
   await expect(gridButton).toHaveClass(/active/)
   await expect(rapidHeader).toBeVisible()
-  if(testInfo.project.name==='mobile-pixel-5')expect(await rapidHeader.evaluate(element=>getComputedStyle(element).position)).toBe('static')
+  if(testInfo.project.name==='mobile-pixel-5')await expect(rapidHeader).toHaveCSS('position','static')
   const scope=page.locator('.p4-review-scope')
   await expect(scope).toContainText('Today / changed')
   await expect(scope).toContainText('3 candidates')
