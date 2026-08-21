@@ -522,7 +522,7 @@ This file is the durable handoff for future agents. Update it after every meanin
 - PR #8 Review Scope UX was retargeted to the new `main` and promoted as merge commit `d2640e61c428831a4037c5d1819554e6a39b5bb4`.
 - Before further development, `next-dev` was fast-forwarded only after verifying that it had 0 commits ahead of `main`.
 - Phase 6 PR #9 final validated head: `5c9f18e85d00164595a326abaec85bf8bb379814`; merged to Next `main` as `d7c959d6803d465db328cf71be08153b99fe045b`.
-- Phase 6 implementation sequence: `b5be1475cb7766682258b5f522a9507bfa5aa5fd`, `65ae0ee1350beba836cb69ee5fdd66934acb8e5d`, `004f5894eebc6ab107c3d8a4f202b85fb8cbae5a`, `1eaa3a015e17e5a2d595493311bdc777fb8dae26`, `5c9f18e85d00164595a326abaec85bf8bb379814`.
+- Phase 6 implementation sequence: `b5be1475cb7766682258b5f522a9507bfa5aa5fd`, `65ae0ee1350beba836cb69ee5fdd66934acb8e5d`, `004f5894eebc6ab107c3d8a4f202b85fb8dae26`, `1eaa3a015e17e5a2d595493311bdc777fb8dae26`, `5c9f18e85d00164595a326abaec85bf8bb379814`.
 
 **What changed / why**
 - #6 promoted the already-reconciled application/data-provider hardening without changing StockScout scoring/model methodology.
@@ -562,3 +562,35 @@ This file is the durable handoff for future agents. Update it after every meanin
 - Synchronize `next-dev` to this logged controlled `main` baseline.
 - Continue Phase 6 with the smallest reversible journal/forward-price slice: define append-only observation retention and derive future-session pricing from existing validated data/charts before considering automatic capture.
 - If that journal is wired into Stable snapshot sync, scan, publish or workflow persistence, run Full Validation before promotion.
+
+## 2026-08-21 — Mobile Rapid Review overlap fix
+
+**Branch / PR / commits**
+- Fix branch: `fix/mobile-rapid-review-overlap`, created from synchronized `main` / `next-dev` baseline `a1d7fca296d8fc495894705cd805f905c7e2b42e`.
+- PR #10 validated head: `810883800047c17b375dddbcb05e02852f6ebdcd`.
+- Promoted to Next `main` as merge commit `5989983c8aab191fb51aa2b8b618a6ab41653873`.
+
+**What changed / why**
+- Real mobile use exposed that the Rapid Review Grid header remained `position: sticky` at phone widths, so stock cards scrolled underneath and the header visually overlaid the first card.
+- At `max-width: 680px`, `.dv-gridview > header` now uses normal document flow (`position: static; top: auto`). Desktop/tablet sticky behavior is unchanged.
+- Added a Playwright regression assertion that the mobile Pixel 5 project resolves the Rapid Review header to `position: static`.
+
+**Affected files / components**
+- `frontend/src/phase4-review.css`.
+- `frontend/e2e/mobile-rapid-review.spec.ts`.
+
+**Scoring / behavior impact**
+- UI-only mobile layout repair. No StockScout Core field, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default ranking, canonical scan data or frozen LEGACY behavior changed.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke `32471044938` (#57): **success**, including runtime tests, TypeScript/Vite build and mobile/desktop Playwright smoke.
+- StockScout Validation `32471045095` (#103): **success**, including Stable snapshot restore, frozen LEGACY verification, regression/integration suite, model compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend build.
+- Full Validation was not run because this repair is frontend/test-only and does not alter scan/data/workflow behavior.
+
+**Risk / decision**
+- Prefer non-sticky Rapid Review controls on small phones to avoid covering candidate cards. Keep the existing sticky behavior at larger viewports where there is enough vertical space.
+- GitHub Pages deployment is triggered by the `main` frontend change; deployment result should be verified before claiming the public app is updated.
+
+**Next logical step**
+- Verify the `Deploy StockScout Terminal` Pages deployment for merge `5989983...`, then fast-forward `next-dev` to the logged `main` baseline before continuing workflow hardening or Phase 6 journal work.
