@@ -41,6 +41,7 @@ CORE_EXTRA_FIELDS = {
     "originalBreakoutVolumeConfirmed", "originalSellScore",
     "originalRunSellSignal", "ema10d", "ema20d", "sma10w", "sma20w",
     "vcpScore", "rsFromHigh", "structureScore", "baseScore", "triggerScore",
+    "fundamentalGrowthScore", "fundamentalMarginScore", "fundamentalInventoryScore",
 }
 
 LEGACY_INDEX_FIELDS = {
