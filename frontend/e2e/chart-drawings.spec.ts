@@ -101,7 +101,7 @@ test('drawings live on the main chart, edit there and persist across reload',asy
   await page.getByRole('button',{name:'Draw horizontal line'}).click()
   await expect(page.locator('.cad-main-capture')).toBeVisible()
   await page.locator('.cad-main-capture').click({position:{x:box.width*.56,y:box.height*.45}})
-  await expect(page.locator('[data-drawing-id="d1"]')).toBeVisible()
+  await expect(page.locator('.cad-main-svg [data-drawing-id="d1"]')).toBeVisible()
   expect(drawings[0].interval).toBe('W')
   expect(drawings[0].kind).toBe('horizontal')
   expect(drawings[0].points[0].price).toBe(drawings[0].points[1].price)
@@ -111,8 +111,8 @@ test('drawings live on the main chart, edit there and persist across reload',asy
   await capture.click({position:{x:box.width*.30,y:box.height*.62}})
   await expect(page.locator('.cad-main-hint')).toContainText('anchor B')
   await capture.click({position:{x:box.width*.68,y:box.height*.32}})
-  await expect(page.locator('[data-drawing-id="d2"]')).toBeVisible()
-  await expect(page.locator('[data-drawing-id="d2"] .cad-main-ray')).toBeVisible()
+  await expect(page.locator('.cad-main-svg [data-drawing-id="d2"]')).toBeVisible()
+  await expect(page.locator('.cad-main-svg [data-drawing-id="d2"] .cad-main-ray')).toBeVisible()
   expect(drawings.find(item=>item.id==='d2')?.kind).toBe('trendline')
 
   await page.locator('.ss-alerts-launch').click()
@@ -126,10 +126,11 @@ test('drawings live on the main chart, edit there and persist across reload',asy
   await expect.poll(()=>rules.find(item=>item.drawing_id==='d1')?.condition).toBe('touch')
   await manager.getByRole('button',{name:'Close drawings and alerts'}).click()
 
-  await expect(page.locator('[data-drawing-id="d1"] .cad-main-handle')).toBeVisible()
-  await expect(page.locator('[data-drawing-id="d1"] .cad-main-badge')).toContainText('Touch')
+  const horizontalHandle=page.locator('.cad-main-handle-overlay [data-drawing-id="d1"] .cad-main-handle')
+  await expect(horizontalHandle).toBeVisible()
+  await expect(page.locator('.cad-main-svg [data-drawing-id="d1"] .cad-main-badge')).toContainText('Touch')
   const originalPrice=drawings.find(item=>item.id==='d1').points[0].price
-  const handleBox=await page.locator('[data-drawing-id="d1"] .cad-main-handle').boundingBox()
+  const handleBox=await horizontalHandle.boundingBox()
   expect(handleBox).not.toBeNull()
   await page.mouse.move(handleBox!.x+handleBox!.width/2,handleBox!.y+handleBox!.height/2)
   await page.mouse.down()
@@ -142,9 +143,9 @@ test('drawings live on the main chart, edit there and persist across reload',asy
 
   await page.reload()
   await chart.scrollIntoViewIfNeeded()
-  await expect(page.locator('[data-drawing-id="d1"]')).toBeVisible()
-  await expect(page.locator('[data-drawing-id="d2"]')).toBeVisible()
-  await expect(page.locator('[data-drawing-id="d1"] .cad-main-badge')).toContainText('Touch')
+  await expect(page.locator('.cad-main-svg [data-drawing-id="d1"]')).toBeVisible()
+  await expect(page.locator('.cad-main-svg [data-drawing-id="d2"]')).toBeVisible()
+  await expect(page.locator('.cad-main-svg [data-drawing-id="d1"] .cad-main-badge')).toContainText('Touch')
   await expect(page.locator('.cad-main-capture')).toHaveCount(0)
 
   const upsertsBeforePan=drawingUpserts
