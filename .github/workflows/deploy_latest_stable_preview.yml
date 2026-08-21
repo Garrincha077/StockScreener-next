@@ -7,6 +7,10 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/deploy_latest_stable_preview.yml'
+  schedule:
+    # Stable normally completes after the US close. Two read-only refresh windows
+    # give a delayed Stable run a second chance without scheduling a Next scan.
+    - cron: '35 22,23 * * 1-5'
   workflow_dispatch:
 
 permissions:

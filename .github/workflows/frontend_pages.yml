@@ -29,7 +29,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      canonical_sha: ${{ steps.canonical.outputs.sha }}
+      stable_sha: ${{ steps.stable.outputs.sha }}
+      generated_at: ${{ steps.stable.outputs.generated_at }}
+      workflow_run_id: ${{ steps.stable.outputs.workflow_run_id }}
     steps:
       - uses: actions/checkout@v4
 
@@ -38,6 +40,44 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
+
+      - name: Download latest Stable snapshot read-only
+        id: stable
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/frontend/public/data/latest.json \
+            --output /tmp/stable-latest.json
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/data/daily_scans/latest_scan_meta.json \
+            --output /tmp/stable-scan-meta.json
+          STABLE_SHA=$(sha256sum /tmp/stable-latest.json | cut -d' ' -f1)
+          cp /tmp/stable-latest.json frontend/public/data/latest.json
+          python - <<'PY' > /tmp/stable-info.txt
+          import json
+          from pathlib import Path
+          payload=json.loads(Path('/tmp/stable-latest.json').read_text(encoding='utf-8'))
+          meta=json.loads(Path('/tmp/stable-scan-meta.json').read_text(encoding='utf-8'))
+          rows=payload.get('universe') or []
+          if not rows or not payload.get('generatedAt'):
+              raise SystemExit('Stable snapshot is incomplete')
+          if not meta.get('workflow_run_id') or not meta.get('generated_at_utc'):
+              raise SystemExit('Stable scan metadata is incomplete')
+          print(payload['generatedAt'])
+          print(meta['workflow_run_id'])
+          print(len(rows))
+          PY
+          GENERATED_AT=$(sed -n '1p' /tmp/stable-info.txt)
+          WORKFLOW_RUN_ID=$(sed -n '2p' /tmp/stable-info.txt)
+          ROWS=$(sed -n '3p' /tmp/stable-info.txt)
+          echo "sha=$STABLE_SHA" >> "$GITHUB_OUTPUT"
+          echo "generated_at=$GENERATED_AT" >> "$GITHUB_OUTPUT"
+          echo "workflow_run_id=$WORKFLOW_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "Stable generatedAt: $GENERATED_AT"
+          echo "Stable workflow run: $WORKFLOW_RUN_ID"
+          echo "Stable universe: $ROWS"
+          echo "Stable sha256: $STABLE_SHA"
 
       - name: Build lightweight client payload + LEGACY shadow
         run: |
@@ -57,6 +97,7 @@ jobs:
           assert core.get('generatedAt') == manifest.get('generatedAt') == (shadow.get('source') or {}).get('generatedAt')
           assert len(core.get('universe') or []) == manifest.get('universe') == shadow.get('total')
           assert shadow.get('affectsStockScout') is False
+          print('Next projection generatedAt:', manifest.get('generatedAt'))
           print('LEGACY shadow counts:', shadow.get('counts'))
           PY
 
@@ -89,23 +130,22 @@ jobs:
           FINAL=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           test "$BEFORE" = "$FINAL"
           python validate_frontend_charts.py frontend/public
-          echo "Canonical latest.json unchanged: $FINAL"
+          echo "Stable canonical latest.json unchanged in workspace: $FINAL"
           echo "Chart shards: $(find frontend/public/data/charts -name '*.json' | wc -l)"
           du -sh frontend/public/data
 
-      - name: Refuse a stale data build
-        id: canonical
+      - name: Refuse a Stable snapshot that advanced during build
         shell: bash
+        env:
+          BUILT_STABLE_SHA: ${{ steps.stable.outputs.sha }}
         run: |
-          LOCAL_SHA=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
-          git fetch origin main
-          REMOTE_SHA=$(git show origin/main:frontend/public/data/latest.json | sha256sum | cut -d' ' -f1)
-          if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
-            echo "::error::Main scan data advanced while this frontend build was running; refusing to package a stale Pages deployment."
-            exit 1
-          fi
-          echo "sha=$LOCAL_SHA" >> "$GITHUB_OUTPUT"
-          echo "Canonical snapshot verified against origin/main: $LOCAL_SHA"
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/frontend/public/data/latest.json \
+            --output /tmp/stable-latest-recheck.json
+          CURRENT_STABLE_SHA=$(sha256sum /tmp/stable-latest-recheck.json | cut -d' ' -f1)
+          test "$CURRENT_STABLE_SHA" = "$BUILT_STABLE_SHA"
+          echo "Stable snapshot still current: $CURRENT_STABLE_SHA"
 
       - uses: actions/setup-node@v4
         with:
@@ -144,21 +184,18 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-
-      - name: Verify artifact still matches current canonical scan
+      - name: Verify Stable snapshot still matches built artifact
         shell: bash
         env:
-          BUILT_SHA: ${{ needs.build.outputs.canonical_sha }}
+          BUILT_STABLE_SHA: ${{ needs.build.outputs.stable_sha }}
         run: |
-          CURRENT_SHA=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
-          if [ "$CURRENT_SHA" != "$BUILT_SHA" ]; then
-            echo "::error::Canonical scan changed after this frontend artifact was built; refusing stale Pages deployment."
-            exit 1
-          fi
-          echo "Deploy snapshot still current: $CURRENT_SHA"
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/frontend/public/data/latest.json \
+            --output /tmp/stable-latest-deploy-check.json
+          CURRENT_STABLE_SHA=$(sha256sum /tmp/stable-latest-deploy-check.json | cut -d' ' -f1)
+          test "$CURRENT_STABLE_SHA" = "$BUILT_STABLE_SHA"
+          echo "Deploying Stable workflow ${{ needs.build.outputs.workflow_run_id }} snapshot ${{ needs.build.outputs.generated_at }}"
 
       - name: Deploy read-only terminal build to GitHub Pages
         id: deployment
