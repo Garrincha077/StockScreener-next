@@ -54,7 +54,7 @@ jobs:
       - name: Install and build
         working-directory: frontend
         run: |
-          npm install
+          npm ci
           npm run check
 
       - name: Verify promoted screener columns are in built source

@@ -20,17 +20,19 @@ test('fetchJsonWithRetry recovers from a transient HTTP failure',async()=>{
   assert.equal(calls,2)
 })
 
-test('chart requests bypass stale browser/CDN cache by default',async()=>{
-  let requested=''
-  let cacheMode:RequestCache|undefined
+test('versioned chart requests cache normally and only cache-bust after an error',async()=>{
+  const requested:string[]=[]
+  const cacheModes:(RequestCache|undefined)[]=[]
+  let calls=0
   const fetcher=async(input:RequestInfo|URL,init?:RequestInit)=>{
-    requested=String(input)
-    cacheMode=init?.cache
-    return Response.json({ok:true})
+    requested.push(String(input));cacheModes.push(init?.cache);calls++
+    return calls===1?new Response('retry',{status:503}):Response.json({ok:true})
   }
-  await fetchJsonWithRetry<{ok:boolean}>('/data/charts/001.json?v=snapshot',{attempts:1,baseDelayMs:0},fetcher)
-  assert.equal(cacheMode,'no-store')
-  assert.match(requested,/\/data\/charts\/001\.json\?v=snapshot&_cb=/)
+  await fetchJsonWithRetry<{ok:boolean}>('/data/charts/001.json?v=snapshot',{attempts:2,baseDelayMs:0},fetcher)
+  assert.equal(cacheModes[0],'default')
+  assert.equal(requested[0],'/data/charts/001.json?v=snapshot')
+  assert.equal(cacheModes[1],'no-store')
+  assert.match(requested[1],/\/data\/charts\/001\.json\?v=snapshot&_cb=/)
 })
 
 test('RetryJsonCache evicts a rejected promise so a later request can recover',async()=>{
