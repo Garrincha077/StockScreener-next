@@ -4,6 +4,7 @@ import './deepvue/legacyConfirmationUi'
 import './deepvue/phase5Cohorts'
 import App from './App'
 import {StockScoutDataProvider} from './data/StockScoutDataProvider'
+import {ChartAlertsProvider} from './ChartAlertsProvider'
 import './styles.css'
 import './terminal.css'
 import './datafirst.css'
@@ -16,6 +17,6 @@ import './mobile-grid-scroll.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <StockScoutDataProvider><App /></StockScoutDataProvider>
+    <StockScoutDataProvider><ChartAlertsProvider><App /></ChartAlertsProvider></StockScoutDataProvider>
   </StrictMode>,
 )
