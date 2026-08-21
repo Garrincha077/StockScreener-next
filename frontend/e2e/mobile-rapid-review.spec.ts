@@ -44,7 +44,7 @@ const manifest=JSON.stringify({
   },
 })
 
-test('Phase 4 inbox, reviewed progress, queue, ticker sync and Rapid Review work across viewports',async({page},testInfo)=>{
+test('Phase 4 review scope, queue, ticker sync and Rapid Review work across viewports',async({page},testInfo)=>{
   let coreRequests=0
   page.on('pageerror',error=>console.error('PAGE ERROR:',error.message))
   page.on('console',message=>{
@@ -62,8 +62,24 @@ test('Phase 4 inbox, reviewed progress, queue, ticker sync and Rapid Review work
   await expect(page.locator('.p4-health')).not.toContainText('Healthy')
 
   const todayButton=page.locator('.p4-inbox-actions button').filter({hasText:/Today/})
+  const newButton=page.locator('.p4-inbox-actions button').filter({hasText:/New since last scan/})
+  const gridButton=page.locator('.dv-top nav button').filter({hasText:/^Grid$/})
+  const summary=page.locator('.dv-gridview > header span')
+  const cards=page.locator('.dv-minicard')
+  const sentinel=page.locator('.dv-grid-sentinel')
+
   await expect(todayButton).toContainText('3 unseen')
   await todayButton.click()
+  await expect(todayButton).toHaveClass(/active/)
+  await expect(gridButton).toHaveClass(/active/)
+  const scope=page.locator('.p4-review-scope')
+  await expect(scope).toContainText('Today / changed')
+  await expect(scope).toContainText('3 candidates')
+  await expect(scope).toContainText('screen membership paused')
+  await expect(summary).toContainText('3 of 3')
+  await expect(cards).toHaveCount(3)
+
+  await scope.getByRole('button',{name:'List'}).click()
   await expect(page.locator('.p4-inbox-drawer')).toContainText('3 candidates')
   await expect(page.locator('.p4-inbox-drawer')).toContainText('3 unseen')
 
@@ -82,18 +98,24 @@ test('Phase 4 inbox, reviewed progress, queue, ticker sync and Rapid Review work
   await expect(todayButton).toContainText('1 unseen')
   await page.getByRole('button',{name:'Close why panel'}).click()
 
-  await todayButton.click()
+  await scope.getByRole('button',{name:'List'}).click()
   await expect(page.locator('.p4-inbox-list button.reviewed')).toHaveCount(2)
   await expect(page.locator('.p4-inbox-list button').first()).toContainText('reviewed')
   await page.getByRole('button',{name:'Close review inbox'}).click()
 
-  const gridButton=page.locator('.dv-top nav button').filter({hasText:/^Grid$/})
-  await expect(gridButton).toHaveCount(1)
-  await gridButton.click({force:true})
+  await newButton.click()
+  await expect(newButton).toHaveClass(/active/)
+  await expect(todayButton).not.toHaveClass(/active/)
+  await expect(scope).toContainText('New since last scan')
+  await expect(scope).toContainText('1 candidates')
+  await expect(summary).toContainText('1 of 1')
+  await expect(cards).toHaveCount(1)
+  await expect(cards.first()).toContainText('T002')
 
-  const summary=page.locator('.dv-gridview > header span')
-  const cards=page.locator('.dv-minicard')
-  const sentinel=page.locator('.dv-grid-sentinel')
+  await page.getByRole('button',{name:'Clear review scope'}).click()
+  await expect(scope).toHaveCount(0)
+  await expect(gridButton).toHaveClass(/active/)
+
   const initialCount=await cards.count()
   expect(initialCount).toBeGreaterThanOrEqual(16)
   expect(initialCount).toBeLessThanOrEqual(50)
