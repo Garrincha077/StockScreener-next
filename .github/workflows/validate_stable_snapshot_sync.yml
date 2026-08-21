@@ -22,12 +22,13 @@ on:
       - 'compute_legacy_confirmation.py'
       - 'audit_legacy_confirmation_shadow.py'
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   validate-stable-snapshot:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
         with:
