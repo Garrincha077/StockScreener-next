@@ -37,7 +37,7 @@ const manifest=JSON.stringify({
   },
 })
 
-test('drawings live on the main chart, preserve tool kind, edit there and persist across reload',async({page})=>{
+test('drawings live on the main chart, preserve tool kind, project forward, edit there and persist across reload',async({page})=>{
   let nextDrawing=1,nextRule=1,drawingUpserts=0
   const drawings:any[]=[]
   const rules:any[]=[]
@@ -99,14 +99,17 @@ test('drawings live on the main chart, preserve tool kind, edit there and persis
   const box=surfaceBox!
 
   // Regression for real-use bug report: Trend must create exactly one trendline,
-  // never a horizontal drawing, and the two anchor prices must stay distinct.
+  // never a horizontal drawing, keep distinct anchors and visibly project beyond
+  // the latest realized bar into the chart's future whitespace.
   await page.getByRole('button',{name:'Draw trendline'}).click()
   const capture=page.locator('.cad-main-capture')
   await capture.click({position:{x:box.width*.30,y:box.height*.62}})
   await expect(page.locator('.cad-main-hint')).toContainText('anchor B')
   await capture.click({position:{x:box.width*.68,y:box.height*.32}})
   await expect(page.locator('.cad-main-svg [data-drawing-id="d1"]')).toBeVisible()
-  await expect(page.locator('.cad-main-svg [data-drawing-id="d1"] .cad-main-ray')).toBeVisible()
+  const trendRay=page.locator('.cad-main-svg [data-drawing-id="d1"] .cad-main-ray')
+  await expect(trendRay).toBeVisible()
+  await expect.poll(async()=>Number(await trendRay.getAttribute('data-future-px')||0)).toBeGreaterThan(50)
   expect(drawings).toHaveLength(1)
   expect(drawings[0].interval).toBe('W')
   expect(drawings[0].kind).toBe('trendline')
@@ -151,6 +154,7 @@ test('drawings live on the main chart, preserve tool kind, edit there and persis
   await chart.scrollIntoViewIfNeeded()
   await expect(page.locator('.cad-main-svg [data-drawing-id="d1"]')).toBeVisible()
   await expect(page.locator('.cad-main-svg [data-drawing-id="d2"]')).toBeVisible()
+  await expect.poll(async()=>Number(await page.locator('.cad-main-svg [data-drawing-id="d1"] .cad-main-ray').getAttribute('data-future-px')||0)).toBeGreaterThan(50)
   await expect(page.locator('.cad-main-svg [data-drawing-id="d2"] .cad-main-badge')).toContainText('Touch')
   await expect(page.locator('.cad-main-capture')).toHaveCount(0)
 
