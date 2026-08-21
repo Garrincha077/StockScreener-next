@@ -859,3 +859,37 @@ This file is the durable handoff for future agents. Update it after every meanin
 **Next logical step**
 - Deploy `next-dev` to the temporary GitHub Pages preview and manually verify on a real ticker: horizontal/trendline creation, right-ray appearance, drag/edit persistence after reload, alert-rule save and normal chart pan/zoom.
 - After that real-use check, continue with A4 manager refinement and A5 global Alerts Center; keep Telegram credential setup/in-app secure storage for its planned later slice.
+
+## 2026-08-21 — Chart Alerts v2 A3.1 real-use trend/level disambiguation
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- Trend-first regression: `f164aac09fea66d1529c06c6a872618ad66d8d0a`.
+- Main-chart disambiguation/provenance: `419f3b4b540dd57e76d43d7292b16a970f689cb4`.
+
+**What changed / why**
+- Real-use preview feedback showed two saved chart badges both rendered as generic `W · drawing only`, making a persisted Level indistinguishable from a newly drawn Trend and creating the appearance that the Trend tool had produced a horizontal line.
+- Code review confirmed the Trend capture path itself stores only `kind='trendline'`; the horizontal path is separate and requires the Level tool.
+- Main-chart badges now explicitly identify drawing kind as `Trend` or `Level`, and saved SVG groups expose `data-drawing-kind` for transparent diagnostics.
+- The browser regression was reordered to reproduce the reported workflow: from an empty snapshot it draws Trend first and requires exactly one persisted drawing, `kind='trendline'`, `extension='ray_right'`, distinct anchor prices, a visible right ray and zero horizontal drawings before the Level tool is ever used.
+- Existing persisted Level drawings are intentionally not auto-deleted; persistence is a feature, and destructive cleanup without owner intent would risk removing legitimate technical levels.
+
+**Affected files / components**
+- `frontend/src/MainChartDrawingLayer.tsx`.
+- `frontend/e2e/chart-drawings.spec.ts`.
+- No Supabase schema, evaluator, scanner, canonical data, workflow or Stable code changed.
+
+**Scoring / behavior impact**
+- None. StockScout Core and frozen LEGACY remain unchanged; drawing state remains a private sidecar outside scoring/ranking.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke run `32518783968` (#113) on `419f3b4...`: **success**, including the strengthened mobile + desktop Trend-first regression, TypeScript/Vite build and existing drawing persistence checks.
+- StockScout Validation run `32518783957` (#202) on the same head: **success**, including frozen LEGACY/Core invariance and frontend build.
+- Full Validation was not run because this is frontend/test-only and does not alter scan/data/workflow behavior.
+
+**Risk / decision**
+- The currently deployed Pages preview still serves the prior A3 build until `next-dev` is manually re-deployed. Do not claim the public UI contains this fix until that deployment is verified.
+- If a real ticker still shows an apparently wrong kind after the new preview is deployed, use the explicit `Trend`/`Level` badge plus the Alerts manager row to inspect the persisted owner-side drawing instead of guessing from line appearance.
+
+**Next logical step**
+- Re-deploy `next-dev` to Pages, then retest one clean Trend drawing on a real ticker. Delete any stale persisted `Level` from the Alerts manager only if the user confirms it is unwanted; then continue A4/A5 polish.
