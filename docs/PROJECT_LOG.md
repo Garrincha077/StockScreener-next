@@ -697,3 +697,56 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Phase A1: separate persisted drawings from alert rules in a backward-compatible, reversible schema/API migration. Preserve existing MVP rows during migration and do not yet change StockScout scoring, scanner behavior or the disabled nightly schedule.
+
+## 2026-08-21 — Chart Alerts v2 A1 drawing/rule split
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- A1 migration/API commit: `0eb943029ff0f2d71e8015a6f38628d57198040f`.
+- Supabase migration name: `stockscout_next_alerts_v2_a1_split` on project `jekidjsifihbbuzxrbse`.
+
+**What changed / why**
+- Added separate private persistence tables for drawing geometry, alert rules and latest transparent alert status: `stockscout_next_drawings`, `stockscout_next_alert_rules`, and `stockscout_next_alert_status`.
+- A drawing can now exist with no alert rule. A rule is one-to-one with a drawing for this first v2 contract and stores condition, source, lifecycle, enabled state, in-app notification flag and Telegram flag separately from geometry.
+- Kept the original combined `stockscout_next_chart_alerts` table as a compatibility mirror so the deployed MVP Edge Function/UI and hourly evaluator continue to work without an A1 frontend or evaluator cutover.
+- Existing V1 `next_chart_alert_upsert` / `delete` RPCs now dual-write/delete the split model while preserving their existing return shape and current app contract.
+- Added service-role-only V2 RPCs: `next_chart_alert_v2_snapshot`, `next_chart_drawing_upsert/delete`, and `next_chart_alert_rule_upsert/delete`.
+- Existing MVP rows are deterministically backfilled. Because the old schema never persisted D/W, migrated rows preserve the actual live evaluator behavior as `D`; sloped legacy rows are marked `needs_review` with `legacy_interval_not_persisted` rather than pretending the lost interval is known.
+- Extended existing alert-event rows with drawing/rule/interval/source/current-line/dedupe provenance while preserving the deployed event-insert RPC signature.
+- Until A2 replaces the live evaluator, V2 deliberately refuses to enable Weekly rules or wick-based crossings; those semantics are stored/configurable but cannot be activated through V2 while the MVP evaluator would calculate them incorrectly.
+
+**Affected files / components**
+- `supabase/migrations/20260821173500_stockscout_next_alerts_v2_a1_split.sql`.
+- Live Supabase `stockscout_private` alert-sidecar tables and `stockscout_api` RPC gateway.
+- Existing Edge Function source and frontend files were not changed or redeployed in A1.
+- Scanner, canonical StockScout payloads, normal Pages publication workflow and Stable repo were not touched.
+
+**Scoring / behavior impact**
+- None to StockScout Core. Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping and default ranking are unchanged.
+- Frozen LEGACY remains unchanged and shadow-only.
+- Current public MVP alert behavior remains on the old daily/calendar-day evaluator until A2; A1 changes persistence/API structure underneath it, not alert math.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Live Supabase validation**
+- Pre-migration live counts were `0 alerts / 0 events`; migration applied successfully.
+- V1 compatibility create test produced a legacy alert and the matching V2 drawing/rule/status. `break_up` mapped to `cross_above + close`, the drawing was preserved as `D`, and the sloped legacy record was transparently marked `needs_review` because the original interval was unknowable.
+- V2 drawing-only test on a Weekly trendline was visible in the V2 snapshot while the V1 snapshot correctly remained empty.
+- Adding a disabled V2 `touch + wick` rule created the compatibility mirror without activating the evaluator.
+- Attempting to enable that Weekly rule was deliberately rejected with `weekly alert activation requires A2 evaluator`, proving the safety guard is active.
+- Deleting the V2 rule left the drawing intact and paused while the compatibility mirror became inert (`enabled=false`); deleting the drawing then removed the compatibility row.
+- All test data was cleaned up. Final live counts: `legacy_alerts=0`, `drawings=0`, `rules=0`, `statuses=0`, `events=0`.
+- Supabase security advisor showed no new critical finding. New private tables appear under the same intentional `RLS enabled/no policy` INFO pattern used by the service-role-only gateway. Existing `pg_net` public-schema and leaked-password-protection warnings remain unrelated/pre-existing. Remediation reference for the RLS lint: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+
+**Tests / audits / CI**
+- Frontend Compile Smoke run `32508593083` (#79) on `0eb9430...`: **success**.
+- StockScout Validation run `32508593028` (#146) on `0eb9430...`: **success**.
+- Full Validation was not run because A1 is an isolated user-sidecar database/API migration and does not alter the StockScout scan generator, canonical scan-data path or GitHub publication workflow.
+
+**Risk / decision**
+- The compatibility table intentionally remains in place through A2 so rollback and the deployed MVP remain low-risk. Do not remove it until the exact D/W evaluator and v2 client path are validated end to end.
+- Current Edge/client list/upsert still use the V1 API; the new V2 RPCs are a prepared contract for A2/A3, not a claim that public UI already exposes separate Drawing vs Rule controls.
+- Legacy sloped drawings must not silently inherit `W`; if/when real pre-A1 rows exist, require explicit user interval confirmation or keep `needs_review`.
+- Keep PR #13 draft.
+
+**Next logical step**
+- Phase A2: wire the deployed evaluator to the already-tested A0 trading-bar geometry contract and the new drawing/rule model. Preserve V1 compatibility during the cutover, add true D/W evaluation and `needs_review` handling, and run controlled evaluator parity tests before any main-chart UI integration.
