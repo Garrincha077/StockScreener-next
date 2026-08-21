@@ -6,6 +6,9 @@ import OriginalEngineDock from './OriginalEngineDock'
 import LegacyConfirmationBadge from './LegacyConfirmationBadge'
 import Phase4ReviewBar from './Phase4ReviewBar'
 import ChartAlertsDock from './ChartAlertsDock'
+import ChartAlertsCenter from './ChartAlertsCenter'
+import {useChartAlerts} from './ChartAlertsProvider'
+import type {ChartDrawing} from './deepvue/chartAlerts'
 import {useStockScoutData} from './data/StockScoutDataProvider'
 import {resetPanelSizes,useResizablePanels} from './useResizablePanels'
 import './resizable-panels.css'
@@ -32,12 +35,15 @@ function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(
 
 export default function Root(){
   const{selectTicker}=useStockScoutData()
+  const{snapshot,selectDrawing}=useChartAlerts()
   const[view,setView]=useState<'terminal'|'groups'>('terminal')
   const[layer,setLayer]=useState<Layer>(initialLayer)
   const[engineOpen,setEngineOpen]=useState(false)
   const[alertsOpen,setAlertsOpen]=useState(false)
+  const[alertsCenterOpen,setAlertsCenterOpen]=useState(false)
   const[engineWidth,setEngineWidth]=useState(initialEngineWidth)
   const drag=useRef<{startX:number;startWidth:number;currentWidth:number;pointerId:number}|null>(null)
+  const globalActiveCount=snapshot.rules.filter(rule=>rule.enabled).length
   useResizablePanels()
   useEffect(()=>{try{localStorage.setItem(LAYER_KEY,layer)}catch{}},[layer])
   useEffect(()=>{
@@ -46,8 +52,11 @@ export default function Root(){
     return()=>document.body.classList.remove('cad-manager-open')
   },[alertsOpen,layer,view])
 
-  const chooseLayer=(next:Layer)=>{setLayer(next);setView('terminal');if(next==='legacy'){setEngineOpen(false);setAlertsOpen(false)}}
+  const chooseLayer=(next:Layer)=>{setLayer(next);setView('terminal');if(next==='legacy'){setEngineOpen(false);setAlertsOpen(false);setAlertsCenterOpen(false)}}
   const openTicker=(ticker:string)=>{selectTicker(ticker);setLayer('stockscout');setView('terminal')}
+  const openAlertDrawing=(drawing:ChartDrawing)=>{
+    selectTicker(drawing.ticker);selectDrawing(drawing.id||null);setLayer('stockscout');setView('terminal');setEngineOpen(false);setAlertsCenterOpen(false);setAlertsOpen(true)
+  }
   const maxEngineWidth=()=>Math.min(MAX_ENGINE_WIDTH,Math.max(MIN_ENGINE_WIDTH,window.innerWidth-700))
   const normalizedEngineWidth=(value:number)=>Math.round(clamp(value,MIN_ENGINE_WIDTH,maxEngineWidth()))
   const setAndPersistEngineWidth=(value:number)=>{
@@ -55,8 +64,9 @@ export default function Root(){
     setEngineWidth(next)
     try{localStorage.setItem(ENGINE_WIDTH_KEY,String(next))}catch{}
   }
-  const setEnginePaneOpen=(open:boolean)=>{setEngineOpen(open);if(open)setAlertsOpen(false)}
-  const toggleAlerts=()=>setAlertsOpen(current=>{const next=!current;if(next)setEngineOpen(false);return next})
+  const setEnginePaneOpen=(open:boolean)=>{setEngineOpen(open);if(open){setAlertsOpen(false);setAlertsCenterOpen(false)}}
+  const toggleAlerts=()=>setAlertsOpen(current=>{const next=!current;if(next){setEngineOpen(false);setAlertsCenterOpen(false)}return next})
+  const toggleAlertsCenter=()=>setAlertsCenterOpen(current=>{const next=!current;if(next){setEngineOpen(false);setAlertsOpen(false)}return next})
   const startEngineResize=(event:ReactPointerEvent<HTMLDivElement>)=>{
     if(window.innerWidth<=1200)return
     drag.current={startX:event.clientX,startWidth:engineWidth,currentWidth:engineWidth,pointerId:event.pointerId}
@@ -96,7 +106,7 @@ export default function Root(){
       <div className="ss-terminal-host"><DeepVueTerminal/></div>
       {engineOpen&&<div className="oe-pane-splitter" role="separator" aria-label="Resize LEGACY source inspector" aria-orientation="vertical" tabIndex={0} onPointerDown={startEngineResize} onKeyDown={resizeWithKeyboard} onDoubleClick={()=>setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)} title="Drag left/right to resize · double-click to reset"><span>↔</span></div>}
       <OriginalEngineDock open={engineOpen} onOpenChange={setEnginePaneOpen} embedded={engineOpen}/>
-      <button className="dv-groups-launch" onClick={()=>{setAlertsOpen(false);setView('groups')}}>◎ Groups</button>
+      <button className="dv-groups-launch" onClick={()=>{setAlertsOpen(false);setAlertsCenterOpen(false);setView('groups')}}>◎ Groups</button>
     </div>
   </>
 
@@ -107,7 +117,12 @@ export default function Root(){
     </div>
     {layer==='stockscout'&&view==='terminal'&&<LegacyConfirmationBadge/>}
     {layer==='legacy'?<LegacyTerminal/>:stockscout}
-    {layer==='stockscout'&&view==='terminal'&&<><button className={`ss-alerts-launch ${alertsOpen?'active':''}`} onClick={toggleAlerts}>✏ Alerts</button><ChartAlertsDock open={alertsOpen} onOpenChange={setAlertsOpen}/></>}
+    {layer==='stockscout'&&view==='terminal'&&<>
+      <button className={`ss-alert-center-launch ${alertsCenterOpen?'active':''}`} onClick={toggleAlertsCenter}>🔔 All Alerts{globalActiveCount?` · ${globalActiveCount}`:''}</button>
+      <button className={`ss-alerts-launch ${alertsOpen?'active':''}`} onClick={toggleAlerts}>✏ Ticker Alerts</button>
+      <ChartAlertsDock open={alertsOpen} onOpenChange={setAlertsOpen}/>
+      <ChartAlertsCenter open={alertsCenterOpen} onOpenChange={setAlertsCenterOpen} onOpenDrawing={openAlertDrawing}/>
+    </>}
     <button className="ss-layout-reset" onClick={()=>{resetPanelSizes();setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)}} title="Reset all resized panels to their default size">↺ Reset layout</button>
   </>
 }
