@@ -79,13 +79,19 @@ export function ChartAlertsProvider({children}:{children:ReactNode}){
 
   const upsertRule=useCallback(async(rule:ChartAlertRule)=>{
     startMutation()
+    const optimistic=Boolean(rule.id)
+    if(optimistic)setSnapshot(current=>({...current,rules:[rule,...current.rules.filter(item=>item.id!==rule.id&&item.drawingId!==rule.drawingId)]}))
     try{
       const saved=await saveChartAlertRule(rule)
       setSnapshot(current=>({...current,rules:[saved,...current.rules.filter(item=>item.id!==saved.id&&item.drawingId!==saved.drawingId)]}))
       setError('');return saved
-    }catch(nextError){setError(String(nextError));throw nextError}
+    }catch(nextError){
+      setError(String(nextError))
+      if(optimistic)void refresh()
+      throw nextError
+    }
     finally{finishMutation()}
-  },[startMutation,finishMutation])
+  },[startMutation,finishMutation,refresh])
 
   const removeRule=useCallback(async(id:string)=>{
     startMutation()
