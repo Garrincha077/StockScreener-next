@@ -36,6 +36,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
   const[firstPoint,setFirstPoint]=useState<ChartAlertPoint|null>(null)
   const[hoverPoint,setHoverPoint]=useState<ChartAlertPoint|null>(null)
   const[editing,setEditing]=useState<ChartDrawing|null>(null)
+  const editingRef=useRef<ChartDrawing|null>(null)
   const[,setViewportRevision]=useState(0)
   const dragRef=useRef<DragCtx|null>(null)
   const windowHandlers=useRef<{move:(event:PointerEvent)=>void;up:(event:PointerEvent)=>void}|null>(null)
@@ -47,6 +48,9 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
   const drawings=useMemo(()=>snapshot.drawings.filter(item=>item.ticker===ticker&&item.interval===interval),[snapshot.drawings,ticker,interval])
   const ruleByDrawing=useMemo(()=>new Map(snapshot.rules.map(rule=>[rule.drawingId,rule])),[snapshot.rules])
   const statusByDrawing=useMemo(()=>new Map(snapshot.status.map(status=>[status.drawingId,status])),[snapshot.status])
+
+  const clearEditing=useCallback(()=>{editingRef.current=null;setEditing(null)},[])
+  const showEditing=useCallback((drawing:ChartDrawing)=>{editingRef.current=drawing;setEditing(drawing)},[])
 
   useEffect(()=>{
     let raf=0
@@ -60,12 +64,12 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
     const onKey=(event:KeyboardEvent)=>{
       if(event.key!=='Escape')return
       if(tool!=='cursor'){setTool('cursor');setFirstPoint(null);setHoverPoint(null)}
-      else if(editing)setEditing(null)
+      else if(editing)clearEditing()
       else selectDrawing(null)
     }
     window.addEventListener('keydown',onKey)
     return()=>window.removeEventListener('keydown',onKey)
-  },[tool,setTool,editing,selectDrawing])
+  },[tool,setTool,editing,clearEditing,selectDrawing])
 
   useEffect(()=>{
     const clear=()=>{if(tool==='cursor'&&!dragRef.current)selectDrawing(null)}
@@ -155,7 +159,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
     if(!start||indexes.some(index=>index<0))return
     event.preventDefault();event.stopPropagation();selectDrawing(drawing.id||null)
     dragRef.current={drawing,kind,startClient:{x:event.clientX,y:event.clientY},startLogical:start.logical,startPrice:start.price,anchorIndexes:indexes,moved:false}
-    setEditing(drawing)
+    showEditing(drawing)
     const move=(pointer:PointerEvent)=>{
       const ctx=dragRef.current
       if(!ctx)return
@@ -164,7 +168,8 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
       if(ctx.kind==='a'||ctx.kind==='b'){
         const point=pointFromClient(pointer.clientX,pointer.clientY)
         if(!point)return
-        nextPoints=ctx.kind==='a'?[point,ctx.drawing.points[1]]:[ctx.drawing.points[0],point]
+        if(ctx.drawing.kind==='horizontal')nextPoints=[{...ctx.drawing.points[0],price:point.price},{...ctx.drawing.points[1],price:point.price}]
+        else nextPoints=ctx.kind==='a'?[point,ctx.drawing.points[1]]:[ctx.drawing.points[0],point]
       }else{
         const current=logicalAndPriceFromClient(pointer.clientX,pointer.clientY)
         if(!current)return
@@ -177,23 +182,24 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
           price:point.price+priceDelta,
         })) as ChartDrawing['points']
       }
-      setEditing({...ctx.drawing,points:nextPoints})
+      showEditing({...ctx.drawing,points:nextPoints})
     }
     const up=async()=>{
       const ctx=dragRef.current
+      const next=editingRef.current
       dragRef.current=null;stopWindowDrag()
-      if(!ctx?.moved){setEditing(null);return}
-      setEditing(current=>{if(current)void upsertDrawing(current).finally(()=>setEditing(null));return current})
+      if(ctx?.moved&&next){try{await upsertDrawing(next)}finally{clearEditing()}}
+      else clearEditing()
     }
     windowHandlers.current={move,up}
     window.addEventListener('pointermove',move,true)
     window.addEventListener('pointerup',up,true)
     window.addEventListener('pointercancel',up,true)
-  },[tool,busy,logicalAndPriceFromClient,frameTimes,selectDrawing,pointFromClient,frame,stopWindowDrag,upsertDrawing])
+  },[tool,busy,logicalAndPriceFromClient,frameTimes,selectDrawing,showEditing,pointFromClient,frame,stopWindowDrag,upsertDrawing,clearEditing])
 
   const chooseTool=useCallback((next:'cursor'|'trendline'|'horizontal')=>{
-    setTool(next);setFirstPoint(null);setHoverPoint(null);setEditing(null)
-  },[setTool])
+    setTool(next);setFirstPoint(null);setHoverPoint(null);clearEditing()
+  },[setTool,clearEditing])
 
   const capturePoint=useCallback(async(event:ReactPointerEvent<HTMLDivElement>)=>{
     if(tool==='cursor'||busy)return
