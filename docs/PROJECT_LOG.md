@@ -43,6 +43,44 @@ This file is the durable handoff for future agents. Update it after every meanin
 **Affected files / components**
 - `compute_legacy_confirmation.py`.
 - `tests/test_compute_legacy_confirmation.py`.
+- No scanner, canonical data writer, workflow, frontend, scoring module or frozen LEGACY source was wired or modified.
+
+**Scoring / behavior impact**
+- No StockScout Core scoring, ranking, buckets, Stage, RS or chart mapping changed.
+- No runtime scan behavior changed; this is an isolated foundation for shadow-mode integration.
+
+**Tests / audits / CI**
+- Targeted local pytest against the committed adapter/test logic: `5 passed`.
+- Coverage includes unavailable LEGACY, observed normalization, no status invention, no candidate mutation and compatibility with `compare_payloads()` core-invariance contract.
+- Full Validation not run because this change does not touch scan/data/workflow runtime paths.
+- No GitHub Actions run was available for commit `c99346586728cdaffec1f36908425c255d5910b2`; CI therefore is not claimed green.
+
+**Risk / decision**
+- The adapter intentionally does not infer LEGACY status from raw evidence yet; doing so before mapping the frozen observed fields would risk silently creating a new methodology.
+- `stock-screener2` was not modified and Next nightly scheduling remains disabled.
+
+**Next logical step**
+- Map the actual already-captured frozen LEGACY fields into this adapter, then run the adapter against a canonical payload in shadow mode and verify exact before/after core invariance before any UI badge/filter wiring.
+
+## 2026-08-20 — Captured LEGACY mapping + canonical shadow invariance gate
+
+**Branch / commits**
+- Branch: `next-dev`.
+- Captured-output classifier: `ddd29e5429dc44cb7df119113f8e5e1bfa38604d`.
+- Expanded regression tests: `56b3df25938f845ed33b6fe5b74369c856f006a1`.
+- Read-only canonical audit: `2c33403783e16bc6add7efc940c2e2afee6fdb91`.
+- Compact persistence refactor: `8990ae9d84d960badb13f203111e670e1f24078e`.
+
+**What changed / why**
+- Mapped the confirmation layer to already-captured frozen outputs under `originalEngine` and the flat `original*` fields; no frozen LEGACY function or threshold was modified.
+- Added deterministic non-numeric status precedence: emitted original SELL -> `RISK`; emitted original BUY -> `CONFIRMED`; raw original BUY/SELL not emitted -> `CONFLICT`; frozen Trend Template/VCP/breakout booleans -> `EARLY`; otherwise captured rows -> `NEUTRAL`; missing capture -> `UNAVAILABLE`.
+- Detailed in-memory evidence exposes original market gate, Minervini TT, VCP contraction anatomy, A/D volume, breakout, original R/R/risk and SELL/failed-breakout evidence.
+- Persistable `legacyConfirmation` is intentionally compact and points back to `market.originalSignalGate` / `originalEngine` instead of duplicating the full evidence tree.
+- Added `audit_legacy_confirmation_shadow.py`, which enriches only in memory and fails on any protected StockScout or chart-mapping drift.
+
+**Affected files / components**
+- `compute_legacy_confirmation.py`.
+- `tests/test_compute_legacy_confirmation.py`.
 - `audit_legacy_confirmation_shadow.py`.
 - No scanner, canonical writer, frontend, workflow or frozen LEGACY source was changed.
 
@@ -432,47 +470,3 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Verify the triggered Full Validation. If green, promote only the smallest reversible one-way Stable -> Next refresh mechanism, then use the fresh snapshots as the input journal for Phase 6 empirical cohort tracking.
-
-## 2026-08-21 — Phase 4 review-scope Grid UX
-
-**Branch / PR / commits**
-- Branch: `feature/review-scope-grid`, based on reconciled app/data hardening branch `integration/hardening-app-data-current-main` (PR #6).
-- Draft PR: #8, retargeted to PR #6 after validation so the final diff remains small.
-- Review-scope semantics/provider/UI/tests: `f1aa812...`, `acef1fb...`, `873bc02...`, `0165d70...`, `49bda6f...`, `cd51dcf...`, `bbe096b...`.
-- Desktop overlap repair / final validated code head: `a8fd115fc43b5e0de58e987138a8be49f37ea79e`.
-
-**What changed / why**
-- `Today` and `New since last scan` are now persistent temporary Review Scope controls. Selecting either automatically opens Grid and limits membership to the same transparent `changedToday` or `newUniverseMember` flags already used by the Phase 4 inbox.
-- Only one scope may be active. Switching Today -> New replaces the scope; clearing the visible `Review scope ... ×` chip restores the normal saved-screen/recipe/builder membership logic.
-- Scope intentionally pauses membership rules rather than intersecting with them, but preserves the existing Multi Sort state. Text query remains available as an additional narrowing layer inside the active scope.
-- Added a `List` action to the scope chip so the existing inbox, review queue, reviewed/unseen state and Why flow remain available without making the large Today/New cards double-purpose controls.
-- The initial desktop browser run exposed a real overlap: fixed `.ss-layer-switch` (`STOCKSCOUT / LEGACY`) intercepted the New button. The fix reserves a dedicated 48px desktop lane for that fixed switch; no forced Playwright click and no z-index masking workaround was used.
-
-**Affected files / components**
-- `frontend/src/phase4Review.ts`.
-- `frontend/src/data/StockScoutDataProvider.tsx`.
-- `frontend/src/Phase4ReviewBar.tsx`.
-- `frontend/src/DeepVueTerminal.tsx`.
-- `frontend/src/phase4-review.css`.
-- `frontend/src/phase4Review.test.ts`.
-- `frontend/e2e/mobile-rapid-review.spec.ts`.
-
-**Scoring / behavior impact**
-- Frontend-only review/navigation behavior. No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default scoring or frozen LEGACY rule changed.
-- Scope state is transient UI state and does not write scan/canonical data or alter saved-screen definitions.
-- Stable `stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
-
-**Tests / audits / CI**
-- Initial Frontend Compile Smoke `32465860063` (#51): Python/client and Node tests plus TypeScript/Vite build passed; Pixel 5 passed, but desktop Playwright failed because the fixed signal-layer switch physically intercepted the New button. This was treated as a real UI bug rather than bypassed.
-- Final Frontend Compile Smoke `32466218700` (#52) on `a8fd115...`: **success**, including unit/runtime tests, TypeScript/Vite build and browser smoke after the layout repair.
-- StockScout Validation `32466218562` (#91): **success**, including frozen LEGACY execution, model compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend build.
-- Validate Stable Snapshot Sync `32466218613` (#10): **success** against the fresh read-only Stable snapshot path.
-- No new Full Validation was required for this feature because it changes frontend-only review state and tests; no scan/data/workflow path was changed.
-
-**Risk / decision**
-- Do not implement Review Scope as a new score, saved screen, or hidden filter mutation. It is explicitly a reversible view-level membership override.
-- Preserve the dedicated desktop lane for the fixed signal-layer switch; simply raising the review z-index would make one control hide/intercept the other.
-- PR #8 must remain stacked on/behind PR #6 until the reconciled app/data provider is promoted; do not merge the temporary stacked-to-main form.
-
-**Next logical step**
-- After PR #6 is safely promoted, land/rebase PR #8 as the small frontend-only UX change and verify it in the public Next app with a real Today/New snapshot. Then return to Phase 6 empirical cohort tracking.
