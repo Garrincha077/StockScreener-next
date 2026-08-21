@@ -94,6 +94,7 @@ export type ChartAlertV2Event={
 export type ChartAlertsV2Snapshot={drawings:ChartDrawing[];rules:ChartAlertRule[];status:ChartAlertStatus[];events:ChartAlertV2Event[]}
 
 const ENDPOINT='https://jekidjsifihbbuzxrbse.supabase.co/functions/v1/stockscout-next-alerts'
+const V2_ENDPOINT='https://jekidjsifihbbuzxrbse.supabase.co/functions/v1/stockscout-next-alerts-v2'
 const DEVICE_KEY='stockscout-next-alert-device-key-v1'
 
 export function isHorizontalAlert(alert:Pick<ChartAlert,'points'>){
@@ -119,8 +120,8 @@ function browserDeviceKey(){
   return created
 }
 
-async function request<T>(body?:Record<string,unknown>,method='POST'):Promise<T>{
-  const response=await fetch(ENDPOINT,{
+async function requestAt<T>(endpoint:string,body?:Record<string,unknown>,method='POST'):Promise<T>{
+  const response=await fetch(endpoint,{
     method,
     cache:'no-store',
     headers:{'Content-Type':'application/json','x-stockscout-device-key':browserDeviceKey()},
@@ -130,6 +131,8 @@ async function request<T>(body?:Record<string,unknown>,method='POST'):Promise<T>
   if(!response.ok)throw new Error(String(data?.error||`Alert service HTTP ${response.status}`))
   return data as T
 }
+const request=<T>(body?:Record<string,unknown>,method='POST')=>requestAt<T>(ENDPOINT,body,method)
+const requestV2=<T>(body?:Record<string,unknown>)=>requestAt<T>(V2_ENDPOINT,body,'POST')
 
 const maybeNumber=(value:unknown)=>value==null?null:Number.isFinite(Number(value))?Number(value):null
 function drawingFromRow(row:any):ChartDrawing{
@@ -188,24 +191,24 @@ export async function deleteChartAlert(id:string):Promise<void>{
 }
 
 export async function loadChartAlertsV2():Promise<ChartAlertsV2Snapshot>{
-  const data=await request<any>({action:'v2_snapshot'})
+  const data=await requestV2<any>({action:'snapshot'})
   return normalizeChartAlertsV2Snapshot(data)
 }
 
 export async function saveChartDrawing(drawing:ChartDrawing):Promise<ChartDrawing>{
-  const data=await request<{drawing:any}>({action:'drawing_upsert',drawing})
+  const data=await requestV2<{drawing:any}>({action:'drawing_upsert',drawing})
   return drawingFromRow(data.drawing)
 }
 
 export async function deleteChartDrawing(id:string):Promise<void>{
-  await request<{ok:boolean}>({action:'drawing_delete',id})
+  await requestV2<{ok:boolean}>({action:'drawing_delete',id})
 }
 
 export async function saveChartAlertRule(rule:ChartAlertRule):Promise<ChartAlertRule>{
-  const data=await request<{rule:any}>({action:'rule_upsert',rule})
+  const data=await requestV2<{rule:any}>({action:'rule_upsert',rule})
   return ruleFromRow(data.rule)
 }
 
 export async function deleteChartAlertRule(id:string):Promise<void>{
-  await request<{ok:boolean}>({action:'rule_delete',id})
+  await requestV2<{ok:boolean}>({action:'rule_delete',id})
 }
