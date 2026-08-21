@@ -55,6 +55,7 @@ on:
       - 'audit_pipeline_models.py'
       - 'audit_frontend_dataset.py'
       - 'frontend/src/**'
+      - 'frontend/package-lock.json'
       - '.github/workflows/stockscout_validation.yml'
   pull_request:
     branches: [main]
@@ -242,7 +243,7 @@ jobs:
       - name: Frontend runtime tests, TypeScript and Vite build
         working-directory: frontend
         run: |
-          npm install
+          npm ci
           npm run check
 
       - name: Upload PR-calibrated dataset
@@ -254,6 +255,8 @@ jobs:
             frontend/public/data/latest.json
             frontend/public/data/core.json
             frontend/public/data/manifest.json
+            frontend/public/data/legacy/index.json
+            frontend/public/data/legacy/details/*.json
             frontend/public/data/shadow/legacy-confirmation.json
           if-no-files-found: error
           retention-days: 14

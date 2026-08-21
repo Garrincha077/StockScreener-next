@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {buildReviewInbox,dataHealth,explainStock} from './phase4Review.ts'
+import {buildReviewInbox,dataHealth,explainStock,lastCompletedMarketSession} from './phase4Review.ts'
 
 test('review inbox separates today changes from new universe members',()=>{
   const universe=[
@@ -29,7 +29,7 @@ test('why this stock is a transparent decomposition of existing fields',()=>{
 test('health reports exact snapshot mismatch before freshness or validation',()=>{
   const health=dataHealth(
     {generatedAt:'2026-08-20T08:00:00Z',universe:[{ticker:'AAA'}]},
-    {generatedAt:'2026-08-20T09:00:00Z',universe:1},
+    {generatedAt:'2026-08-20T09:00:00Z',universe:1,marketSession:{date:'2026-08-19',status:'closed'},provenance:{source:{sha256:'a'},publication:{sourceSha256:'a'}}},
     {conclusion:'success',run_id:123},
     Date.parse('2026-08-20T10:00:00Z'),
   )
@@ -40,23 +40,27 @@ test('health reports exact snapshot mismatch before freshness or validation',()=
 test('health does not claim validation green when client status is unavailable',()=>{
   const health=dataHealth(
     {generatedAt:'2026-08-20T08:00:00Z',universe:[{ticker:'AAA'}]},
-    {generatedAt:'2026-08-20T08:00:00Z',universe:1},
+    {generatedAt:'2026-08-20T08:00:00Z',universe:1,marketSession:{date:'2026-08-19',status:'closed'},provenance:{source:{sha256:'a'},publication:{sourceSha256:'a'}}},
     null,
     Date.parse('2026-08-20T10:00:00Z'),
   )
-  assert.equal(health.level,'ok')
-  assert.equal(health.label,'Data healthy')
+  assert.equal(health.level,'neutral')
+  assert.equal(health.label,'Validation unknown')
   assert.match(health.detail,/validation status is not published/i)
 })
 
 test('health exposes a published successful validation when available',()=>{
   const health=dataHealth(
     {generatedAt:'2026-08-20T08:00:00Z',universe:[{ticker:'AAA'}]},
-    {generatedAt:'2026-08-20T08:00:00Z',universe:1},
+    {generatedAt:'2026-08-20T08:00:00Z',universe:1,marketSession:{date:'2026-08-19',status:'closed'},provenance:{source:{sha256:'a'},publication:{sourceSha256:'a'}}},
     {conclusion:'success',run_id:32355794186},
     Date.parse('2026-08-20T10:00:00Z'),
   )
   assert.equal(health.level,'ok')
   assert.equal(health.label,'Healthy')
   assert.match(health.detail,/32355794186/)
+})
+
+test('last completed session skips an observed NYSE holiday',()=>{
+  assert.equal(lastCompletedMarketSession(Date.parse('2026-07-03T21:00:00Z')),'2026-07-02')
 })

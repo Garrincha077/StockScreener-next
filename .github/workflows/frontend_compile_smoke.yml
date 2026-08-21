@@ -8,6 +8,7 @@ on:
       - 'frontend/e2e/**'
       - 'frontend/index.html'
       - 'frontend/package.json'
+      - 'frontend/package-lock.json'
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
       - 'frontend/playwright.config.ts'
@@ -29,6 +30,7 @@ on:
       - 'frontend/e2e/**'
       - 'frontend/index.html'
       - 'frontend/package.json'
+      - 'frontend/package-lock.json'
       - 'frontend/tsconfig*.json'
       - 'frontend/vite.config.ts'
       - 'frontend/playwright.config.ts'
@@ -91,11 +93,13 @@ jobs:
 
       - name: Install
         working-directory: frontend
-        run: npm install
+        run: npm ci
 
       - name: Runtime tests, TypeScript and Vite build
         working-directory: frontend
-        run: npm run check
+        run: |
+          npm run check
+          test ! -e dist/data/latest.json
 
       - name: Prepare browser for Playwright
         working-directory: frontend

@@ -1,8 +1,10 @@
 import {useCallback,useEffect,useMemo,useRef,useState} from 'react'
 import {createColumnHelper,flexRender,getCoreRowModel,getPaginationRowModel,type PaginationState,type SortingState,type VisibilityState,useReactTable} from '@tanstack/react-table'
 import {CandlestickSeries,ColorType,HistogramSeries,LineSeries,createChart} from 'lightweight-charts'
-import {builtInScreens,fieldDefs,makeGroup,makeRule,matchesGroups,opsByKind,type Logic,type RuleGroup,type ScreenState} from './deepvue/filterEngine'
-import {RetryJsonCache,chartShardFor,nextGridCount} from './deepvue/runtime'
+import {builtInScreens,fieldDefs,invalidRules,makeGroup,makeRule,matchesGroups,opsByKind,validateRule,type Logic,type RuleGroup,type ScreenState} from './deepvue/filterEngine'
+import {nextGridCount} from './deepvue/runtime'
+import {useStockScoutData} from './data/StockScoutDataProvider'
+import {applyMultiSort} from './deepvue/multiSort'
 
 type Bar={time:string;open:number;high:number;low:number;close:number;volume:number;rs:number}
 type RawBar=[string,number,number,number,number,number,number]
@@ -10,7 +12,8 @@ type Page='Screener'|'Grid'|'Changes'|'Watchlist'|'Market'
 type Interval='D'|'W'
 type Range='3M'|'6M'|'1Y'|'2Y'|'5Y'
 type ChartMode='Price'|'RS'|'Volume'
-type Stock={
+type ChartLoadState={status:'loading'|'ready'|'unavailable'|'error';bars:Bar[];error?:string}
+export type Stock={
   ticker:string;price:number;stage:number;stageName:string;setup?:string;score?:number
   primarySetup?:string;setupTags?:string[];setupMatchCount?:number
   opportunityScore?:number;opportunityPotential?:number;opportunityTiming?:number;opportunityRank?:number;opportunityTier?:string;opportunityGroupModifier?:number;opportunityFundModifier?:number;opportunityPenalty?:number;emergingLeaderScore?:number;confluence?:number;structureScore?:number;rsScore?:number;baseScore?:number;triggerScore?:number;freshnessScore?:number;neglectedScore?:number
@@ -33,7 +36,6 @@ type Stock={
   stageFrom?:number|null;stageTo?:number|null;stageChanged?:boolean;newSetupTags?:string[];lostSetupTags?:string[];changeLabels?:string[]
   originalBuyScore?:number;originalRR?:number;originalTTPasses?:number;originalVcpQuality?:number;originalAdVolumeRatio?:number;originalRiskPct?:number;originalSellScore?:number
   reasons?:string[]
-  __mixScore?:number;__mixAverage?:number
 }
 type Payload={version:number;generatedAt:string;market:Record<string,any>;universe:Stock[];chartShards?:Record<string,string>;featureModel?:string}
 
@@ -52,35 +54,6 @@ const isFreshMaSort=(id:string)=>id===EMA_FRESH_SORT||id===SMA_FRESH_SORT
 const maBaseSortId=(id:string)=>id===EMA_FRESH_SORT?'ema10d20dSpreadPct':id===SMA_FRESH_SORT?'sma10w20wSpreadPct':id
 const maFreshSortId=(id:string)=>id==='ema10d20dSpreadPct'?EMA_FRESH_SORT:id==='sma10w20wSpreadPct'?SMA_FRESH_SORT:null
 function loadLocal<T>(key:string,fallback:T):T{try{const x=JSON.parse(localStorage.getItem(key)||'null');return x??fallback}catch{return fallback}}
-function sortValue(stock:Stock,id:string):any{
-  if(id===EMA_FRESH_SORT){const age=stock.ema10d20dCrossAge,cross=stock.ema10d20dCross;return typeof age==='number'&&cross?-age+(cross==='BULL'?0.25:0):-1e9}
-  if(id===SMA_FRESH_SORT){const age=stock.sma10w20wCrossAge,cross=stock.sma10w20wCross;return typeof age==='number'&&cross?-age+(cross==='BULL'?0.25:0):-1e9}
-  if(id==='opportunityScore')return opp(stock);if(id==='primarySetup')return setupOf(stock);return(stock as any)[id]
-}
-function compareValues(a:any,b:any):number{const am=a==null||(typeof a==='number'&&!Number.isFinite(a)),bm=b==null||(typeof b==='number'&&!Number.isFinite(b));if(am&&bm)return 0;if(am)return 1;if(bm)return-1;if(typeof a==='number'&&typeof b==='number')return a-b;if(typeof a==='boolean'&&typeof b==='boolean')return Number(a)-Number(b);return String(a).localeCompare(String(b),undefined,{numeric:true,sensitivity:'base'})}
-function prioritySort(rows:Stock[],sorting:SortingState){return rows.map((stock,index)=>({stock,index})).sort((a,b)=>{for(const s of sorting){const av=sortValue(a.stock,s.id),bv=sortValue(b.stock,s.id),c=compareValues(av,bv);if(c!==0)return s.desc?-c:c}const t=a.stock.ticker.localeCompare(b.stock.ticker);return t||a.index-b.index}).map(x=>x.stock)}
-function applyMultiSort(rows:Stock[],sorting:SortingState){
-  rows.forEach(stock=>{delete stock.__mixScore;delete stock.__mixAverage})
-  if(!sorting.length)return rows
-  if(sorting.length===1)return prioritySort(rows,sorting)
-  const accum=new Map<string,{log:number;arith:number;weight:number}>()
-  rows.forEach(stock=>accum.set(stock.ticker,{log:0,arith:0,weight:0}))
-  let activeCriteria=0
-  sorting.forEach((sort,sortIndex)=>{
-    const values=rows.map((stock,index)=>({stock,index,value:sortValue(stock,sort.id)})).filter(x=>typeof x.value==='number'&&Number.isFinite(x.value)) as {stock:Stock;index:number;value:number}[]
-    if(values.length<2)return
-    activeCriteria++
-    values.sort((a,b)=>(sort.desc?b.value-a.value:a.value-b.value)||(a.index-b.index))
-    const percentile=new Map<string,number>()
-    let i=0
-    while(i<values.length){let j=i+1;while(j<values.length&&values[j].value===values[i].value)j++;const avgPosition=(i+j-1)/2,score=100-(avgPosition/(values.length-1))*99;for(let k=i;k<j;k++)percentile.set(values[k].stock.ticker,score);i=j}
-    const weight=Math.max(.55,1-sortIndex*.10)
-    rows.forEach(stock=>{const p=Math.max(1,percentile.get(stock.ticker)??1),a=accum.get(stock.ticker)!;a.log+=Math.log(p)*weight;a.arith+=p*weight;a.weight+=weight})
-  })
-  if(activeCriteria<2)return prioritySort(rows,sorting)
-  rows.forEach(stock=>{const a=accum.get(stock.ticker)!;stock.__mixScore=a.weight?Math.exp(a.log/a.weight):0;stock.__mixAverage=a.weight?a.arith/a.weight:0})
-  return rows.map((stock,index)=>({stock,index})).sort((a,b)=>{const mix=(b.stock.__mixScore||0)-(a.stock.__mixScore||0);if(Math.abs(mix)>1e-9)return mix;const avg=(b.stock.__mixAverage||0)-(a.stock.__mixAverage||0);if(Math.abs(avg)>1e-9)return avg;const first=sorting[0],c=compareValues(sortValue(a.stock,first.id),sortValue(b.stock,first.id));if(c!==0)return first.desc?-c:c;return a.stock.ticker.localeCompare(b.stock.ticker)||a.index-b.index}).map(x=>x.stock)
-}
 function aggregateWeekly(bars:Bar[]){const out:Bar[]=[];for(const b of bars){const d=new Date(`${b.time}T00:00:00Z`),day=(d.getUTCDay()+6)%7;d.setUTCDate(d.getUTCDate()-day);const key=d.toISOString().slice(0,10),last=out[out.length-1];if(!last||last.time!==key)out.push({...b,time:key});else{last.high=Math.max(last.high,b.high);last.low=Math.min(last.low,b.low);last.close=b.close;last.volume+=b.volume;last.rs=b.rs}}return out}
 function ma(values:number[],n:number){const out:(number|null)[]=[];let sum=0;for(let i=0;i<values.length;i++){sum+=values[i];if(i>=n)sum-=values[i-n];out.push(i+1>=n?sum/n:null)}return out}
 function ema(values:number[],n:number){const out:(number|null)[]=[];if(!values.length)return out;const k=2/(n+1);let value=values[0];for(let i=0;i<values.length;i++){value=i===0?values[i]:values[i]*k+value*(1-k);out.push(i+1>=n?value:null)}return out}
@@ -110,7 +83,8 @@ function PriceChart({bars,interval='W',range='5Y',mode='Price',mini=false}:{bars
 }
 
 function DeepVueTerminal(){
-  const[payload,setPayload]=useState<Payload|null>(null),[error,setError]=useState('')
+  const{core,error,selectedTicker,selectTicker,reload,loadChart}=useStockScoutData()
+  const payload=core as Payload|null
   const[page,setPage]=useState<Page>('Screener'),[recipe,setRecipe]=useState('All'),[query,setQuery]=useState('')
   const[sorting,setSorting]=useState<SortingState>(()=>loadLocal('dv-sorts-v1',[{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}]))
   const[visibility,setVisibility]=useState<VisibilityState>(()=>loadLocal('dv-cols-v5',defaultVisibility))
@@ -120,45 +94,21 @@ function DeepVueTerminal(){
   const[customScreens,setCustomScreens]=useState<ScreenState[]>(()=>loadLocal('dv-custom-screens-v1',[]))
   const[activeScreen,setActiveScreen]=useState('Custom'),[builderOpen,setBuilderOpen]=useState(false),[columnsOpen,setColumnsOpen]=useState(false)
   const[watchlist,setWatchlist]=useState<string[]>(()=>loadLocal('stockscout-watchlist',[]))
-  const[selectedTicker,setSelectedTicker]=useState(location.hash.replace('#','').toUpperCase())
-  const[selectedBars,setSelectedBars]=useState<Bar[]>([]),[chartLoading,setChartLoading]=useState(false)
+  const[selectedChart,setSelectedChart]=useState<ChartLoadState>({status:'loading',bars:[]})
   const[interval,setInterval]=useState<Interval>('W'),[range,setRange]=useState<Range>('5Y'),[chartMode,setChartMode]=useState<ChartMode>('Price')
   const[gridCount,setGridCount]=useState(16),[gridRange,setGridRange]=useState<Range>('2Y')
-  const shardCache=useRef(new RetryJsonCache<Record<string,RawBar[]>>())
-
-  const load=useCallback(async()=>{
-    let lastError:unknown=new Error('Dataset unavailable')
-    for(const file of ['core.json','latest.json']){
-      try{
-        const response=await fetch(`./data/${file}?t=${Date.now()}`,{cache:'no-store'})
-        if(!response.ok)throw new Error(`${file} HTTP ${response.status}`)
-        const p=await response.json() as Payload
-        if(!p.universe?.length)throw new Error(`${file} dataset empty`)
-        shardCache.current.clear()
-        setPayload(p);setError('');setSelectedTicker(t=>t||p.universe[0].ticker)
-        return
-      }catch(error){lastError=error}
-    }
-    setError(String(lastError))
-  },[])
-  useEffect(()=>{load()},[load])
   useEffect(()=>localStorage.setItem('dv-sorts-v1',JSON.stringify(sorting)),[sorting])
   useEffect(()=>localStorage.setItem('dv-cols-v5',JSON.stringify(visibility)),[visibility])
   useEffect(()=>localStorage.setItem('dv-root-logic',JSON.stringify(rootLogic)),[rootLogic])
   useEffect(()=>localStorage.setItem('dv-groups-v1',JSON.stringify(groups)),[groups])
   useEffect(()=>localStorage.setItem('dv-custom-screens-v1',JSON.stringify(customScreens)),[customScreens])
   useEffect(()=>localStorage.setItem('stockscout-watchlist',JSON.stringify(watchlist)),[watchlist])
-  useEffect(()=>{if(selectedTicker)history.replaceState(null,'',`${location.pathname}${location.search}#${selectedTicker}`)},[selectedTicker])
-
-  const loadBars=useCallback(async(ticker:string):Promise<Bar[]>=>{
-    if(!payload)return[];const shard=payload.chartShards?.[ticker]||chartShardFor(ticker)
-    const snapshot=payload.generatedAt||'snapshot',cacheKey=`${snapshot}:${shard}`
-    try{
-      const data=await shardCache.current.load(cacheKey,`./data/charts/${shard}?v=${encodeURIComponent(snapshot)}`)
-      const rows=data[ticker]||[]
-      return rows.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4],volume:r[5],rs:r[6]}))
-    }catch{return[]}
-  },[payload])
+  const loadBars=useCallback(async(ticker:string,retry=false):Promise<ChartLoadState>=>{
+    const result=await loadChart(ticker,retry)
+    if(result.status!=='ready')return{...result,bars:[]}
+    const bars=(result.rows as RawBar[]).map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4],volume:r[5],rs:r[6]}))
+    return{status:'ready',bars}
+  },[loadChart])
 
   const universe=payload?.universe||[]
   const toggleWatch=(ticker:string)=>setWatchlist(w=>w.includes(ticker)?w.filter(x=>x!==ticker):[...w,ticker])
@@ -171,8 +121,15 @@ function DeepVueTerminal(){
   }),[universe,page,watchlist,query,recipe,groups,rootLogic])
   const sortedData=useMemo(()=>applyMultiSort(filtered,sorting),[filtered,sorting])
   const selected=sortedData.find(s=>s.ticker===selectedTicker)||sortedData[0]
-  useEffect(()=>{if(sortedData.length&&selectedTicker!==selected?.ticker)setSelectedTicker(sortedData[0].ticker)},[sortedData,selectedTicker,selected?.ticker])
-  useEffect(()=>{let live=true;if(!selected){setSelectedBars([]);setChartLoading(false);return}setChartLoading(true);loadBars(selected.ticker).then(x=>live&&setSelectedBars(x)).finally(()=>live&&setChartLoading(false));return()=>{live=false}},[selected?.ticker,loadBars])
+  useEffect(()=>{if(sortedData.length&&selectedTicker!==selected?.ticker)selectTicker(sortedData[0].ticker)},[sortedData,selectedTicker,selected?.ticker,selectTicker])
+  const loadSelectedChart=useCallback((retry=false)=>{
+    if(!selected){setSelectedChart({status:'unavailable',bars:[]});return()=>{}}
+    let live=true
+    setSelectedChart({status:'loading',bars:[]})
+    loadBars(selected.ticker,retry).then(next=>{if(live)setSelectedChart(next)})
+    return()=>{live=false}
+  },[selected?.ticker,loadBars])
+  useEffect(()=>loadSelectedChart(false),[loadSelectedChart])
   useEffect(()=>setPagination(p=>({...p,pageIndex:0})),[page,recipe,query,groups,rootLogic,sorting])
 
   const columns=useMemo(()=>[
@@ -244,8 +201,9 @@ function DeepVueTerminal(){
   const moveSort=(id:string,dir:-1|1)=>setSorting(s=>{const a=[...s],i=a.findIndex(x=>x.id===id),j=i+dir;if(i<0||j<0||j>=a.length)return s;[a[i],a[j]]=[a[j],a[i]];return a})
 
   const allScreens=[...builtInScreens,...customScreens]
+  const invalidRuleCount=invalidRules(groups).length
   const applyScreen=(screen:ScreenState)=>{setRootLogic(screen.rootLogic);setGroups(screen.groups);setSorting(screen.sorting);setVisibility({...defaultVisibility,...(screen.visibility||{})});setRecipe(screen.recipe||'All');setQuery(screen.query||'');setPagination({pageIndex:0,pageSize:screen.pageSize||100});setActiveScreen(screen.name)}
-  const saveScreen=()=>{const name=window.prompt('Screen name',activeScreen==='Custom'?'My Screen':activeScreen);if(!name)return;const state:ScreenState={name,rootLogic,groups,sorting,visibility,recipe,query,pageSize:pagination.pageSize};setCustomScreens(old=>[...old.filter(s=>s.name!==name),state]);setActiveScreen(name)}
+  const saveScreen=()=>{if(invalidRuleCount){setBuilderOpen(true);return}const name=window.prompt('Screen name',activeScreen==='Custom'?'My Screen':activeScreen);if(!name)return;const state:ScreenState={name,rootLogic,groups,sorting,visibility,recipe,query,pageSize:pagination.pageSize};setCustomScreens(old=>[...old.filter(s=>s.name!==name),state]);setActiveScreen(name)}
   const deleteScreen=()=>{if(builtInScreens.some(s=>s.name===activeScreen))return;setCustomScreens(x=>x.filter(s=>s.name!==activeScreen));setActiveScreen('Custom')}
   const addGroup=()=>setGroups(g=>[...g,makeGroup('ALL',[makeRule('rsRank')])])
   const updateGroup=(id:string,fn:(g:RuleGroup)=>RuleGroup)=>setGroups(gs=>gs.map(g=>g.id===id?fn(g):g))
@@ -255,10 +213,10 @@ function DeepVueTerminal(){
   if(!payload)return <div className="dv-loading">{error||'Loading StockScout…'}</div>
   const m=payload.market||{},daily=m.dailyChanges||{},ageH=Math.max(0,Math.round((Date.now()-new Date(payload.generatedAt).getTime())/3600000))
   return <div className="dv-app">
-    <header className="dv-top"><div className="dv-brand">◉ <b>STOCKSCOUT</b><small>DEEP SCREEN</small></div><nav>{(['Screener','Grid','Changes','Watchlist','Market'] as Page[]).map(p=><button key={p} className={page===p?'active':''} onClick={()=>setPage(p)}>{p}{p==='Changes'&&daily.changed?` ${daily.changed}`:''}</button>)}</nav><div className="dv-live"><b>{m.regime||'UNKNOWN'}</b><span>{universe.length.toLocaleString()} stocks</span><span>{ageH}h old</span><button onClick={load}>↻</button></div></header>
+    <header className="dv-top"><div className="dv-brand">◉ <b>STOCKSCOUT</b><small>DEEP SCREEN</small></div><nav>{(['Screener','Grid','Changes','Watchlist','Market'] as Page[]).map(p=><button key={p} className={page===p?'active':''} onClick={()=>setPage(p)}>{p}{p==='Changes'&&daily.changed?` ${daily.changed}`:''}</button>)}</nav><div className="dv-live"><b>{m.regime||'UNKNOWN'}</b><span>{universe.length.toLocaleString()} stocks</span><span>{ageH}h old</span><button onClick={reload}>↻</button></div></header>
 
     {page==='Market'?<Market universe={universe} market={m}/>:<>
-      <section className="dv-screenbar"><div className="dv-screenpick"><span>SCREEN</span><select value={allScreens.some(s=>s.name===activeScreen)?activeScreen:''} onChange={e=>{const s=allScreens.find(x=>x.name===e.target.value);if(s)applyScreen(s)}}><option value="">Custom</option>{builtInScreens.map(s=><option key={s.name}>{s.name}</option>)}{customScreens.length>0&&<optgroup label="My screens">{customScreens.map(s=><option key={s.name}>{s.name}</option>)}</optgroup>}</select><button onClick={saveScreen}>Save as…</button>{customScreens.some(s=>s.name===activeScreen)&&<button className="danger" onClick={deleteScreen}>Delete</button>}</div><div className="dv-screenmeta"><b>{activeScreen}</b><span>{groups.reduce((n,g)=>n+g.rules.length,0)} rules</span><span>{sorting.length} sort levels</span><span>{filtered.length.toLocaleString()} matches</span></div></section>
+      <section className="dv-screenbar"><div className="dv-screenpick"><span>SCREEN</span><select value={allScreens.some(s=>s.name===activeScreen)?activeScreen:''} onChange={e=>{const s=allScreens.find(x=>x.name===e.target.value);if(s)applyScreen(s)}}><option value="">Custom</option>{builtInScreens.map(s=><option key={s.name}>{s.name}</option>)}{customScreens.length>0&&<optgroup label="My screens">{customScreens.map(s=><option key={s.name}>{s.name}</option>)}</optgroup>}</select><button onClick={saveScreen} disabled={invalidRuleCount>0} title={invalidRuleCount?'Fix invalid rules before saving':''}>Save as…</button>{customScreens.some(s=>s.name===activeScreen)&&<button className="danger" onClick={deleteScreen}>Delete</button>}</div><div className="dv-screenmeta"><b>{activeScreen}</b><span className={invalidRuleCount?'dv-rule-warning':''}>{invalidRuleCount?`${invalidRuleCount} invalid · ignored`:`${groups.reduce((n,g)=>n+g.rules.length,0)} rules`}</span><span>{sorting.length} sort levels</span><span>{filtered.length.toLocaleString()} matches</span></div></section>
 
       <section className="dv-recipes">{recipeTabs.map(t=><button key={t} className={recipe===t?'active':''} onClick={()=>setRecipe(t)}>{t}<small>{t==='All'?universe.length:universe.filter(s=>tagsOf(s).includes(t)).length}</small></button>)}</section>
 
@@ -269,13 +227,13 @@ function DeepVueTerminal(){
       {builderOpen&&<FilterBuilder rootLogic={rootLogic} setRootLogic={setRootLogic} groups={groups} setGroups={setGroups} addGroup={addGroup} updateGroup={updateGroup} removeGroup={removeGroup}/>} 
       {columnsOpen&&<ColumnPicker table={table} setVisibility={setVisibility}/>} 
 
-      {page==='Grid'?<GridView stocks={sortedData} count={gridCount} setCount={setGridCount} range={gridRange} setRange={setGridRange} loadBars={loadBars} selected={selected?.ticker} onSelect={setSelectedTicker} watchlist={watchlist} toggleWatch={toggleWatch}/>:<main className="dv-work"><div className="dv-tablebox"><div className="dv-tablewrap"><table><thead>{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const fid=maFreshSortId(h.column.id),si=sorting.findIndex(s=>s.id===h.column.id||(fid!==null&&s.id===fid)),ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss&&isFreshMaSort(ss.id)?'✨':ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}</thead><tbody>{table.getRowModel().rows.map(r=><tr key={r.id} className={r.original.ticker===selected?.ticker?'selected':''} onClick={()=>setSelectedTicker(r.original.ticker)}>{r.getVisibleCells().map(c=><td key={c.id}>{flexRender(c.column.columnDef.cell,c.getContext())}</td>)}</tr>)}</tbody></table></div><footer><span>{page==='Changes'?'Meaningful changes since the previous scan':sorting.length>1?'2+ sorts = percentile MIX; #1 gets only a mild extra weight':'Single sort = direct column priority'}</span><div><button disabled={!table.getCanPreviousPage()} onClick={()=>table.previousPage()}>←</button><b>{pagination.pageIndex+1}/{Math.max(1,table.getPageCount())}</b><button disabled={!table.getCanNextPage()} onClick={()=>table.nextPage()}>→</button></div></footer></div>{selected&&<Detail stock={selected} bars={selectedBars} loading={chartLoading} interval={interval} setInterval={setInterval} range={range} setRange={setRange} mode={chartMode} setMode={setChartMode} watched={watchlist.includes(selected.ticker)} toggleWatch={()=>toggleWatch(selected.ticker)}/>}</main>}
+      {page==='Grid'?<GridView stocks={sortedData} count={gridCount} setCount={setGridCount} range={gridRange} setRange={setGridRange} loadBars={loadBars} selected={selected?.ticker} onSelect={selectTicker} watchlist={watchlist} toggleWatch={toggleWatch}/>:<main className="dv-work"><div className="dv-tablebox"><div className="dv-tablewrap"><table><thead>{table.getHeaderGroups().map(hg=><tr key={hg.id}>{hg.headers.map(h=>{const fid=maFreshSortId(h.column.id),si=sorting.findIndex(s=>s.id===h.column.id||(fid!==null&&s.id===fid)),ss=si>=0?sorting[si]:null;return <th key={h.id} className={si>=0?'sorted':''} onClick={()=>h.column.getCanSort()&&cycleSort(h.column.id)}>{flexRender(h.column.columnDef.header,h.getContext())}{si>=0&&<><i>{si+1}</i><b>{ss&&isFreshMaSort(ss.id)?'✨':ss?.desc?'↓':'↑'}</b></>}</th>})}</tr>)}</thead><tbody>{table.getRowModel().rows.map(r=><tr key={r.id} className={r.original.ticker===selected?.ticker?'selected':''} onClick={()=>selectTicker(r.original.ticker)}>{r.getVisibleCells().map(c=><td key={c.id}>{flexRender(c.column.columnDef.cell,c.getContext())}</td>)}</tr>)}</tbody></table></div><footer><span>{page==='Changes'?'Meaningful changes since the previous scan':sorting.length>1?'2+ sorts = percentile MIX; #1 gets only a mild extra weight':'Single sort = direct column priority'}</span><div><button disabled={!table.getCanPreviousPage()} onClick={()=>table.previousPage()}>←</button><b>{pagination.pageIndex+1}/{Math.max(1,table.getPageCount())}</b><button disabled={!table.getCanNextPage()} onClick={()=>table.nextPage()}>→</button></div></footer></div>{selected&&<Detail stock={selected} chart={selectedChart} retryChart={()=>loadSelectedChart(true)} interval={interval} setInterval={setInterval} range={range} setRange={setRange} mode={chartMode} setMode={setChartMode} watched={watchlist.includes(selected.ticker)} toggleWatch={()=>toggleWatch(selected.ticker)}/>}</main>}
     </>}
   </div>
 }
 
 function FilterBuilder({rootLogic,setRootLogic,groups,setGroups,addGroup,updateGroup,removeGroup}:{rootLogic:Logic;setRootLogic:(v:Logic)=>void;groups:RuleGroup[];setGroups:(v:RuleGroup[])=>void;addGroup:()=>void;updateGroup:(id:string,fn:(g:RuleGroup)=>RuleGroup)=>void;removeGroup:(id:string)=>void}){
-  return <section className="dv-builder"><div className="dv-builderhead"><div><b>GROUP JOIN</b><button className={rootLogic==='ALL'?'active':''} onClick={()=>setRootLogic('ALL')}>ALL groups</button><button className={rootLogic==='ANY'?'active':''} onClick={()=>setRootLogic('ANY')}>ANY group</button><span>{rootLogic==='ALL'?'Every group must pass':'At least one group must pass'}</span></div><div><button onClick={addGroup}>+ Group</button><button onClick={()=>setGroups([])}>Clear rules</button></div></div>{groups.length===0?<div className="dv-builderempty">No custom rules. Add a group or load a saved screen.</div>:groups.map((g,gi)=><div className="dv-rulegroup" key={g.id}><div className="dv-groupjoin"><b>GROUP {gi+1}</b><button className={g.logic==='ALL'?'active':''} onClick={()=>updateGroup(g.id,x=>({...x,logic:'ALL'}))}>ALL</button><button className={g.logic==='ANY'?'active':''} onClick={()=>updateGroup(g.id,x=>({...x,logic:'ANY'}))}>ANY</button><span>{g.logic==='ALL'?'Every rule must pass':'At least one rule must pass'}</span><button className="danger" onClick={()=>removeGroup(g.id)}>×</button></div>{g.rules.map(r=>{const def=fieldDefs.find(x=>x.id===r.field)||fieldDefs[0],ops=opsByKind[def.kind];return <div className="dv-rule" key={r.id}><select value={r.field} onChange={e=>{const d=fieldDefs.find(x=>x.id===e.target.value)||fieldDefs[0];updateGroup(g.id,x=>({...x,rules:x.rules.map(q=>q.id===r.id?{...q,field:d.id,op:d.defaultOp,value:''}:q)}))}}>{fieldDefs.map(f=><option value={f.id} key={f.id}>{f.label}</option>)}</select><select value={r.op} onChange={e=>updateGroup(g.id,x=>({...x,rules:x.rules.map(q=>q.id===r.id?{...q,op:e.target.value as any}:q)}))}>{ops.map(o=><option key={o}>{o}</option>)}</select>{!['true','false'].includes(r.op)&&<input value={r.value} placeholder={def.placeholder||'value'} onChange={e=>updateGroup(g.id,x=>({...x,rules:x.rules.map(q=>q.id===r.id?{...q,value:e.target.value}:q)}))}/>}<button onClick={()=>updateGroup(g.id,x=>({...x,rules:x.rules.filter(q=>q.id!==r.id)}))}>×</button></div>})}<button className="dv-addrule" onClick={()=>updateGroup(g.id,x=>({...x,rules:[...x.rules,makeRule('rsRank')]}))}>+ Rule</button></div>)}</section>
+  return <section className="dv-builder"><div className="dv-builderhead"><div><b>GROUP JOIN</b><button className={rootLogic==='ALL'?'active':''} onClick={()=>setRootLogic('ALL')}>ALL groups</button><button className={rootLogic==='ANY'?'active':''} onClick={()=>setRootLogic('ANY')}>ANY group</button><span>{rootLogic==='ALL'?'Every group must pass':'At least one group must pass'}</span></div><div><button onClick={addGroup}>+ Group</button><button onClick={()=>setGroups([])}>Clear rules</button></div></div>{groups.length===0?<div className="dv-builderempty">No custom rules. Add a group or load a saved screen.</div>:groups.map((g,gi)=><div className="dv-rulegroup" key={g.id}><div className="dv-groupjoin"><b>GROUP {gi+1}</b><button className={g.logic==='ALL'?'active':''} onClick={()=>updateGroup(g.id,x=>({...x,logic:'ALL'}))}>ALL</button><button className={g.logic==='ANY'?'active':''} onClick={()=>updateGroup(g.id,x=>({...x,logic:'ANY'}))}>ANY</button><span>{g.logic==='ALL'?'Every valid rule must pass':'At least one valid rule must pass'}</span><button className="danger" onClick={()=>removeGroup(g.id)}>×</button></div>{g.rules.map(r=>{const def=fieldDefs.find(x=>x.id===r.field)||fieldDefs[0],ops=opsByKind[def.kind],ruleError=validateRule(r);return <div className={`dv-rule ${ruleError?'invalid':''}`} key={r.id}><select value={r.field} onChange={e=>{const d=fieldDefs.find(x=>x.id===e.target.value)||fieldDefs[0];updateGroup(g.id,x=>({...x,rules:x.rules.map(q=>q.id===r.id?{...q,field:d.id,op:d.defaultOp,value:''}:q)}))}}>{fieldDefs.map(f=><option value={f.id} key={f.id}>{f.label}</option>)}</select><select value={r.op} onChange={e=>updateGroup(g.id,x=>({...x,rules:x.rules.map(q=>q.id===r.id?{...q,op:e.target.value as any}:q)}))}>{ops.map(o=><option key={o}>{o}</option>)}</select>{!['true','false'].includes(r.op)&&<input value={r.value} aria-invalid={Boolean(ruleError)} placeholder={def.placeholder||'value'} onChange={e=>updateGroup(g.id,x=>({...x,rules:x.rules.map(q=>q.id===r.id?{...q,value:e.target.value}:q)}))}/>}<button onClick={()=>updateGroup(g.id,x=>({...x,rules:x.rules.filter(q=>q.id!==r.id)}))}>×</button>{ruleError&&<small role="alert">{ruleError} · ignored until fixed</small>}</div>})}<button className="dv-addrule" onClick={()=>updateGroup(g.id,x=>({...x,rules:[...x.rules,makeRule('rsRank')]}))}>+ Rule</button></div>)}</section>
 }
 
 function ColumnPicker({table,setVisibility}:{table:any;setVisibility:(v:VisibilityState)=>void}){
@@ -283,7 +241,7 @@ function ColumnPicker({table,setVisibility}:{table:any;setVisibility:(v:Visibili
   return <section className="dv-colpicker"><div className="dv-colsets">{Object.entries(sets).map(([name,v])=><button key={name} onClick={()=>setVisibility(v)}>{name}</button>)}<button onClick={()=>table.getAllLeafColumns().forEach((c:any)=>c.toggleVisibility(true))}>All</button></div>{table.getAllLeafColumns().filter((c:any)=>c.id!=='watch').map((c:any)=><label key={c.id}><input type="checkbox" checked={c.getIsVisible()} onChange={c.getToggleVisibilityHandler()}/>{String(c.columnDef.header||c.id)}</label>)}</section>
 }
 
-function GridView({stocks,count,setCount,range,setRange,loadBars,selected,onSelect,watchlist,toggleWatch}:{stocks:Stock[];count:number;setCount:(n:number)=>void;range:Range;setRange:(r:Range)=>void;loadBars:(t:string)=>Promise<Bar[]>;selected?:string;onSelect:(t:string)=>void;watchlist:string[];toggleWatch:(ticker:string)=>void}){
+function GridView({stocks,count,setCount,range,setRange,loadBars,selected,onSelect,watchlist,toggleWatch}:{stocks:Stock[];count:number;setCount:(n:number)=>void;range:Range;setRange:(r:Range)=>void;loadBars:(t:string,retry?:boolean)=>Promise<ChartLoadState>;selected?:string;onSelect:(t:string)=>void;watchlist:string[];toggleWatch:(ticker:string)=>void}){
   const sentinel=useRef<HTMLDivElement>(null)
   const presets=[12,16,24,36,48]
   const visible=Math.min(count,stocks.length)
@@ -298,14 +256,14 @@ function GridView({stocks,count,setCount,range,setRange,loadBars,selected,onSele
   },[count,stocks.length,setCount])
   return <main className="dv-gridview"><header><div><b>RAPID REVIEW</b><span>{visible} of {stocks.length.toLocaleString()} current matches · same filter + balanced mix stack</span></div><div><select value={selectValue} onChange={e=>setCount(Number(e.target.value))}>{showProgress&&<option value={count}>{count}</option>}{presets.map(n=><option key={n} value={n}>{n}</option>)}{!presets.includes(stocks.length)&&<option value={stocks.length}>All ({stocks.length})</option>}</select>{(['6M','1Y','2Y','5Y'] as Range[]).map(r=><button className={range===r?'active':''} key={r} onClick={()=>setRange(r)}>{r}</button>)}</div></header><section className="dv-chartgrid">{stocks.slice(0,visible).map(s=><MiniCard key={s.ticker} stock={s} range={range} loadBars={loadBars} selected={selected===s.ticker} watched={watchlist.includes(s.ticker)} toggleWatch={()=>toggleWatch(s.ticker)} onClick={()=>onSelect(s.ticker)}/>)}</section><div className="dv-grid-sentinel" ref={sentinel} aria-hidden="true"/></main>
 }
-function MiniCard({stock,range,loadBars,selected,watched,toggleWatch,onClick}:{stock:Stock;range:Range;loadBars:(t:string)=>Promise<Bar[]>;selected:boolean;watched:boolean;toggleWatch:()=>void;onClick:()=>void}){
+function MiniCard({stock,range,loadBars,selected,watched,toggleWatch,onClick}:{stock:Stock;range:Range;loadBars:(t:string,retry?:boolean)=>Promise<ChartLoadState>;selected:boolean;watched:boolean;toggleWatch:()=>void;onClick:()=>void}){
   const interval:Interval=range==='6M'||range==='1Y'?'D':'W'
-  const[bars,setBars]=useState<Bar[]>([]),[loading,setLoading]=useState(true),[attempt,setAttempt]=useState(0)
-  useEffect(()=>{let live=true;setLoading(true);setBars([]);loadBars(stock.ticker).then(x=>{if(live)setBars(x)}).finally(()=>{if(live)setLoading(false)});return()=>{live=false}},[stock.ticker,loadBars,attempt])
-  return <article className={`dv-minicard ${selected?'selected':''}`} onClick={onClick}><header><div><b>{stock.ticker}</b><span>{setupOf(stock)}</span></div><div className="dv-miniactions"><button className={`dv-heart ${watched?'on':''}`} aria-label={watched?`Remove ${stock.ticker} from watchlist`:`Add ${stock.ticker} to watchlist`} title={watched?'Remove from watchlist':'Add to watchlist'} onClick={e=>{e.stopPropagation();toggleWatch()}}>{watched?'♥':'♡'}</button><strong>{opp(stock)}</strong></div></header><div className="dv-miniinfo"><span>RS <b>{fmt(stock.rsRank,0)}</b></span><span>Fund <b>{fmt(stock.fundamentalEvidenceScore,0)}</b></span><span>Vol <b>{fmt(stock.volumeRatio,1)}x</b></span><span>10W <b>{signed(stock.distance10w)}</b></span>{stock.changeImpact!==undefined&&num(stock.changeImpact)!==0&&<span className={num(stock.changeImpact)>0?'dv-good':'dv-bad'}>Δ <b>{signed(stock.changeImpact,0)}</b></span>}</div>{bars.length?<PriceChart bars={bars} interval={interval} range={range} mini/>:loading?<div className="dv-miniload">loading chart…</div>:<div className="dv-miniload"><button onClick={e=>{e.stopPropagation();setAttempt(x=>x+1)}}>retry chart</button></div>}<footer>{(stock.changeLabels||[]).slice(0,2).map(x=><span key={x}>{x}</span>)}</footer></article>
+  const[state,setState]=useState<ChartLoadState>({status:'loading',bars:[]}),[attempt,setAttempt]=useState(0)
+  useEffect(()=>{let live=true;setState({status:'loading',bars:[]});loadBars(stock.ticker,attempt>0).then(next=>{if(live)setState(next)});return()=>{live=false}},[stock.ticker,loadBars,attempt])
+  return <article className={`dv-minicard ${selected?'selected':''}`} onClick={onClick}><header><div><b>{stock.ticker}</b><span>{setupOf(stock)}</span></div><div className="dv-miniactions"><button className={`dv-heart ${watched?'on':''}`} aria-label={watched?`Remove ${stock.ticker} from watchlist`:`Add ${stock.ticker} to watchlist`} title={watched?'Remove from watchlist':'Add to watchlist'} onClick={e=>{e.stopPropagation();toggleWatch()}}>{watched?'♥':'♡'}</button><strong>{opp(stock)}</strong></div></header><div className="dv-miniinfo"><span>RS <b>{fmt(stock.rsRank,0)}</b></span><span>Fund <b>{fmt(stock.fundamentalEvidenceScore,0)}</b></span><span>Vol <b>{fmt(stock.volumeRatio,1)}x</b></span><span>10W <b>{signed(stock.distance10w)}</b></span>{stock.changeImpact!==undefined&&num(stock.changeImpact)!==0&&<span className={num(stock.changeImpact)>0?'dv-good':'dv-bad'}>Δ <b>{signed(stock.changeImpact,0)}</b></span>}</div>{state.status==='ready'?<PriceChart bars={state.bars} interval={interval} range={range} mini/>:state.status==='loading'?<div className="dv-miniload">loading chart…</div>:state.status==='unavailable'?<div className="dv-miniload">chart unavailable</div>:<div className="dv-miniload"><button onClick={e=>{e.stopPropagation();setAttempt(x=>x+1)}}>retry chart</button></div>}<footer>{(stock.changeLabels||[]).slice(0,2).map(x=><span key={x}>{x}</span>)}</footer></article>
 }
 
-function Detail({stock,bars,loading,interval,setInterval,range,setRange,mode,setMode,watched,toggleWatch}:{stock:Stock;bars:Bar[];loading:boolean;interval:Interval;setInterval:(v:Interval)=>void;range:Range;setRange:(v:Range)=>void;mode:ChartMode;setMode:(v:ChartMode)=>void;watched:boolean;toggleWatch:()=>void}){
+function Detail({stock,chart,retryChart,interval,setInterval,range,setRange,mode,setMode,watched,toggleWatch}:{stock:Stock;chart:ChartLoadState;retryChart:()=>void;interval:Interval;setInterval:(v:Interval)=>void;range:Range;setRange:(v:Range)=>void;mode:ChartMode;setMode:(v:ChartMode)=>void;watched:boolean;toggleWatch:()=>void}){
   const dims=[['Structure',stock.structureScore],['RS',stock.rsScore],['Base',stock.baseScore],['Trigger',stock.triggerScore],['Freshness',stock.freshnessScore],['Neglected',stock.neglectedScore]] as [string,number|undefined][]
   const fundDims=[['Growth',stock.fundamentalGrowthScore],['Margins',stock.fundamentalMarginScore],['Inventory',stock.fundamentalInventoryScore]] as [string,number|null|undefined][]
   const fundScore=num(stock.fundamentalEvidenceScore,-1)
@@ -313,7 +271,7 @@ function Detail({stock,bars,loading,interval,setInterval,range,setRange,mode,set
     {(stock.changeLabels||[]).length>0&&<div className="dv-todaybox"><b>CHANGED SINCE LAST SCAN</b>{stock.changeLabels!.map(x=><span key={x}>{x}</span>)}</div>}
     <div className="dv-tags">{tagsOf(stock).map(t=><span key={t} className={t.startsWith('⚠')?'warn':''}>{t}</span>)}</div>
     <div className="dv-chartcontrols"><div>{(['Price','RS','Volume'] as ChartMode[]).map(x=><button className={mode===x?'active':''} onClick={()=>setMode(x)} key={x}>{x}</button>)}</div><div>{(['D','W'] as Interval[]).map(x=><button className={interval===x?'active':''} onClick={()=>setInterval(x)} key={x}>{x==='D'?'Daily':'Weekly'}</button>)}</div><div>{(['3M','6M','1Y','2Y','5Y'] as Range[]).map(x=><button className={range===x?'active':''} onClick={()=>setRange(x)} key={x}>{x}</button>)}</div></div><div className="dv-ma-note">{interval==='D'?'EMA 10 · EMA 20 · SMA 50 · SMA 200':'SMA 10W · SMA 20W'}</div>
-    <div className="dv-chartbox">{loading?<div className="dv-chartmsg">Loading 5Y history…</div>:bars.length?<PriceChart bars={bars} interval={interval} range={range} mode={mode}/>:<div className="dv-chartmsg">Chart unavailable</div>}</div>
+    <div className="dv-chartbox">{chart.status==='loading'?<div className="dv-chartmsg">Loading 5Y history…</div>:chart.status==='ready'?<PriceChart bars={chart.bars} interval={interval} range={range} mode={mode}/>:chart.status==='unavailable'?<div className="dv-chartmsg">Chart unavailable for this ticker</div>:<div className="dv-chartmsg">Chart request failed. <button onClick={retryChart}>Retry</button></div>}</div>
     <div className="dv-kpis"><K l="RS Rank" v={fmt(stock.rsRank,0)} d={stock.rsRankDelta}/><K l="RS Δ" v={fmt(stock.rsAcceleration,2)}/><K l="Group" v={fmt(stock.groupRank,0)}/><K l="Group RS" v={signed(stock.groupRS)}/><K l="Group conf" v={`${fmt(stock.groupConfidence,0)}%`}/><K l="TT" v={`${fmt(stock.trendTemplatePasses,0)}/8`}/><K l="EMA 10D" v={fmt(stock.ema10d,2)}/><K l="EMA 20D" v={fmt(stock.ema20d,2)}/><K l="D EMA X" v={stock.ema10d20dCross?`${stock.ema10d20dCross} ${fmt(stock.ema10d20dCrossAge,0)}d`:'—'}/><K l="D EMA spread" v={signed(stock.ema10d20dSpreadPct,2)}/><K l="SMA 10W" v={fmt(stock.sma10w,2)}/><K l="SMA 20W" v={fmt(stock.sma20w,2)}/><K l="W SMA X" v={stock.sma10w20wCross?`${stock.sma10w20wCross} ${fmt(stock.sma10w20wCrossAge,0)}w`:'—'}/><K l="W SMA spread" v={signed(stock.sma10w20wSpreadPct,2)}/><K l="S2 age" v={`${fmt(stock.stage2AgeWeeks,1)}w`}/><K l="Vol" v={`${fmt(stock.volumeRatio,2)}x`} d={stock.volumeRatioDelta}/><K l="Breakout" v={signed(stock.breakoutPct)}/><K l="10W" v={signed(stock.distance10w)}/><K l="30W" v={signed(stock.distance30w)}/><K l="Potential" v={fmt(stock.opportunityPotential,0)}/><K l="Timing" v={fmt(stock.opportunityTiming,0)}/><K l="Opp Rank" v={fmt(stock.opportunityRank,0)}/><K l="Group Δ" v={`${num(stock.opportunityGroupModifier)>0?'+':''}${fmt(stock.opportunityGroupModifier,1)}`}/><K l="Fund Δ" v={`${num(stock.opportunityFundModifier)>0?'+':''}${fmt(stock.opportunityFundModifier,1)}`}/><K l="Fund Ev" v={fmt(stock.fundamentalEvidenceScore,0)}/><K l="Fund conf" v={`${fmt(stock.fundamentalEvidenceConfidence,0)}%`}/></div>
     <div className="dv-dims">{dims.map(([n,v])=><div key={n}><span>{n}</span><i><b style={{width:`${Math.max(0,Math.min(100,num(v)))}%`}}/></i><strong>{fmt(v,0)}</strong></div>)}</div>
     <div className="dv-fundbox"><header><div><b>FUNDAMENTAL EVIDENCE</b><small>confirmation evidence · bounded ±5 Opportunity modifier</small></div><strong className={fundScore>=75?'dv-good':fundScore>=0&&fundScore<40?'dv-bad':''}>{fmt(stock.fundamentalEvidenceScore,0)} {stock.fundamentalEvidenceLabel||''}</strong><span>confidence {fmt(stock.fundamentalEvidenceConfidence,0)}% · coverage {fmt(stock.fundamentalEvidenceCoverage,0)}%</span></header><div className="dv-dims">{fundDims.map(([n,v])=><div key={n}><span>{n}</span><i><b style={{width:`${Math.max(0,Math.min(100,num(v)))}%`}}/></i><strong>{fmt(v,0)}</strong></div>)}</div></div>

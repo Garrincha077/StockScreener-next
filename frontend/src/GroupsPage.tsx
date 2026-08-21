@@ -1,4 +1,5 @@
-import {useEffect,useMemo,useState} from 'react'
+import {useMemo,useState} from 'react'
+import {useStockScoutData} from './data/StockScoutDataProvider'
 import './groups.css'
 
 type GroupRow={ticker:string;name:string;rank:number;rel1m:number;rel3m:number;rel6m:number;stocks:number;stage2Pct:number;earlyLeaders:number;medianOpportunity:number;avgConfidence?:number;topTickers:string[]}
@@ -12,26 +13,9 @@ const signed=(v:any,d=1)=>typeof v==='number'&&Number.isFinite(v)?`${v>0?'+':''}
 const score=(s:Stock)=>s.opportunityScore??s.leadershipScore??0
 
 export default function GroupsPage({onBack,onOpenTicker}:{onBack:()=>void;onOpenTicker:(ticker:string)=>void}){
-  const[payload,setPayload]=useState<Payload|null>(null),[error,setError]=useState('')
+  const{core,error}=useStockScoutData()
+  const payload=core as Payload|null
   const[mode,setMode]=useState<Mode>('Sectors'),[sort,setSort]=useState<Sort>('rank')
-  useEffect(()=>{
-    let live=true
-    ;(async()=>{
-      let lastError:unknown=new Error('Group dataset unavailable')
-      for(const file of ['core.json','latest.json']){
-        try{
-          const response=await fetch(`./data/${file}?t=${Date.now()}`,{cache:'no-store'})
-          if(!response.ok)throw new Error(`${file} HTTP ${response.status}`)
-          const data=await response.json() as Payload
-          if(!data.universe?.length)throw new Error(`${file} dataset empty`)
-          if(live){setPayload(data);setError('')}
-          return
-        }catch(nextError){lastError=nextError}
-      }
-      if(live)setError(String(lastError))
-    })()
-    return()=>{live=false}
-  },[])
   const groups=mode==='Sectors'?payload?.groups?.sectors||[]:payload?.groups?.industries||[]
   const ordered=useMemo(()=>[...groups].sort((a,b)=>{
     if(sort==='early')return b.earlyLeaders-a.earlyLeaders||b.rank-a.rank

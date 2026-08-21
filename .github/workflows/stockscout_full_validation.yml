@@ -1,7 +1,7 @@
 name: StockScout Full Validation
 
 # Final gate for StockScout Next scan/data/workflow changes.
-# Full-run trigger: 2026-08-21 read-only Stable snapshot + Pages preview validation
+# Full-run trigger: 2026-08-21 current-main reconciliation of Codex app/data hardening
 on:
   push:
     paths:

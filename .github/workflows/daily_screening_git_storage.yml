@@ -343,7 +343,7 @@ jobs:
 
       - name: Install terminal dependencies
         working-directory: frontend
-        run: npm install
+        run: npm ci
 
       - name: Test and build terminal with live scan data
         working-directory: frontend
