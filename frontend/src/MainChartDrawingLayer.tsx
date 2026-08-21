@@ -36,6 +36,7 @@ const CLICK_PX=4
 const COLOR_BY_CONDITION={cross_above:'#20d886',cross_below:'#f05d6c',touch:'#f3c85b'} as const
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value))
 const conditionLabel=(rule:ChartAlertRule)=>rule.condition==='cross_above'?'Cross ↑':rule.condition==='cross_below'?'Cross ↓':'Touch'
+const drawingKindLabel=(drawing:ChartDrawing)=>drawing.kind==='horizontal'?'Level':'Trend'
 
 export default function MainChartDrawingLayer({bridge,ticker,bars,source,interval}:{bridge:MainChartBridge;ticker:string;bars:Bar[];source:Bar[];interval:'D'|'W'}){
   const{snapshot,busy,error,tool,setTool,selectedDrawingId,selectDrawing,upsertDrawing}=useChartAlerts()
@@ -223,12 +224,12 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
     const point=pointFromClient(event.clientX,event.clientY)
     if(!point)return
     if(tool==='horizontal'){
-      const saved=await upsertDrawing({ticker,kind:'horizontal',interval,points:[point,point],extension:'pane',style:{}})
+      const saved=await upsertDrawing({ticker,kind:'horizontal',interval,points:[point,point],extension:'pane',style:{},metadata:{createdByTool:'horizontal'}})
       selectDrawing(saved.id||null);chooseTool('cursor');return
     }
     if(!firstPoint){setFirstPoint(point);setHoverPoint(point);return}
     if(firstPoint.time===point.time)return
-    const saved=await upsertDrawing({ticker,kind:'trendline',interval,points:[firstPoint,point],extension:'ray_right',style:{}})
+    const saved=await upsertDrawing({ticker,kind:'trendline',interval,points:[firstPoint,point],extension:'ray_right',style:{},metadata:{createdByTool:'trendline'}})
     selectDrawing(saved.id||null);chooseTool('cursor')
   },[tool,busy,pointFromClient,upsertDrawing,ticker,interval,selectDrawing,chooseTool,firstPoint])
 
@@ -244,15 +245,16 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
   const draft=tool==='trendline'&&firstPoint&&hoverPoint?{ticker,kind:'trendline',interval,points:[firstPoint,hoverPoint],extension:'ray_right'} as ChartDrawing:null
 
   const badgeText=(drawing:ChartDrawing)=>{
+    const kind=drawingKindLabel(drawing)
     const rule=drawing.id?ruleByDrawing.get(drawing.id):undefined
     const status=drawing.id?statusByDrawing.get(drawing.id):undefined
-    if(status?.state==='needs_review')return `${interval} · needs review`
-    if(!rule)return `${interval} · drawing only`
-    if(!rule.enabled)return `${interval} · ${conditionLabel(rule)} · paused`
+    if(status?.state==='needs_review')return `${interval} · ${kind} · review`
+    if(!rule)return `${interval} · ${kind}`
+    if(!rule.enabled)return `${interval} · ${kind} · ${conditionLabel(rule)} · paused`
     const g=geometry(drawing),latest=frame[frame.length-1]
     const distance=status?.distancePct??(g?.badge&&latest?((latest.close-g.badge.line)/g.badge.line)*100:null)
-    const suffix=typeof distance==='number'&&Number.isFinite(distance)?` · price ${Math.abs(distance).toFixed(1)}% ${distance>=0?'above':'below'}`:''
-    return `${interval} · ${conditionLabel(rule)}${suffix}`
+    const suffix=typeof distance==='number'&&Number.isFinite(distance)?` · ${Math.abs(distance).toFixed(1)}% ${distance>=0?'above':'below'}`:''
+    return `${interval} · ${kind} · ${conditionLabel(rule)}${suffix}`
   }
 
   return <div className="cad-main-layer" data-tool={tool}>
@@ -268,11 +270,11 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
         const g=geometry(drawing);if(!g)return null
         const rule=ruleByDrawing.get(drawing.id),selected=selectedDrawingId===drawing.id
         const color=selected?'#dcecff':rule?.enabled?COLOR_BY_CONDITION[rule.condition]:'#7c8595'
-        return <g key={drawing.id} className={selected?'selected':''} data-drawing-id={drawing.id}>
+        return <g key={drawing.id} className={selected?'selected':''} data-drawing-id={drawing.id} data-drawing-kind={drawing.kind}>
           {g.segment&&<line className="cad-main-line" x1={g.segment.x1} y1={g.segment.y1} x2={g.segment.x2} y2={g.segment.y2} stroke={color} strokeWidth={selected?2.4:1.8}/>} 
           {g.ray&&<line className="cad-main-ray" x1={g.ray.x1} y1={g.ray.y1} x2={g.ray.x2} y2={g.ray.y2} stroke={color} strokeWidth={selected?2.1:1.6} strokeDasharray="7 4"/>}
           <line className="cad-main-hit" x1={g.full.x1} y1={g.full.y1} x2={g.full.x2} y2={g.full.y2} stroke="transparent" strokeWidth={HIT_WIDTH} onPointerDown={event=>beginDrag(event,drawing,'body')} onMouseDown={event=>beginDrag(event,drawing,'body')}/>
-          {g.badge&&<foreignObject className="cad-main-badge-fo" x={g.badge.x} y={g.badge.y} width="168" height="24"><button className={`cad-main-badge ${selected?'selected':''}`} onPointerDown={event=>{event.stopPropagation();selectDrawing(drawing.id||null)}}>{badgeText(drawing)}</button></foreignObject>}
+          {g.badge&&<foreignObject className="cad-main-badge-fo" x={g.badge.x} y={g.badge.y} width="168" height="24"><button aria-label={`${interval} ${drawingKindLabel(drawing)} drawing`} className={`cad-main-badge ${selected?'selected':''}`} onPointerDown={event=>{event.stopPropagation();selectDrawing(drawing.id||null)}}>{badgeText(drawing)}</button></foreignObject>}
         </g>
       })}
       {draft&&(()=>{const g=geometry(draft);return g?.segment?<line className="cad-main-draft" x1={g.segment.x1} y1={g.segment.y1} x2={g.segment.x2} y2={g.segment.y2}/>:null})()}
