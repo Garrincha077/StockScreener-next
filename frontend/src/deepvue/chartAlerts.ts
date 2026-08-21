@@ -27,6 +27,72 @@ export type ChartAlertEvent={
 }
 export type ChartAlertsSnapshot={alerts:ChartAlert[];events:ChartAlertEvent[]}
 
+export type ChartAlertInterval='D'|'W'
+export type ChartDrawingKind='trendline'|'horizontal'
+export type ChartDrawingExtension='ray_right'|'pane'
+export type ChartAlertCondition='cross_above'|'cross_below'|'touch'
+export type ChartAlertSource='close'|'wick'
+export type ChartAlertLifecycle='one_shot'|'rearm'
+export type ChartDrawing={
+  id?:string
+  ticker:string
+  kind:ChartDrawingKind
+  interval:ChartAlertInterval
+  points:[ChartAlertPoint,ChartAlertPoint]
+  extension:ChartDrawingExtension
+  label?:string|null
+  style?:Record<string,unknown>
+  metadata?:Record<string,unknown>
+  createdAt?:string
+  updatedAt?:string
+}
+export type ChartAlertRule={
+  id?:string
+  drawingId:string
+  condition:ChartAlertCondition
+  source:ChartAlertSource
+  lifecycle:ChartAlertLifecycle
+  enabled:boolean
+  notifyInApp:boolean
+  notifyTelegram:boolean
+  createdAt?:string
+  updatedAt?:string
+}
+export type ChartAlertStatus={
+  drawingId:string
+  ruleId?:string|null
+  projectedLinePrice?:number|null
+  latestClose?:number|null
+  latestHigh?:number|null
+  latestLow?:number|null
+  distancePct?:number|null
+  latestMarketDate?:string|null
+  state:'active'|'approaching'|'triggered'|'paused'|'needs_review'
+  reviewReason?:string|null
+  evaluatedAt?:string|null
+  updatedAt?:string
+}
+export type ChartAlertV2Event={
+  id:string
+  drawingId?:string|null
+  ruleId?:string|null
+  ticker:string
+  eventType:ChartAlertMode
+  interval?:ChartAlertInterval|null
+  source?:ChartAlertSource|null
+  scanGeneratedAt:string
+  marketDate:string
+  prevLinePrice?:number|null
+  currentLinePrice?:number|null
+  closePrice?:number|null
+  message:string
+  telegramStatus:'not_configured'|'pending'|'sent'|'error'
+  telegramSentAt?:string|null
+  telegramError?:string|null
+  createdAt:string
+}
+export type ChartAlertsV2Snapshot={drawings:ChartDrawing[];rules:ChartAlertRule[];status:ChartAlertStatus[];events:ChartAlertV2Event[]}
+
 const ENDPOINT='https://jekidjsifihbbuzxrbse.supabase.co/functions/v1/stockscout-next-alerts'
 const DEVICE_KEY='stockscout-next-alert-device-key-v1'
 
@@ -65,6 +131,49 @@ async function request<T>(body?:Record<string,unknown>,method='POST'):Promise<T>
   return data as T
 }
 
+const maybeNumber=(value:unknown)=>value==null?null:Number.isFinite(Number(value))?Number(value):null
+function drawingFromRow(row:any):ChartDrawing{
+  return{
+    id:String(row?.id||''),ticker:String(row?.ticker||'').toUpperCase(),kind:row?.kind==='horizontal'?'horizontal':'trendline',
+    interval:row?.interval==='W'?'W':'D',points:row?.points,extension:row?.extension==='pane'?'pane':'ray_right',
+    label:row?.label??null,style:row?.style||{},metadata:row?.metadata||{},createdAt:row?.created_at,updatedAt:row?.updated_at,
+  }
+}
+function ruleFromRow(row:any):ChartAlertRule{
+  return{
+    id:String(row?.id||''),drawingId:String(row?.drawing_id||row?.drawingId||''),
+    condition:['cross_above','cross_below','touch'].includes(row?.condition)?row.condition:'touch',
+    source:row?.source==='wick'?'wick':'close',lifecycle:row?.lifecycle==='one_shot'?'one_shot':'rearm',
+    enabled:Boolean(row?.enabled),notifyInApp:row?.notify_in_app!==false,notifyTelegram:row?.notify_telegram!==false,
+    createdAt:row?.created_at,updatedAt:row?.updated_at,
+  }
+}
+function statusFromRow(row:any):ChartAlertStatus{
+  const state=['active','approaching','triggered','paused','needs_review'].includes(row?.state)?row.state:'paused'
+  return{
+    drawingId:String(row?.drawing_id||''),ruleId:row?.rule_id?String(row.rule_id):null,
+    projectedLinePrice:maybeNumber(row?.projected_line_price),latestClose:maybeNumber(row?.latest_close),latestHigh:maybeNumber(row?.latest_high),latestLow:maybeNumber(row?.latest_low),distancePct:maybeNumber(row?.distance_pct),
+    latestMarketDate:row?.latest_market_date??null,state,reviewReason:row?.review_reason??null,evaluatedAt:row?.evaluated_at??null,updatedAt:row?.updated_at,
+  }
+}
+function eventFromRow(row:any):ChartAlertV2Event{
+  return{
+    id:String(row?.id||''),drawingId:row?.drawing_id?String(row.drawing_id):null,ruleId:row?.rule_id?String(row.rule_id):null,ticker:String(row?.ticker||'').toUpperCase(),
+    eventType:['break_up','break_down','touch'].includes(row?.event_type)?row.event_type:'touch',interval:row?.interval==='W'?'W':row?.interval==='D'?'D':null,source:row?.source==='wick'?'wick':row?.source==='close'?'close':null,
+    scanGeneratedAt:String(row?.scan_generated_at||''),marketDate:String(row?.market_date||''),prevLinePrice:maybeNumber(row?.prev_line_price),currentLinePrice:maybeNumber(row?.current_line_price??row?.line_price),closePrice:maybeNumber(row?.close_price),
+    message:String(row?.message||''),telegramStatus:['pending','sent','error'].includes(row?.telegram_status)?row.telegram_status:'not_configured',telegramSentAt:row?.telegram_sent_at??null,telegramError:row?.telegram_error??null,createdAt:String(row?.created_at||''),
+  }
+}
+
+export function normalizeChartAlertsV2Snapshot(raw:any):ChartAlertsV2Snapshot{
+  return{
+    drawings:(Array.isArray(raw?.drawings)?raw.drawings:[]).map(drawingFromRow),
+    rules:(Array.isArray(raw?.rules)?raw.rules:[]).map(ruleFromRow),
+    status:(Array.isArray(raw?.status)?raw.status:[]).map(statusFromRow),
+    events:(Array.isArray(raw?.events)?raw.events:[]).map(eventFromRow),
+  }
+}
+
 export async function loadChartAlerts():Promise<ChartAlertsSnapshot>{
   return request<ChartAlertsSnapshot>(undefined,'GET')
 }
@@ -76,4 +185,27 @@ export async function saveChartAlert(alert:ChartAlert):Promise<ChartAlert>{
 
 export async function deleteChartAlert(id:string):Promise<void>{
   await request<{ok:boolean}>({action:'delete',id})
+}
+
+export async function loadChartAlertsV2():Promise<ChartAlertsV2Snapshot>{
+  const data=await request<any>({action:'v2_snapshot'})
+  return normalizeChartAlertsV2Snapshot(data)
+}
+
+export async function saveChartDrawing(drawing:ChartDrawing):Promise<ChartDrawing>{
+  const data=await request<{drawing:any}>({action:'drawing_upsert',drawing})
+  return drawingFromRow(data.drawing)
+}
+
+export async function deleteChartDrawing(id:string):Promise<void>{
+  await request<{ok:boolean}>({action:'drawing_delete',id})
+}
+
+export async function saveChartAlertRule(rule:ChartAlertRule):Promise<ChartAlertRule>{
+  const data=await request<{rule:any}>({action:'rule_upsert',rule})
+  return ruleFromRow(data.rule)
+}
+
+export async function deleteChartAlertRule(id:string):Promise<void>{
+  await request<{ok:boolean}>({action:'rule_delete',id})
 }
