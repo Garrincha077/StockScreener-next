@@ -24,6 +24,7 @@ export type ReviewStock={
   reasons?:string[]
 }
 
+export type ReviewScope='today'|'new'|null
 export type ReviewPayload={generatedAt:string;universe:ReviewStock[]}
 export type ReviewManifest={
   generatedAt?:string
@@ -37,9 +38,19 @@ const finite=(value:unknown):value is number=>typeof value==='number'&&Number.is
 const rounded=(value:number)=>Math.round(value)
 const setupOf=(stock:ReviewStock)=>stock.primarySetup||stock.setup||stock.setupTags?.[0]||stock.stageName||'Unclassified setup'
 
+export function matchesReviewScope(stock:ReviewStock,scope:ReviewScope){
+  if(scope==='today')return stock.changedToday===true
+  if(scope==='new')return stock.newUniverseMember===true
+  return true
+}
+
+export function reviewScopeLabel(scope:Exclude<ReviewScope,null>){
+  return scope==='today'?'Today / changed':'New since last scan'
+}
+
 export function buildReviewInbox(universe:ReviewStock[]){
-  const today=universe.filter(stock=>stock.changedToday).sort((a,b)=>(b.changeImpact??0)-(a.changeImpact??0)||a.ticker.localeCompare(b.ticker))
-  const newSinceLastScan=universe.filter(stock=>stock.newUniverseMember).sort((a,b)=>(b.opportunityScore??0)-(a.opportunityScore??0)||a.ticker.localeCompare(b.ticker))
+  const today=universe.filter(stock=>matchesReviewScope(stock,'today')).sort((a,b)=>(b.changeImpact??0)-(a.changeImpact??0)||a.ticker.localeCompare(b.ticker))
+  const newSinceLastScan=universe.filter(stock=>matchesReviewScope(stock,'new')).sort((a,b)=>(b.opportunityScore??0)-(a.opportunityScore??0)||a.ticker.localeCompare(b.ticker))
   return{today,newSinceLastScan}
 }
 
