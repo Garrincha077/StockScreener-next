@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {buildReviewInbox,dataHealth,explainStock,lastCompletedMarketSession} from './phase4Review.ts'
+import {buildReviewInbox,dataHealth,explainStock,lastCompletedMarketSession,matchesReviewScope,reviewScopeLabel} from './phase4Review.ts'
 
 test('review inbox separates today changes from new universe members',()=>{
   const universe=[
@@ -11,6 +11,18 @@ test('review inbox separates today changes from new universe members',()=>{
   const inbox=buildReviewInbox(universe)
   assert.deepEqual(inbox.today.map(x=>x.ticker),['BBB','AAA'])
   assert.deepEqual(inbox.newSinceLastScan.map(x=>x.ticker),['CCC','BBB'])
+})
+
+test('review scope uses the same transparent membership flags as the inbox',()=>{
+  const today={ticker:'AAA',changedToday:true,newUniverseMember:false}
+  const fresh={ticker:'BBB',changedToday:false,newUniverseMember:true}
+  assert.equal(matchesReviewScope(today,'today'),true)
+  assert.equal(matchesReviewScope(today,'new'),false)
+  assert.equal(matchesReviewScope(fresh,'new'),true)
+  assert.equal(matchesReviewScope(fresh,'today'),false)
+  assert.equal(matchesReviewScope(today,null),true)
+  assert.equal(reviewScopeLabel('today'),'Today / changed')
+  assert.equal(reviewScopeLabel('new'),'New since last scan')
 })
 
 test('why this stock is a transparent decomposition of existing fields',()=>{
