@@ -117,6 +117,8 @@ function evaluateAlert(alert: AlertRow, bars: Bar[]) {
 }
 
 async function readSecret(name: string) {
+  const envName=name==='stockscout_next_telegram_bot_token'?'STOCKSCOUT_NEXT_TELEGRAM_BOT_TOKEN':name==='stockscout_next_telegram_chat_id'?'STOCKSCOUT_NEXT_TELEGRAM_CHAT_ID':''
+  if(envName){const direct=Deno.env.get(envName);if(direct)return direct}
   const { data, error } = await db.rpc('stockscout_next_secret', { secret_name: name })
   if (error) return ''
   return typeof data === 'string' ? data : ''
@@ -141,8 +143,9 @@ async function sendTelegram(text: string) {
 
 async function evaluateAll(req: Request) {
   const evaluatorKey = req.headers.get('x-stockscout-evaluator-key') ?? ''
-  const { data: allowed, error: authError } = await db.rpc('stockscout_next_validate_evaluator_key', { candidate: evaluatorKey })
-  if (authError || allowed !== true) return json({ error: 'Unauthorized evaluator' }, 401)
+  const evaluatorHash = await sha256(evaluatorKey)
+  const { data: config, error: authError } = await db.from('stockscout_next_runtime_config').select('value').eq('key','evaluator_key_sha256').maybeSingle()
+  if (authError || !config || config.value !== evaluatorHash) return json({ error: 'Unauthorized evaluator' }, 401)
 
   const manifestResponse = await fetch(`${PAGES_BASE}data/manifest.json?alertEval=${Date.now()}`, { cache: 'no-store' })
   if (!manifestResponse.ok) return json({ error: `Manifest HTTP ${manifestResponse.status}` }, 502)
