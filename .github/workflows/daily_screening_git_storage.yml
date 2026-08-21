@@ -1,38 +1,53 @@
 name: Daily Stock Screening (Post-Market)
 
-# StockScout Next development mode: full scans are manual/reusable only.
-# The stable production repository remains responsible for the scheduled nightly scan.
+# Deliberately no schedule. Production scheduling remains gated on ten
+# consecutive green production-style Full Validation runs.
 on:
   workflow_dispatch:
     inputs:
       force_full_refresh:
-        description: 'Force refresh all fundamentals (ignore cache)'
+        description: Force refresh all fundamentals
         required: false
         type: boolean
         default: false
-      persist_outputs:
-        description: 'Persist generated scan outputs to the source branch'
+      allow_prior_session_backfill:
+        description: Explicitly allow a prior completed session before 16:30 ET
+        required: false
+        type: boolean
+        default: false
+      publish_snapshot:
+        description: Publish immutable validated-scan-snapshot (main only)
         required: false
         type: boolean
         default: true
       deploy_pages:
-        description: 'Publish the validated terminal to GitHub Pages'
+        description: Deploy the exact validated snapshot to Pages (main only)
         required: false
         type: boolean
         default: true
   workflow_call:
     inputs:
-      persist_outputs:
+      force_full_refresh:
         required: false
         type: boolean
-        default: true
+        default: false
+      allow_prior_session_backfill:
+        required: false
+        type: boolean
+        default: false
+      publish_snapshot:
+        required: false
+        type: boolean
+        default: false
       deploy_pages:
         required: false
         type: boolean
-        default: true
+        default: false
+
+permissions: {}
 
 concurrency:
-  group: daily-stock-screening
+  group: stockscout-daily-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
@@ -40,104 +55,92 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 300
     permissions:
-      contents: write
-
+      actions: read
+      contents: read
+    outputs:
+      canonical_sha: ${{ steps.snapshot-meta.outputs.canonical_sha }}
+      frontend_commit: ${{ steps.snapshot-meta.outputs.frontend_commit }}
+      snapshot_name: validated-scan-snapshot
     steps:
-      - name: Checkout code
+      - name: Checkout source without write credentials
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-
-      - name: Get current date
-        id: date
-        shell: bash
-        run: |
-          echo "date=$(date -u +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
-          echo "time=$(date -u +'%H:%M:%S')" >> "$GITHUB_OUTPUT"
-
-      - name: Check existing fundamental cache
-        id: cache-check
-        shell: bash
-        run: |
-          if [ -d "data/fundamentals_cache" ]; then
-            CACHE_COUNT=$(find data/fundamentals_cache -name '*_fundamentals.json' -type f 2>/dev/null | wc -l | tr -d ' ')
-            echo "Found existing fundamental cache"
-            echo "cached_stocks=$CACHE_COUNT" >> "$GITHUB_OUTPUT"
-            echo "Cached stocks: $CACHE_COUNT"
-          else
-            echo "No existing cache; creating it"
-            mkdir -p data/fundamentals_cache
-            echo "cached_stocks=0" >> "$GITHUB_OUTPUT"
-          fi
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          cache: pip
+          cache-dependency-path: requirements-ci.lock
 
-      - name: Install Python dependencies
+      - name: Install hash-locked CI dependencies
+        run: python -m pip install --require-hashes -r requirements-ci.lock
+
+      - name: Restore the latest successful main snapshot state when available
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          set -euo pipefail
+          destination="$RUNNER_TEMP/prior-snapshot"
+          mkdir -p "$destination"
+          artifact_id=""
+          while IFS=$'\t' read -r candidate_id run_id branch; do
+            [ "$branch" = "main" ] || continue
+            conclusion=$(gh api "/repos/$GITHUB_REPOSITORY/actions/runs/$run_id" --jq '.conclusion')
+            if [ "$conclusion" = "success" ]; then artifact_id="$candidate_id"; break; fi
+          done < <(gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts?name=validated-scan-snapshot&per_page=100" --jq '.artifacts[] | select(.expired == false) | [.id, .workflow_run.id, .workflow_run.head_branch] | @tsv')
+          if [ -n "$artifact_id" ]; then
+            gh api "/repos/$GITHUB_REPOSITORY/actions/artifacts/$artifact_id/zip" > "$RUNNER_TEMP/prior-snapshot.zip"
+            unzip -q "$RUNNER_TEMP/prior-snapshot.zip" -d "$destination"
+            echo "Restored immutable snapshot artifact $artifact_id"
+          else
+            echo "No successful validated-scan-snapshot exists yet; using repository bootstrap state"
+          fi
 
-      - name: Validate rich-pipeline Python syntax
-        run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py audit_lateral_base.py audit_emerging_leader.py audit_frontend_dataset.py audit_pipeline_models.py compute_opportunity_v2.py finalize_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py validate_frontend_charts.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
-
-      - name: Verify frozen LEGACY source baseline
-        run: python verify_legacy_baseline.py
-
-      - name: Fast-engine regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_emerging_leader.py tests/test_lateral_base.py tests/test_opportunity_v2.py tests/test_opportunity_v2_integration.py tests/test_prepare_frontend_payloads.py -q
-
-      - name: Preserve previous terminal snapshot
+      - name: Restore prior diff baseline and fundamentals cache
         shell: bash
         run: |
-          mkdir -p data/batch_results
-          if [ -s frontend/public/data/latest.json ]; then
+          set -euo pipefail
+          mkdir -p data/batch_results data/fundamentals_cache
+          if [ -s "$RUNNER_TEMP/prior-snapshot/data/latest.json" ]; then
+            cp "$RUNNER_TEMP/prior-snapshot/data/latest.json" data/batch_results/previous_frontend.json
+          elif [ -s frontend/public/data/latest.json ]; then
             cp frontend/public/data/latest.json data/batch_results/previous_frontend.json
-            echo "Previous canonical dataset preserved for daily diff"
-          else
-            rm -f data/batch_results/previous_frontend.json
-            echo "No previous canonical dataset available"
           fi
+          if [ -d "$RUNNER_TEMP/prior-snapshot/cache/fundamentals_cache" ]; then
+            cp -a "$RUNNER_TEMP/prior-snapshot/cache/fundamentals_cache/." data/fundamentals_cache/
+          fi
+          echo "CACHED_STOCKS=$(find data/fundamentals_cache -name '*_fundamentals.json' -type f | wc -l | tr -d ' ')" >> "$GITHUB_ENV"
+
+      - name: Verify workflow contracts and frozen LEGACY source
+        run: |
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py audit_lateral_base.py audit_emerging_leader.py audit_frontend_dataset.py audit_pipeline_models.py compute_opportunity_v2.py finalize_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py validate_frontend_charts.py validate_snapshot_artifact.py smoke_pages_deploy.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
+          python verify_legacy_baseline.py
+          python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_emerging_leader.py tests/test_lateral_base.py tests/test_opportunity_v2.py tests/test_opportunity_v2_integration.py tests/test_prepare_frontend_payloads.py tests/test_validate_scan_session.py tests/test_validate_snapshot_artifact.py tests/test_workflow_hardening.py -q
 
       - name: Run optimized stock screening
         env:
-          FORCE_FULL_REFRESH: ${{ github.event.inputs.force_full_refresh || 'false' }}
-          CACHED_STOCKS: ${{ steps.cache-check.outputs.cached_stocks }}
+          FORCE_FULL_REFRESH: ${{ inputs.force_full_refresh }}
         run: |
-          echo "Starting post-market screening"
-          echo "Engine: fast batched 5Y price prefetch"
-          echo "Priority: maximum useful coverage; runtime is secondary"
-          echo "Fresh price data: full universe, one shared market-data pass"
-          echo "Cached fundamentals: $CACHED_STOCKS stocks"
           mkdir -p data/daily_scans data/logs
           python run_fast_scan.py --conservative --git-storage
-
-      - name: Verify latest report
-        shell: bash
-        run: |
           test -s data/daily_scans/latest_optimized_scan.txt
-          echo "Latest report created successfully"
-          wc -l data/daily_scans/latest_optimized_scan.txt
 
       - name: Validate completed US market session
+        env:
+          ALLOW_PRIOR_SESSION_BACKFILL: ${{ inputs.allow_prior_session_backfill }}
         run: python validate_scan_session.py
 
-      - name: Hydrate rich fundamentals for all analyzed stocks
+      - name: Hydrate fundamentals and export the canonical snapshot
         env:
-          FORCE_FULL_REFRESH: ${{ github.event.inputs.force_full_refresh || 'false' }}
+          FORCE_FULL_REFRESH: ${{ inputs.force_full_refresh }}
           RICH_FUNDAMENTALS_MAX_AGE_DAYS: '7'
           RICH_FUNDAMENTALS_REQUEST_DELAY: '0.35'
-        run: |
-          echo "Hydrating fundamentals across every analyzed stage"
-          python hydrate_rich_fundamentals.py
-
-      - name: Export rich LEGACY + STOCKSCOUT terminal dataset and 5Y charts
         shell: bash
         run: |
+          python hydrate_rich_fundamentals.py
           python export_frontend_data_fast.py
           python enhance_frontend_dataset.py
           python calibrate_frontend_setups.py
@@ -149,254 +152,104 @@ jobs:
           python compute_opportunity_v2.py
           python compute_daily_changes.py data/batch_results/previous_frontend.json frontend/public/data/latest.json
           python finalize_opportunity_v2.py
-
           test -s frontend/public/data/latest.json
           test -d frontend/public/data/charts
-          echo "Chart shards: $(find frontend/public/data/charts -name '*.json' | wc -l)"
-          python - <<'PY'
-          import json
-          p=json.load(open('frontend/public/data/latest.json'))
-          m=p.get('market',{})
-          print('Feature coverage:', m.get('featureCoverage',0))
-          print('Feature model:', p.get('featureModel'))
-          print('Calibration:', p.get('calibrationModel'))
-          print('Group model:', m.get('groupModel'))
-          print('Group avg confidence:', m.get('groupAverageConfidence'))
-          print('Group max ranking adjustment:', m.get('groupLeadershipMaxAdjustment'))
-          print('Data model:', p.get('dataModel'))
-          print('Layers:', list((p.get('layers') or {}).keys()))
-          print('LEGACY coverage:', m.get('legacyLayerCoverage',0))
-          print('LEGACY complete source coverage:', m.get('legacyCompleteSourceCoverage',0))
-          print('STOCKSCOUT coverage:', m.get('stockscoutLayerCoverage',0))
-          print('Rich technical coverage:', m.get('richTechnicalCoverage',0))
-          print('Rich fundamental coverage:', m.get('richFundamentalCoverage',0))
-          print('Fundamental Evidence:', m.get('fundamentalEvidence',{}))
-          print('Opportunity model:', p.get('opportunityModel'))
-          print('Opportunity v2:', m.get('opportunityV2',{}))
-          print('Original-run BUY signals:', m.get('originalRunBuySignals',0))
-          print('Original-run SELL signals:', m.get('originalRunSellSignals',0))
-          print('Top sector:', m.get('topSector'))
-          print('Top industry:', m.get('topIndustry'))
-          print('Daily changes:', m.get('dailyChanges',{}))
-          PY
-          du -sh frontend/public/data
 
-      - name: Validate canonical dataset invariants
-        run: python validate_canonical_dataset.py
-
-      - name: Opportunity v2 and model compatibility audit
-        run: python audit_pipeline_models.py
-
-      - name: Fundamental evidence audit
-        run: python audit_fundamental_evidence.py
-
-      - name: Verify LEGACY source still frozen after enrichment
-        run: python verify_legacy_baseline.py
-
-      - name: Build lightweight client payload
+      - name: Run canonical, model and LEGACY audits
         run: |
+          python validate_canonical_dataset.py
+          python audit_pipeline_models.py
+          python audit_fundamental_evidence.py
+          python verify_legacy_baseline.py
+          python audit_legacy_confirmation_shadow.py frontend/public/data/latest.json
+
+      - name: Build manifest v2 client projection
+        run: |
+          before=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           python prepare_frontend_payloads.py
-          test -s frontend/public/data/core.json
-          test -s frontend/public/data/manifest.json
-          test -s frontend/public/data/shadow/legacy-confirmation.json
+          after=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          test "$before" = "$after"
 
-      - name: Validate chart coverage before publish
-        shell: bash
-        run: |
-          python validate_frontend_charts.py frontend/public
+      - name: Enforce immutable snapshot and 98 percent chart gate
+        run: python validate_snapshot_artifact.py --data-root frontend/public/data --min-chart-coverage 98
 
-      - name: Write run metadata
-        env:
-          RUN_ID: ${{ github.run_id }}
-          RUN_ATTEMPT: ${{ github.run_attempt }}
-          COMMIT_SHA: ${{ github.sha }}
-        run: |
-          python - <<'PY'
-          import json, os
-          from datetime import datetime, timezone
-          from pathlib import Path
-          payload = {
-              "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-              "workflow_run_id": os.environ["RUN_ID"],
-              "workflow_run_attempt": os.environ["RUN_ATTEMPT"],
-              "source_commit": os.environ["COMMIT_SHA"],
-              "report": "data/daily_scans/latest_optimized_scan.txt",
-              "frontend_data": "frontend/public/data/latest.json",
-              "frontend_client_data": "frontend/public/data/core.json",
-              "chart_horizon": "5y",
-              "price_convention": "adjusted-ohlcv",
-              "session_guard": "completed-us-session-v1",
-              "feature_model": "data-first-v2-early-leader-groups",
-              "calibration_model": "early-leader-v2",
-              "group_model": "behavioral-proxy-v2-confidence",
-              "scan_engine": "fast-batched-5y-v1",
-              "data_model": "rich-scan-layers-v1",
-              "client_payload_model": "stockscout-client-core-v1",
-              "fundamentals_policy": "full-analyzed-universe-max-7d",
-              "fundamental_evidence_model": "stockscout-fundamental-evidence-v1",
-              "opportunity_model": "stockscout-opportunity-v2-potential-timing",
-              "legacy_upstream_commit": "2fce788b7c95e595bdbb012bd35d3a92fcc49e5a",
-              "legacy_capture_model": "legacy-complete-source-capture-v1",
-              "layers": ["LEGACY", "STOCKSCOUT"],
-          }
-          Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
-          PY
-
-      - name: Add scan summary
-        shell: bash
-        run: |
-          {
-            echo "## Daily stock screening"
-            echo ""
-            echo "**Run:** ${{ steps.date.outputs.date }} ${{ steps.date.outputs.time }} UTC"
-            echo ""
-            echo "**Session:** guarded after completed US regular session"
-            echo ""
-            echo "**Price convention:** adjusted OHLCV end-to-end"
-            echo ""
-            echo "**Canonical dataset:** hard invariants passed before publish"
-            echo ""
-            echo "**Client payload:** lightweight core projection; full LEGACY/rich source payload loads on demand"
-            echo ""
-            echo "**Layers:** LEGACY (frozen upstream) + STOCKSCOUT (custom discovery)"
-            echo ""
-            echo "**LEGACY:** complete original runtime outputs + exact market-gated BUY/SELL emission"
-            echo ""
-            echo "**Fundamentals:** full analyzed universe, target cache age <=7 days"
-            echo ""
-            echo "**Opportunity v2:** 55% structural Potential + 45% current Timing; calibrated on the live universe with bounded caps"
-            echo ""
-            echo "**Fundamental Evidence:** transparent v1 score + confidence; used only as a bounded +/-5 Opportunity v2 modifier"
-            echo ""
-            echo "**Group Leadership:** confidence-weighted behavioral proxies; used only as a bounded +/-5 Opportunity v2 modifier"
-            echo ""
-            echo '```text'
-            head -n 80 data/daily_scans/latest_optimized_scan.txt
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-
-      - name: Commit cache and canonical outputs
-        if: ${{ inputs.persist_outputs }}
-        id: commit
-        shell: bash
-        run: |
-          git config --local user.email "github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git add data/fundamentals_cache/
-          git add -f data/daily_scans/latest_optimized_scan.txt
-          git add -f data/daily_scans/latest_scan_meta.json
-          git add -f frontend/public/data/latest.json
-          git add -f frontend/public/data/core.json
-          git add -f frontend/public/data/manifest.json
-          git add -f frontend/public/data/shadow/legacy-confirmation.json
-
-          if git diff --staged --quiet; then
-            echo "No persistent changes to commit"
-            echo "has_changes=false" >> "$GITHUB_OUTPUT"
-          else
-            CHANGED_FILES=$(git diff --staged --name-only | wc -l | tr -d ' ')
-            git commit -m "data: post-market scan ${{ steps.date.outputs.date }} ($CHANGED_FILES files)"
-            echo "has_changes=true" >> "$GITHUB_OUTPUT"
-          fi
-
-      - name: Sync persistent outputs to source branch
-        if: ${{ inputs.persist_outputs && steps.commit.outputs.has_changes == 'true' }}
-        shell: bash
-        run: |
-          pushed=false
-          for attempt in 1 2 3; do
-            echo "Sync attempt $attempt/3"
-            git fetch origin "${GITHUB_REF_NAME}"
-            if git rebase "origin/${GITHUB_REF_NAME}" && git push origin HEAD:"${GITHUB_REF_NAME}"; then
-              pushed=true
-              break
-            fi
-            git rebase --abort || true
-            sleep $((attempt * 3))
-          done
-          if [ "$pushed" != true ]; then
-            echo "::error::Canonical push failed after retries; Pages deployment is blocked to prevent publishing data that is not persisted in Git."
-            exit 1
-          fi
-
-      - name: Upload recovery artifact
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: scan-state-${{ steps.date.outputs.date }}-${{ github.run_id }}
-          path: |
-            data/daily_scans/latest_optimized_scan.txt
-            data/daily_scans/latest_scan_meta.json
-            data/batch_results/batch_progress.pkl
-            data/batch_results/previous_frontend.json
-            frontend/public/data/latest.json
-            frontend/public/data/core.json
-            frontend/public/data/manifest.json
-            frontend/public/data/shadow/legacy-confirmation.json
-          if-no-files-found: warn
-          retention-days: 14
-
-      - name: Set up Node
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install terminal dependencies
+      - name: Test and build terminal with validated scan data
         working-directory: frontend
-        run: npm ci
+        run: |
+          npm ci
+          npm run check
+          test ! -e dist/data/latest.json
 
-      - name: Test and build terminal with live scan data
-        working-directory: frontend
-        run: npm run check
+      - name: Verify the exact Pages tree
+        run: python validate_snapshot_artifact.py --data-root frontend/public/data --site-root frontend/dist --min-chart-coverage 98
 
-      - name: Verify built Pages artifact contains usable charts
+      - name: Package immutable validated snapshot
+        id: snapshot-meta
         shell: bash
         run: |
-          python validate_frontend_charts.py frontend/dist
+          set -euo pipefail
+          bundle="$RUNNER_TEMP/validated-snapshot"
+          mkdir -p "$bundle/data" "$bundle/site" "$bundle/cache/fundamentals_cache" "$bundle/reports"
+          cp -a frontend/public/data/. "$bundle/data/"
+          cp -a frontend/dist/. "$bundle/site/"
+          cp -a data/fundamentals_cache/. "$bundle/cache/fundamentals_cache/"
+          cp -a data/daily_scans/. "$bundle/reports/"
+          CANONICAL_SHA=$(sha256sum "$bundle/data/latest.json" | cut -d' ' -f1)
+          MANIFEST_SHA=$(sha256sum "$bundle/data/manifest.json" | cut -d' ' -f1)
+          GENERATED_AT=$(python -c "import json; print(json.load(open('$bundle/data/manifest.json'))['generatedAt'])")
+          python -c "import json,pathlib; pathlib.Path('$bundle/snapshot-metadata.json').write_text(json.dumps({'schemaVersion':1,'canonicalSha256':'$CANONICAL_SHA','manifestSha256':'$MANIFEST_SHA','generatedAt':'$GENERATED_AT','scanSourceCommit':'$GITHUB_SHA','frontendSourceCommit':'$GITHUB_SHA','workflowRunId':'$GITHUB_RUN_ID'},indent=2)+'\n',encoding='utf-8')"
+          python validate_snapshot_artifact.py --data-root "$bundle/data" --site-root "$bundle/site" --metadata "$bundle/snapshot-metadata.json" --min-chart-coverage 98 --expected-canonical-sha "$CANONICAL_SHA" --expected-frontend-commit "$GITHUB_SHA"
+          echo "canonical_sha=$CANONICAL_SHA" >> "$GITHUB_OUTPUT"
+          echo "frontend_commit=$GITHUB_SHA" >> "$GITHUB_OUTPUT"
 
-      - name: Upload Pages artifact
-        if: ${{ inputs.deploy_pages }}
-        uses: actions/upload-pages-artifact@v3
+      - name: Upload immutable validated scan snapshot
+        if: ${{ inputs.publish_snapshot && github.ref == 'refs/heads/main' }}
+        uses: actions/upload-artifact@v4
         with:
-          path: frontend/dist
-          retention-days: 14
+          name: validated-scan-snapshot
+          path: ${{ runner.temp }}/validated-snapshot
+          if-no-files-found: error
+          retention-days: 90
 
-      - name: Upload full screening results
+      - name: Upload recovery state and logs
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: screening-results-${{ steps.date.outputs.date }}-${{ github.run_id }}
+          name: scan-recovery-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             data/daily_scans/
             data/logs/
+            data/batch_results/batch_progress.pkl
+            frontend/public/data/
           if-no-files-found: warn
-          retention-days: 90
+          retention-days: 30
 
-      - name: Cache size report
+      - name: Publication policy summary
         if: always()
+        shell: bash
         run: |
-          echo "=== Git Repository Impact ==="
-          if [ -d "data/fundamentals_cache" ]; then
-            CACHE_SIZE=$(du -sh data/fundamentals_cache | cut -f1)
-            CACHE_FILES=$(find data/fundamentals_cache -name "*.json" | wc -l | tr -d ' ')
-            echo "Fundamental cache directory size: $CACHE_SIZE"
-            echo "Total cache files: $CACHE_FILES"
-          fi
+          echo "## StockScout publication policy" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Source ref: $GITHUB_REF" >> "$GITHUB_STEP_SUMMARY"
+          echo "- publish_snapshot input: ${{ inputs.publish_snapshot }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- deploy_pages input: ${{ inputs.deploy_pages }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Feature branches produce recovery artifacts only." >> "$GITHUB_STEP_SUMMARY"
 
   deploy-pages:
-    if: ${{ inputs.deploy_pages }}
     needs: screen-stocks
-    runs-on: ubuntu-latest
-    concurrency:
-      group: stockscout-pages-deploy
-      cancel-in-progress: false
+    if: ${{ needs.screen-stocks.result == 'success' && inputs.publish_snapshot && inputs.deploy_pages && github.ref == 'refs/heads/main' }}
     permissions:
+      actions: read
+      contents: read
       pages: write
       id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Deploy live terminal to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+    uses: ./.github/workflows/pages_deploy.yml
+    with:
+      artifact_name: validated-scan-snapshot
+      expected_canonical_sha: ${{ needs.screen-stocks.outputs.canonical_sha }}
+      expected_frontend_commit: ${{ needs.screen-stocks.outputs.frontend_commit }}
