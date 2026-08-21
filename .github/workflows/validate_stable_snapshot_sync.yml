@@ -1,0 +1,115 @@
+name: Validate Stable Snapshot Sync
+
+# Shadow-mode bridge: read the latest Stable snapshot and prove that the current
+# StockScout Next code can consume it without writing to Stable, Next main, or
+# the checked-in canonical dataset.
+on:
+  workflow_dispatch:
+  push:
+    branches: [next-dev]
+    paths:
+      - '.github/workflows/validate_stable_snapshot_sync.yml'
+      - 'prepare_frontend_payloads.py'
+      - 'build_legacy_confirmation_sidecar.py'
+      - 'compute_legacy_confirmation.py'
+      - 'audit_legacy_confirmation_shadow.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/validate_stable_snapshot_sync.yml'
+      - 'prepare_frontend_payloads.py'
+      - 'build_legacy_confirmation_sidecar.py'
+      - 'compute_legacy_confirmation.py'
+      - 'audit_legacy_confirmation_shadow.py'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-stable-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Download latest Stable snapshot read-only
+        shell: bash
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/frontend/public/data/latest.json \
+            --output /tmp/stable-latest.json
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/data/daily_scans/latest_scan_meta.json \
+            --output /tmp/stable-scan-meta.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/stable-latest.json').read_text(encoding='utf-8'))
+          meta = json.loads(Path('/tmp/stable-scan-meta.json').read_text(encoding='utf-8'))
+          rows = payload.get('universe') or []
+          if not isinstance(payload, dict) or not rows:
+              raise SystemExit('Stable snapshot has no universe')
+          if not payload.get('generatedAt'):
+              raise SystemExit('Stable snapshot has no generatedAt')
+          if not meta.get('generated_at_utc') or not meta.get('workflow_run_id'):
+              raise SystemExit('Stable scan metadata is incomplete')
+          print('Stable generatedAt:', payload['generatedAt'])
+          print('Stable scan workflow:', meta['workflow_run_id'])
+          print('Stable universe:', len(rows))
+          PY
+
+      - name: Replace canonical only inside disposable Actions workspace
+        shell: bash
+        run: |
+          set -euo pipefail
+          CHECKED_IN_SHA=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          STABLE_SHA=$(sha256sum /tmp/stable-latest.json | cut -d' ' -f1)
+          echo "Checked-in Next snapshot: $CHECKED_IN_SHA"
+          echo "Downloaded Stable snapshot: $STABLE_SHA"
+          cp /tmp/stable-latest.json frontend/public/data/latest.json
+          test "$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)" = "$STABLE_SHA"
+
+      - name: Prove LEGACY shadow preserves StockScout Core
+        run: python audit_legacy_confirmation_shadow.py frontend/public/data/latest.json
+
+      - name: Build Next client payloads from Stable snapshot
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          python prepare_frontend_payloads.py
+          AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          test "$BEFORE" = "$AFTER"
+          python - <<'PY'
+          import json
+          core=json.load(open('frontend/public/data/core.json'))
+          manifest=json.load(open('frontend/public/data/manifest.json'))
+          shadow=json.load(open('frontend/public/data/shadow/legacy-confirmation.json'))
+          assert core.get('generatedAt') == manifest.get('generatedAt') == (shadow.get('source') or {}).get('generatedAt')
+          assert len(core.get('universe') or []) == manifest.get('universe') == shadow.get('total')
+          assert shadow.get('affectsStockScout') is False
+          print('Next projection generatedAt:', manifest.get('generatedAt'))
+          print('LEGACY shadow counts:', shadow.get('counts'))
+          PY
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Test, typecheck and build frontend against fresh Stable data
+        working-directory: frontend
+        run: |
+          npm install
+          npm run check
+
+      - name: Verify workflow did not mutate repositories
+        shell: bash
+        run: |
+          echo 'No git commit/push step exists in this workflow.'
+          echo 'Stable was accessed only through raw.githubusercontent.com GET requests.'
+          echo 'All downloaded/generated data exists only in this disposable runner.'

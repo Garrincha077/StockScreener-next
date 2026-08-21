@@ -431,3 +431,42 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Verify the `Deploy StockScout Terminal` Pages run from merge commit `d104726...` and use the public Next Pages URL for real-use review. Continue subsequent roadmap work on `next-dev`; use Full Validation for any future scan/data/workflow changes.
+
+## 2026-08-21 — Read-only Stable snapshot bridge validation
+
+**Branch / PR / commits**
+- `next-dev` was first fast-forwarded to current validated `main`; it had been 0 commits ahead and 8 behind, so no unpromoted Codex work was overwritten.
+- Added validator: `f4e84a72bfa9d04cc92d66fff0e937d1060ef850`.
+- Added Full Validation path gate: `4d4b7064da0a6c19e46b850ddc51c20c1b099fd9`.
+- Added PR trigger for explicit bridge visibility: `0f05b427895ae9a4cefeb1144b0c9f99e4fb965c`.
+- Draft PR #4 (`next-dev` -> `main`) opened; intentionally unmerged.
+
+**What changed / why**
+- Added `.github/workflows/validate_stable_snapshot_sync.yml` as a read-only compatibility bridge.
+- The workflow downloads Stable `frontend/public/data/latest.json` and scan metadata by GET only, substitutes the snapshot only inside a disposable Actions workspace, runs LEGACY/Core invariance, rebuilds Next client/shadow payloads, and runs frontend tests/typecheck/build.
+- Workflow permissions are `contents: read`; it has no commit/push step and no Stable write path.
+- `stockscout_full_validation.yml` now treats this bridge workflow as a Full Validation trigger because it changes the data/workflow path.
+- This work identifies the safe architecture for keeping Next fresh without re-enabling its nightly scanner; it does not yet publish or persist the imported snapshot.
+
+**Behavior / scoring impact**
+- No scanner/model code, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, Stage, RS, chart mapping, default rank or frozen LEGACY implementation changed.
+- No canonical dataset was committed by the bridge and no Pages deployment changed.
+- Stable `stock-screener2` remained read-only and untouched.
+- Next scheduled nightly scan remains disabled.
+
+**Validation**
+- `Validate Stable Snapshot Sync` PR run `32452561269`: **success**.
+- It consumed Stable scan workflow `32422201734`, canonical `generatedAt=2026-08-20T22:09:11.073071+00:00`, universe 2,011.
+- Fresh-snapshot LEGACY shadow audit: PASS; 0 Core invariance errors; chart shard mapping identical; 2,011/2,011 available.
+- Fresh shadow counts: CONFIRMED 575, EARLY 182, NEUTRAL 1,031, RISK 223.
+- Client projection preserved the downloaded canonical SHA; frontend Node suite passed 19/19 tests and TypeScript/Vite build succeeded.
+- StockScout Validation PR run `32452561337`: **success**, including Stable snapshot restore, frozen LEGACY graph, regression/integration, current model stack, compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend build.
+- A Full Validation was triggered by this workflow-path change, but its new status record was not yet available when this entry was written. Do **not** claim that new Full Validation green until explicitly verified.
+
+**Risk / decision**
+- Keep PR #4 draft and unmerged until the triggered Full Validation is explicitly verified.
+- The bridge proves compatibility only; public Next still uses its checked-in older snapshot until a separate promotion decision changes the publish path.
+- Do not solve freshness by granting Stable write access or re-enabling Next nightly scanning.
+
+**Next logical step**
+- Verify the triggered Full Validation. If green, promote only the smallest reversible one-way Stable -> Next refresh mechanism, then use the fresh snapshots as the input journal for Phase 6 empirical cohort tracking.
