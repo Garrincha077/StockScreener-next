@@ -931,3 +931,45 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Re-deploy `next-dev` to Pages and retest one clean Weekly and Daily Trend on a real ticker: the solid segment should remain between anchors and the dashed ray should clearly cross the latest candle into future whitespace. If that real-use check is good, continue with A4 manager refinement and A5 global Alerts Center.
+
+## 2026-08-22 — Chart Alerts v2 A4 current-ticker Alert Manager
+
+**Branch / PR / validated head**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- Final validated A4 code head before this log-only commit: `631c37ca0f4120e7844d052443fdfa5ccdd55132`.
+- Manager/layout sequence: `53d085b7c525408f7810de94ff437891e007162a`, `b9097cfcd4678af14922009828073fc28896e8d6`, `7f88e14e3223fd7c8b156cb173d85ebcc981b755`, browser gate `ce28e35482d9dc2c914191cb902792576f6ab3d9`, optimistic rule-edit fix `631c37ca0f4120e7844d052443fdfa5ccdd55132`.
+
+**What changed / why**
+- Replaced the broad floating Drawings & Alerts panel with a current-ticker Alert Manager. The manager exposes saved D/W drawings, selected drawing/rule state, projected line, latest close, distance, evaluator state/review reason and recent triggers.
+- Alert rule controls now explicitly expose condition (`Cross Above`, `Cross Below`, `Touch`), source (`Close`, `Wick`), lifecycle (`Auto re-arm`, `One shot`), Active, in-app and Telegram flags. Drawing deletion and rule deletion are separate, so a user can remove an alert rule while keeping the technical line.
+- On desktop the manager docks as a 390 px right pane and pushes the StockScout terminal left instead of covering the chart. Mobile uses a bounded bottom drawer above the navigation.
+- The Alerts manager and Original Engine source inspector are mutually exclusive so two right panes cannot compete for the same screen space.
+- Browser testing exposed a real controlled-checkbox latency issue: async rule saves could visually snap Telegram/Active toggles back until the API response. Existing-rule edits are now optimistic in `ChartAlertsProvider`, with server reconciliation and refresh-on-error.
+
+**Affected files / components**
+- `frontend/src/ChartAlertsDock.tsx`.
+- `frontend/src/ChartAlertsProvider.tsx`.
+- `frontend/src/Root.tsx`.
+- `frontend/src/chart-alerts.css`.
+- `frontend/e2e/chart-drawings.spec.ts`.
+- No Supabase schema/evaluator, scanner, canonical data or workflow changed.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping/default ranking or other StockScout Core field changed.
+- Frozen LEGACY remains unchanged/shadow-only. Alert state remains private sidecar data only and cannot influence scores.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Initial Frontend Compile Smoke #122 / run `32532795563` failed only in the new A4 mobile+desktop Playwright flow because an async controlled Telegram checkbox snapped back before the server response. Runtime tests and TypeScript/Vite build were already green; this failure directly motivated the optimistic-edit repair.
+- After that repair, Frontend Compile Smoke #123 / run `32532932718`: **success**, including A4 mobile+desktop workflow coverage for main-chart drawing/manager selection sync, real right-pane desktop push, Touch/Wick rule creation, One-shot lifecycle, Telegram toggle, future-ray persistence and existing drag/pan behavior.
+- StockScout Validation #218 / run `32532932734`: **success**, including Stable snapshot restore, frozen LEGACY verification, regression/integration/model compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend build.
+- Full Validation was not run because A4 is frontend/user-sidecar UI/state only and does not change scan/data/workflow behavior.
+
+**Risk / decision**
+- The current-ticker manager is code/browser validated, but public Pages still needs a fresh manual `next-dev` deploy before this exact A4 UX is claimed live on a real ticker.
+- Telegram credentials remain unconfigured; A4 exposes the per-rule Telegram flag only and does not claim delivery end to end.
+- Keep PR #13 draft. Cross-device identity is still browser capability-key based and remains later work.
+
+**Next logical step**
+- Phase A5: add a global Alerts Center across all tickers with Active, Near Trigger, Triggered, Paused and All Drawings views. Reuse the same V2 snapshot/status fields and rank Near Trigger only by transparent geometric distance, never by StockScout score.
+- After A5, add the planned secure in-app Telegram credential setup without exposing secrets to browser persistence, then run one deliberate Telegram end-to-end trigger test.
