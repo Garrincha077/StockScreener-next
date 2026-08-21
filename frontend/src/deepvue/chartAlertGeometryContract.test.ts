@@ -12,7 +12,7 @@ import {
   projectAlertLineAtTime as projectEvaluator,
   type GeometryBar as EvaluatorBar,
   type GeometryPoint as EvaluatorPoint,
-} from '../../../supabase/functions/_shared/chartAlertGeometryContract.ts'
+} from '../../../supabase/functions/stockscout-next-alerts/chartAlertGeometryContract.ts'
 
 const closeEnough=(actual:number|null,expected:number|null,label:string)=>{
   if(expected==null){assert.equal(actual,null,label);return}
