@@ -1,4 +1,4 @@
-import {useCallback,useEffect,useMemo,useRef,useState,type PointerEvent as ReactPointerEvent} from 'react'
+import {useCallback,useEffect,useMemo,useRef,useState,type MouseEvent as ReactMouseEvent,type PointerEvent as ReactPointerEvent} from 'react'
 import {useChartAlerts} from './ChartAlertsProvider'
 import {barsForAlertInterval,type GeometryBar} from './deepvue/chartAlertGeometryContract'
 import type {ChartAlertPoint,ChartAlertRule,ChartDrawing} from './deepvue/chartAlerts'
@@ -14,6 +14,12 @@ type DragCtx={
   startPrice:number
   anchorIndexes:[number,number]
   moved:boolean
+}
+type WindowDragHandlers={
+  pointerMove:(event:PointerEvent)=>void
+  pointerUp:(event:PointerEvent)=>void
+  mouseMove:(event:MouseEvent)=>void
+  mouseUp:(event:MouseEvent)=>void
 }
 type LineGeom={
   paneW:number;paneH:number
@@ -39,7 +45,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
   const editingRef=useRef<ChartDrawing|null>(null)
   const[,setViewportRevision]=useState(0)
   const dragRef=useRef<DragCtx|null>(null)
-  const windowHandlers=useRef<{move:(event:PointerEvent)=>void;up:(event:PointerEvent)=>void}|null>(null)
+  const windowHandlers=useRef<WindowDragHandlers|null>(null)
 
   const frame=useMemo(()=>barsForAlertInterval(bars,interval) as Bar[],[bars,interval])
   const currentSource=useMemo(()=>source.length?source:frame,[source,frame])
@@ -144,34 +150,37 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
   const stopWindowDrag=useCallback(()=>{
     const handlers=windowHandlers.current
     if(!handlers)return
-    window.removeEventListener('pointermove',handlers.move,true)
-    window.removeEventListener('pointerup',handlers.up,true)
-    window.removeEventListener('pointercancel',handlers.up,true)
+    window.removeEventListener('pointermove',handlers.pointerMove,true)
+    window.removeEventListener('pointerup',handlers.pointerUp,true)
+    window.removeEventListener('pointercancel',handlers.pointerUp,true)
+    window.removeEventListener('mousemove',handlers.mouseMove,true)
+    window.removeEventListener('mouseup',handlers.mouseUp,true)
     windowHandlers.current=null
   },[])
 
   useEffect(()=>()=>stopWindowDrag(),[stopWindowDrag])
 
-  const beginDrag=useCallback((event:ReactPointerEvent<SVGElement>,drawing:ChartDrawing,kind:DragKind)=>{
-    if(tool!=='cursor'||busy)return
+  const beginDrag=useCallback((event:ReactPointerEvent<SVGElement>|ReactMouseEvent<SVGElement>,drawing:ChartDrawing,kind:DragKind)=>{
+    if(tool!=='cursor'||busy||dragRef.current)return
     const start=logicalAndPriceFromClient(event.clientX,event.clientY)
     const indexes:[number,number]=[frameTimes.indexOf(drawing.points[0].time),frameTimes.indexOf(drawing.points[1].time)]
     if(!start||indexes.some(index=>index<0))return
     event.preventDefault();event.stopPropagation();selectDrawing(drawing.id||null)
     dragRef.current={drawing,kind,startClient:{x:event.clientX,y:event.clientY},startLogical:start.logical,startPrice:start.price,anchorIndexes:indexes,moved:false}
     showEditing(drawing)
-    const move=(pointer:PointerEvent)=>{
+
+    const moveAt=(clientX:number,clientY:number)=>{
       const ctx=dragRef.current
       if(!ctx)return
-      if(Math.hypot(pointer.clientX-ctx.startClient.x,pointer.clientY-ctx.startClient.y)>CLICK_PX)ctx.moved=true
+      if(Math.hypot(clientX-ctx.startClient.x,clientY-ctx.startClient.y)>CLICK_PX)ctx.moved=true
       let nextPoints:ChartDrawing['points']=ctx.drawing.points
       if(ctx.kind==='a'||ctx.kind==='b'){
-        const point=pointFromClient(pointer.clientX,pointer.clientY)
+        const point=pointFromClient(clientX,clientY)
         if(!point)return
         if(ctx.drawing.kind==='horizontal')nextPoints=[{...ctx.drawing.points[0],price:point.price},{...ctx.drawing.points[1],price:point.price}]
         else nextPoints=ctx.kind==='a'?[point,ctx.drawing.points[1]]:[ctx.drawing.points[0],point]
       }else{
-        const current=logicalAndPriceFromClient(pointer.clientX,pointer.clientY)
+        const current=logicalAndPriceFromClient(clientX,clientY)
         if(!current)return
         const priceDelta=current.price-ctx.startPrice
         let barDelta=ctx.drawing.kind==='horizontal'?0:Math.round(current.logical-ctx.startLogical)
@@ -184,17 +193,24 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
       }
       showEditing({...ctx.drawing,points:nextPoints})
     }
-    const up=async()=>{
+    const finish=async()=>{
       const ctx=dragRef.current
+      if(!ctx)return
       const next=editingRef.current
       dragRef.current=null;stopWindowDrag()
-      if(ctx?.moved&&next){try{await upsertDrawing(next)}finally{clearEditing()}}
+      if(ctx.moved&&next){try{await upsertDrawing(next)}finally{clearEditing()}}
       else clearEditing()
     }
-    windowHandlers.current={move,up}
-    window.addEventListener('pointermove',move,true)
-    window.addEventListener('pointerup',up,true)
-    window.addEventListener('pointercancel',up,true)
+    const pointerMove=(pointer:PointerEvent)=>moveAt(pointer.clientX,pointer.clientY)
+    const mouseMove=(mouse:MouseEvent)=>moveAt(mouse.clientX,mouse.clientY)
+    const pointerUp=()=>{void finish()}
+    const mouseUp=()=>{void finish()}
+    windowHandlers.current={pointerMove,pointerUp,mouseMove,mouseUp}
+    window.addEventListener('pointermove',pointerMove,true)
+    window.addEventListener('pointerup',pointerUp,true)
+    window.addEventListener('pointercancel',pointerUp,true)
+    window.addEventListener('mousemove',mouseMove,true)
+    window.addEventListener('mouseup',mouseUp,true)
   },[tool,busy,logicalAndPriceFromClient,frameTimes,selectDrawing,showEditing,pointFromClient,frame,stopWindowDrag,upsertDrawing,clearEditing])
 
   const chooseTool=useCallback((next:'cursor'|'trendline'|'horizontal')=>{
@@ -253,9 +269,9 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
         return <g key={drawing.id} className={selected?'selected':''} data-drawing-id={drawing.id}>
           {g.segment&&<line className="cad-main-line" x1={g.segment.x1} y1={g.segment.y1} x2={g.segment.x2} y2={g.segment.y2} stroke={color} strokeWidth={selected?2.4:1.8}/>} 
           {g.ray&&<line className="cad-main-ray" x1={g.ray.x1} y1={g.ray.y1} x2={g.ray.x2} y2={g.ray.y2} stroke={color} strokeWidth={selected?2.1:1.6} strokeDasharray="7 4"/>}
-          <line className="cad-main-hit" x1={g.full.x1} y1={g.full.y1} x2={g.full.x2} y2={g.full.y2} stroke="transparent" strokeWidth={HIT_WIDTH} onPointerDown={event=>beginDrag(event,drawing,'body')}/>
-          {selected&&g.a&&<circle className="cad-main-handle" cx={g.a.x} cy={g.a.y} r="5.5" onPointerDown={event=>beginDrag(event,drawing,'a')}/>} 
-          {selected&&drawing.kind==='trendline'&&g.b&&<circle className="cad-main-handle" cx={g.b.x} cy={g.b.y} r="5.5" onPointerDown={event=>beginDrag(event,drawing,'b')}/>} 
+          <line className="cad-main-hit" x1={g.full.x1} y1={g.full.y1} x2={g.full.x2} y2={g.full.y2} stroke="transparent" strokeWidth={HIT_WIDTH} onPointerDown={event=>beginDrag(event,drawing,'body')} onMouseDown={event=>beginDrag(event,drawing,'body')}/>
+          {selected&&g.a&&<circle className="cad-main-handle" cx={g.a.x} cy={g.a.y} r="5.5" onPointerDown={event=>beginDrag(event,drawing,'a')} onMouseDown={event=>beginDrag(event,drawing,'a')}/>} 
+          {selected&&drawing.kind==='trendline'&&g.b&&<circle className="cad-main-handle" cx={g.b.x} cy={g.b.y} r="5.5" onPointerDown={event=>beginDrag(event,drawing,'b')} onMouseDown={event=>beginDrag(event,drawing,'b')}/>} 
           {g.badge&&<foreignObject className="cad-main-badge-fo" x={g.badge.x} y={g.badge.y} width="168" height="24"><button className={`cad-main-badge ${selected?'selected':''}`} onPointerDown={event=>{event.stopPropagation();selectDrawing(drawing.id||null)}}>{badgeText(drawing)}</button></foreignObject>}
         </g>
       })}
