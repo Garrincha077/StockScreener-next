@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - '.github/workflows/stockscout_full_validation.yml'
+      - '.github/workflows/validate_stable_snapshot_sync.yml'
   workflow_dispatch:
 
 permissions:
