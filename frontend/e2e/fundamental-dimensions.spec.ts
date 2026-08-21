@@ -18,8 +18,14 @@ const payload=JSON.stringify({
 const manifest=JSON.stringify({
   manifestVersion:2,model:'test',generatedAt,universe:1,
   marketSession:{date:'2099-01-01',status:'closed',timezone:'America/New_York'},
-  provenance:{source:{sha256:'source'},publication:{sourceSha256:'source'}},
-  assets:{},
+  provenance:{source:{kind:'canonical-audit',path:'latest.json',sha256:'source',bytes:1},publication:{kind:'frontend-projection',model:'test',sourceSha256:'source'}},
+  assets:{
+    core:{path:'core.json',sha256:'core',bytes:1,coverage:1,coveragePct:100},
+    legacyIndex:{path:'legacy/index.json',sha256:'index',bytes:1,coverage:1,coveragePct:100},
+    legacyDetails:{path:'legacy/details',sha256:'details',bytes:1,coverage:1,coveragePct:100,shardCount:128},
+    legacyConfirmation:{path:'shadow/legacy-confirmation.json',sha256:'confirmation',bytes:1,coverage:1,coveragePct:100},
+    charts:{path:'charts',sha256:'charts',bytes:0,coverage:0,coveragePct:0,shardCount:128},
+  },
 })
 
 test('fundamental evidence dimension bars receive projected values',async({page})=>{
