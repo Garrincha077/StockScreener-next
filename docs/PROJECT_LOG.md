@@ -134,7 +134,7 @@ This file is the durable handoff for future agents. Update it after every meanin
 - No fresh Full Validation and no GitHub Actions CI run of these new files is claimed.
 
 **Risk / decision**
-- Prefer sidecar delivery over adding ~0.884 MB of repeated confirmation metadata to the already-large canonical `latest.json`.
+- Prefer sidecar delivery over adding ~0.884 MB of repeated confirmation metadata to the already-large canonical payload.
 - Keep drill-down sourced from existing `originalEngine`; do not duplicate evidence in the sidecar.
 - Stable remains untouched and Next scheduled nightly scan remains disabled.
 
@@ -451,7 +451,7 @@ This file is the durable handoff for future agents. Update it after every meanin
 **Behavior / scoring impact**
 - No scanner/model code, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, Stage, RS, chart mapping, default rank or frozen LEGACY implementation changed.
 - No canonical dataset was committed by the bridge and no Pages deployment changed.
-- Stable `stock-screener2` remained read-only and untouched.
+- Stable `stockscout-screener2` remained read-only and untouched.
 - Next scheduled nightly scan remains disabled.
 
 **Validation**
@@ -594,3 +594,382 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Verify the `Deploy StockScout Terminal` Pages deployment for merge `5989983...`, then fast-forward `next-dev` to the logged `main` baseline before continuing workflow hardening or Phase 6 journal work.
+
+## 2026-08-21 — Persistent chart drawings + post-scan alerts
+
+**Branch / PR / commits**
+- Branch: `next-dev`.
+- Draft PR: #13 (`next-dev` -> `main`), titled `Next: persistent chart drawings and post-scan alerts`; intentionally remains draft pending real-use validation.
+- Validated feature head before this log-only commit: `0527114c750a00cbebba994c73e4340b9597a8a8`.
+- Key implementation commits in this slice include `75cf478ca70f1ad231ea77b322f591667c7886f4`, `96b23dd64b4e957fd8671bf5fbd76d99277b04b7`, `6d91b53c14dd30a706132b709d54ffc75129c426`, `b8ee495c5253630a7545aaf471ed9f884c49ff34`, `f72a70f1d8f97335ff3f2bdccd8d72a993074539`, `37d0034cd98e0a29f0361d6687ea8bcc32492a26`, `9f6254b393df12997b8e40b43b4d099bedac425e`, `3fde39a21afd397fc05f765ddb7a269eb277d43f`, `df015c7e0a8335eb7f117a32010c1c50bf3d442f`, `9b976c75d27a1ebb7830fd3881c1d91623d368f9`, `bbb152bc9d528c95fee551825b5e75bfaeb70c50`, and `0527114c750a00cbebba994c73e4340b9597a8a8`.
+
+**What changed / why**
+- Reused the proven user-alert concept from the older `Garrincha077/StockScout` implementation rather than inventing a separate methodology. The Next implementation preserves the useful pattern—persistent chart geometry, post-scan evaluation and Telegram delivery—but adapts it to GitHub Pages + Supabase.
+- Added a standalone `Drawings & Alerts` dock for the currently selected ticker rather than making a broad invasive rewrite of `DeepVueTerminal`.
+- User drawings support a two-point trendline and a one-click horizontal line, with explicit alert modes `Cross Above`, `Cross Below`, `Touch`, or alert disabled.
+- Alert geometry and trigger events persist outside canonical scan data. Drawings therefore survive a new scan and can be re-projected to the new market date.
+- `break_up` / `break_down` semantics require a true transition across the projected line using previous close vs previous projected line and new close vs new projected line; this avoids repeated hits merely because price remains on one side. `touch` requires the projected line price to lie inside the latest bar high/low range.
+- Per-scan dedupe is enforced by unique `(alert_id, scan_generated_at)` event identity so the same alert cannot repeatedly fire for the same published snapshot.
+- The evaluator runs hourly as an independent Supabase sidecar check. It reads only the latest already-published Next Pages `manifest.json`/core/chart shards; it does not start or re-enable a Next scan.
+
+**Affected files / components**
+- Frontend alert/drawing client and dock under `frontend/src/`, including the Root-level dock wiring and dedicated styling.
+- Supabase migrations under `supabase/migrations/` for Next chart alerts, runtime/evaluator configuration and the service gateway.
+- Edge Function source: `supabase/functions/stockscout-next-alerts/index.ts`.
+- Supabase runtime architecture uses private persistence plus explicit service RPCs: alert/event data is stored in `stockscout_private`, while only narrow service-role functions are exposed through existing `stockscout_api`.
+- The Edge Function is deployed as `stockscout-next-alerts`; frontend device isolation uses a capability-style device key hashed before persistence.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default ranking or other StockScout Core field/score changed.
+- Frozen LEGACY remains unchanged and shadow-only; alert evaluation is independent of LEGACY scoring and cannot alter StockScout candidate scores.
+- No canonical scan payload, scanner methodology or normal publication behavior is modified by the alert layer.
+- Stable `Garrincha077/stock-screener2` was not modified.
+- Next scheduled nightly scan remains disabled.
+
+**Backend / security validation**
+- Initial implementation exposed a real integration issue: this older Supabase project's Data API does not expose the `public` schema used by the first draft. The design was corrected rather than widening database exposure: persistence moved behind the existing `stockscout_private` + `stockscout_api` service-RPC pattern already used by StockScout.
+- Real browser-style backend list test after the gateway repair returned HTTP `200` with empty `alerts/events`.
+- Real CRUD smoke: create returned HTTP `201`, the created test alert was readable, delete/cleanup succeeded, and the database was returned to `0` test alerts / `0` test events.
+- Real evaluator request returned HTTP `200` against the currently published Next snapshot `generatedAt=2026-08-20T22:09:11.073071+00:00`; with no active user alerts it correctly reported `evaluated: 0`, `fired: 0`.
+- Supabase security advisor reported no new critical issue. The RLS-with-no-policy INFO notices on the alert tables were intentional in the first closed-table iteration because direct anon/auth access was not used; the final service gateway keeps user data behind service-role RPCs. The `pg_net` public-schema warning is an extension placement limitation/pre-existing project-level advisory rather than an exposed alert-data policy.
+- Telegram send support is implemented server-side only. Current status is intentionally `not_configured` because `stockscout_next_telegram_bot_token` and `stockscout_next_telegram_chat_id` have not yet been placed in Supabase Vault/runtime secrets; no token or chat ID was committed to GitHub or sent to the browser.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke #71 / run `32503304465` on feature head `0527114c...`: **success**.
+- StockScout Validation #136 / run `32503304544` on feature head `0527114c...`: **success**.
+- These gates cover existing client/runtime tests, TypeScript/Vite build and StockScout regression/invariance checks; no Core or LEGACY drift was detected.
+- Full Validation was not run for this slice because the alert system is a separate user-sidecar layer and does not change the StockScout scanner, canonical scan-data generation or normal scan/publish workflow path. Do not infer a Full Validation result from the green PR checks.
+
+**Risk / decision**
+- Keep the drawing/alert feature isolated from candidate scoring and canonical scan data. Do not turn alert state, line geometry or trigger history into a StockScout composite score.
+- Keep browser access capability-scoped and database access behind the narrow service gateway; do not expose service-role credentials or Telegram credentials to the frontend.
+- Hourly evaluation is acceptable because it evaluates the latest published snapshot only; it must not become a hidden replacement for or trigger of the disabled Next nightly scanner.
+- PR #13 should remain draft until a real ticker drawing persists across reload/new snapshot and a real alert path is manually verified. Telegram delivery cannot be considered end-to-end verified until its Vault secrets are configured and one controlled test message succeeds.
+
+**Next logical step**
+- Configure the existing Telegram bot token and chat ID as Supabase Vault/runtime secrets without committing them to GitHub.
+- Use a real ticker in the Next UI to verify drawing persistence after reload and then across the next published snapshot.
+- Trigger one controlled `Touch` or crossing case and verify the event appears in `Recent Triggers`; once Telegram credentials are configured, verify the same event is delivered to the intended Telegram chat.
+- Only after that manual end-to-end check should PR #13 be considered for promotion from draft; keep Stable untouched and keep the Next scheduled nightly scan disabled.
+
+## 2026-08-21 — Chart Alerts v2 A0 geometry contract
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft.
+- Alerts v2 roadmap: `0e63849da573bd4a3ec39a16b03f970c856f237c`.
+- Shared golden vectors: `616d7155eaff135446e3527b9ec441ccacb250c7`.
+- Frontend reference contract: `209a7de1e32db7f83d7ec408e76bf67ef363f365`.
+- Evaluator reference contract: `0d2c0e32ecb5fc4e4ada70e44c180bae510f44c3`.
+- Frontend/evaluator parity test head: `c002862fb2cf63d64732225fcacf95c8a14b063f`.
+
+**What changed / why**
+- Phase A0 freezes the intended alert geometry before changing the live UI or Supabase schema. Frontend and evaluator now have independent pure reference implementations that are required to produce identical results on the same golden vectors.
+- Sloped-line projection is defined by trading/logical bar index, not calendar-day distance. Missing weekends and non-trading sessions therefore do not steepen or flatten a line.
+- `D` uses cleaned daily bars. `W` aggregates daily OHLC into Monday-keyed weekly bars and projects by weekly-bar index.
+- Anchor dates must exist in the selected D/W frame. Missing history fails explicitly rather than silently clamping an anchor to the nearest visible bar.
+- `cross_above` / `cross_below` require a true transition between the previous and latest projected line values. Close is the default serious crossing basis; wick crossing is also defined. `touch` is explicitly wick/bar-range based; `touch + close` is rejected as an unsupported combination.
+- Contract types also reserve transparent drawing/lifecycle concepts (`trendline|horizontal`, `ray_right|pane`, `one_shot|rearm`) for the later A1/A6 slices without wiring them into current runtime behavior.
+
+**Affected files / components**
+- `docs/STOCKSCOUT_CHART_ALERTS_V2_ROADMAP.md`.
+- `shared/chartAlertGeometryVectors.ts`.
+- `frontend/src/deepvue/chartAlertGeometryContract.ts`.
+- `frontend/src/deepvue/chartAlertGeometryContract.test.ts`.
+- `supabase/functions/_shared/chartAlertGeometryContract.ts`.
+- Existing `frontend/src/deepvue/chartAlerts.ts`, `ChartAlertsDock.tsx`, the deployed Edge Function, database schema and evaluator cron were intentionally not rewired in A0.
+
+**Scoring / behavior impact**
+- None. StockScout Core, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping and default ranking are untouched.
+- Frozen LEGACY remains shadow-only and unchanged.
+- A0 is contract/test-only: the currently deployed MVP still uses its old calendar-day projection until the later evaluator integration slice. No live alert semantics are being claimed changed yet.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke run `32507490812` (#77) on feature head `c002862...`: **success**.
+- The frontend job ran 40 Node tests with 40/40 passing, including all 12 new chart-alert geometry/parity vectors; TypeScript/Vite production build succeeded and Playwright reported 8/8 passing.
+- StockScout Validation run `32507490943` (#144) on `c002862...`: **success**. Stable snapshot restore, frozen LEGACY verification, regression/integration tests, current model stack, compatibility audit, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend runtime/build steps all completed successfully.
+- Full Validation was not run because A0 does not modify scan generation, canonical data, publication workflow or the deployed alert evaluator runtime.
+
+**Risk / decision**
+- Do not assume the current live MVP already uses the new bar-index contract. Until A2 wires the deployed evaluator and the main-chart overlay to these semantics, the old calendar-day evaluator remains the live behavior.
+- Keep frontend and evaluator implementations independently testable against the same golden vectors so future UI/backend refactors cannot silently diverge.
+- Keep PR #13 draft; this A0 gate validates semantics, not end-to-end alert delivery.
+
+**Next logical step**
+- Phase A1: separate persisted drawings from alert rules in a backward-compatible, reversible schema/API migration. Preserve existing MVP rows during migration and do not yet change StockScout scoring, scanner behavior or the disabled nightly schedule.
+
+## 2026-08-21 — Chart Alerts v2 A1 drawing/rule split
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- A1 migration/API commit: `0eb943029ff0f2d71e8015a6f38628d57198040f`.
+- Supabase migration name: `stockscout_next_alerts_v2_a1_split` on project `jekidjsifihbbuzxrbse`.
+
+**What changed / why**
+- Added separate private persistence tables for drawing geometry, alert rules and latest transparent alert status: `stockscout_next_drawings`, `stockscout_next_alert_rules`, and `stockscout_next_alert_status`.
+- A drawing can now exist with no alert rule. A rule is one-to-one with a drawing for this first v2 contract and stores condition, source, lifecycle, enabled state, in-app notification flag and Telegram flag separately from geometry.
+- Kept the original combined `stockscout_next_chart_alerts` table as a compatibility mirror so the deployed MVP Edge Function/UI and hourly evaluator continue to work without an A1 frontend or evaluator cutover.
+- Existing V1 `next_chart_alert_upsert` / `delete` RPCs now dual-write/delete the split model while preserving their existing return shape and current app contract.
+- Added service-role-only V2 RPCs: `next_chart_alert_v2_snapshot`, `next_chart_drawing_upsert/delete`, and `next_chart_alert_rule_upsert/delete`.
+- Existing MVP rows are deterministically backfilled. Because the old schema never persisted D/W, migrated rows preserve the actual live evaluator behavior as `D`; sloped legacy rows are marked `needs_review` with `legacy_interval_not_persisted` rather than pretending the lost interval is known.
+- Extended existing alert-event rows with drawing/rule/interval/source/current-line/dedupe provenance while preserving the deployed event-insert RPC signature.
+- Until A2 replaces the live evaluator, V2 deliberately refuses to enable Weekly rules or wick-based crossings; those semantics are stored/configurable but cannot be activated through V2 while the MVP evaluator would calculate them incorrectly.
+
+**Affected files / components**
+- `supabase/migrations/20260821173500_stockscout_next_alerts_v2_a1_split.sql`.
+- Live Supabase `stockscout_private` alert-sidecar tables and `stockscout_api` RPC gateway.
+- Existing Edge Function source and frontend files were not changed or redeployed in A1.
+- Scanner, canonical StockScout payloads, normal Pages publication workflow and Stable repo were not touched.
+
+**Scoring / behavior impact**
+- None to StockScout Core. Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping and default ranking are unchanged.
+- Frozen LEGACY remains unchanged and shadow-only.
+- Current public MVP alert behavior remains on the old daily/calendar-day evaluator until A2; A1 changes persistence/API structure underneath it, not alert math.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Live Supabase validation**
+- Pre-migration live counts were `0 alerts / 0 events`; migration applied successfully.
+- V1 compatibility create test produced a legacy alert and the matching V2 drawing/rule/status. `break_up` mapped to `cross_above + close`, the drawing was preserved as `D`, and the sloped legacy record was transparently marked `needs_review` because the original interval was unknowable.
+- V2 drawing-only test on a Weekly trendline was visible in the V2 snapshot while the V1 snapshot correctly remained empty.
+- Adding a disabled V2 `touch + wick` rule created the compatibility mirror without activating the evaluator.
+- Attempting to enable that Weekly rule was deliberately rejected with `weekly alert activation requires A2 evaluator`, proving the safety guard is active.
+- Deleting the V2 rule left the drawing intact and paused while the compatibility mirror became inert (`enabled=false`); deleting the drawing then removed the compatibility row.
+- All test data was cleaned up. Final live counts: `legacy_alerts=0`, `drawings=0`, `rules=0`, `statuses=0`, `events=0`.
+- Supabase security advisor showed no new critical finding. New private tables appear under the same intentional `RLS enabled/no policy` INFO pattern used by the service-role-only gateway. Existing `pg_net` public-schema and leaked-password-protection warnings remain unrelated/pre-existing. Remediation reference for the RLS lint: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+
+**Tests / audits / CI**
+- Frontend Compile Smoke run `32508593083` (#79) on `0eb9430...`: **success**.
+- StockScout Validation run `32508593028` (#146) on `0eb9430...`: **success**.
+- Full Validation was not run because A1 is an isolated user-sidecar database/API migration and does not alter the StockScout scan generator, canonical scan-data path or GitHub publication workflow.
+
+**Risk / decision**
+- The compatibility table intentionally remains in place through A2 so rollback and the deployed MVP remain low-risk. Do not remove it until the exact D/W evaluator and v2 client path are validated end to end.
+- Current Edge/client list/upsert still use the V1 API; the new V2 RPCs are a prepared contract for A2/A3, not a claim that public UI already exposes separate Drawing vs Rule controls.
+- Legacy sloped drawings must not silently inherit `W`; if/when real pre-A1 rows exist, require explicit user interval confirmation or keep `needs_review`.
+- Keep PR #13 draft.
+
+**Next logical step**
+- Phase A2: wire the deployed evaluator to the already-tested A0 trading-bar geometry contract and the new drawing/rule model. Preserve V1 compatibility during the cutover, add true D/W evaluation and `needs_review` handling, and run controlled evaluator parity tests before any main-chart UI integration.
+
+## 2026-08-21 — Chart Alerts v2 A2 exact D/W evaluator cutover
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- A2 evaluator RPC migration: `88c446a873fbd901ac412a3ba49efc9549d4cfe6` (`supabase/migrations/20260821175500_stockscout_next_alerts_v2_a2_evaluator.sql`).
+- Edge evaluator cutover: `394e04209e10349f6a72863baa3129c7e49269d1`.
+- Cutover regression test: `5cd9db6e5183c13f5ad1422485e843d2366d54c3`.
+- Deployed geometry contract colocated with Edge function: `ad1c6f5219420c6894f010651aa61510817fee76`.
+- Function import/parity updates: `186ccd9f5fb41f4b5809805c7f01140d0eb2c7b6`, `eef5af9dde4f7543fe12d52b566d2b658fcedfd9`.
+- Final validated A2 code head before this log-only commit: `41677caa811d24614c0205acd0a50b3b4b20b9af`.
+- Live Supabase migration was applied under generated migration version `20260821174524`, name `stockscout_next_alerts_v2_a2_evaluator`; repository filename timestamp differs but SQL contract is the same A2 migration.
+
+**What changed / why**
+- The deployed evaluator now reads the V2 drawing+rule join through `next_chart_alert_v2_enabled()` and uses the same A0 trading-bar geometry contract that is parity-tested against the frontend reference.
+- Daily trendlines project by realized daily bar index rather than calendar-day distance; Weekly alerts aggregate the same adjusted daily OHLC into Monday-keyed weekly bars and project by weekly-bar index.
+- `cross_above` / `cross_below` support explicit `close` or `wick` source, while `touch` remains wick/range based.
+- Evaluator status is persisted transparently with projected line, latest OHLC, distance %, latest market bar and state. Missing history/anchors and unknown migrated sloped intervals produce `needs_review` rather than guessed geometry.
+- Events now persist V2 provenance (`drawing_id`, `rule_id`, D/W interval, source, previous/current line values). `one_shot` rules automatically disable after the first newly inserted trigger; `rearm` rules stay enabled.
+- Old `next_chart_alert_enabled()` now returns an empty array. This intentionally makes any stale/pre-A2 Edge version fail closed rather than evaluate Weekly or sloped lines with obsolete calendar-day math. The V1 browser CRUD/compatibility mirror remains in place for the current public MVP until A3/A4 client cutover.
+- The evaluator continues to read only the latest already-published Next Pages manifest/core/chart shards; it does not start a scan or alter canonical StockScout data.
+
+**Affected files / components**
+- `supabase/migrations/20260821175500_stockscout_next_alerts_v2_a2_evaluator.sql`.
+- `supabase/functions/stockscout-next-alerts/index.ts`.
+- `supabase/functions/stockscout-next-alerts/chartAlertGeometryContract.ts`.
+- `frontend/src/deepvue/chartAlertGeometryContract.test.ts`.
+- `frontend/src/deepvue/chartAlertEvaluatorCutover.test.ts`.
+- Removed stale `supabase/functions/_shared/chartAlertGeometryContract.ts` after parity tests were pointed at the code actually packaged with the deployed function.
+
+**Live Supabase / Edge validation**
+- Edge Function `stockscout-next-alerts` deployed as version **4 ACTIVE** with existing custom evaluator/device-key authentication (`verify_jwt=false` remains deliberate for this already-custom-auth function). Deployment bundle SHA: `5de6d3e1a6d8646c9d79d881a2fec8fd370a023596dd572ef67e9358920439c9`.
+- Empty-state evaluator smoke via the existing Vault evaluator key returned HTTP 200 with explicit `engine: v2-trading-bars`, published snapshot `generatedAt=2026-08-20T22:09:11.073071+00:00`, `evaluated=0`, `fired=0`, `needsReview=0`.
+- Controlled AAPL Daily horizontal `Touch + Wick` at 311.30 and Weekly horizontal `Touch + Wick` at 311.30 both fired in one evaluator run (`evaluated=2`, `fired=2`, `needsReview=0`, no failures). Weekly status used market key `2026-08-17`, proving Monday-keyed weekly aggregation; Daily used `2026-08-20`.
+- The Daily smoke used `one_shot` and was automatically disabled after firing; the Weekly `rearm` rule remained enabled. Event provenance stored the correct D/W interval and wick source.
+- Strong sloped-line proof used AAPL Daily anchors `2026-08-14 @ 284` and `2026-08-18 @ 298`. Trading-bar geometry projected the next two realized bars at **305** and **312**. With AAPL close `311.30` on 2026-08-20, `Cross Below / Close` fired and persisted `prev_line_price=305`, `current_line_price=312`. This is intentionally different from the obsolete calendar-day projection and directly verifies the weekend-gap bug is removed.
+- Missing-history test used AAPL anchors in January 2010, outside the available 5Y shard. Evaluator returned `fired=0`, `needsReview=1`; persisted status was `needs_review`, reason `missing_anchor`, projected line null, and event count 0.
+- All controlled A2 test drawings/rules/status/events and compatibility rows were deleted. Final test-owner counts are zero across legacy alerts, drawings, rules, statuses and events; both old and new evaluator reads are empty.
+
+**Security / behavior impact**
+- Supabase security advisor after A2 reported no new critical finding. The alert private tables remain under the intentional `RLS enabled / no policy` INFO pattern because access is through the service-role-only RPC gateway. Existing unrelated warnings remain: `pg_net` installed in public schema and leaked-password protection disabled. RLS lint reference: https://supabase.com/docs/guides/database/database-linter?lint=0008_rls_enabled_no_policy
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping or default ranking changed.
+- Frozen LEGACY remains unchanged/shadow-only. Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke run `32509965463` (#87) on final A2 code head `41677c...`: **success**.
+- StockScout Validation run `32509965432` (#156) on `41677c...`: **success**.
+- These checks include the frontend/evaluator golden-vector parity suite and the evaluator-cutover source regression test, plus existing StockScout regression/Core-invariance and frontend build/browser gates.
+- Full Validation was not run because A2 changes the isolated user-alert sidecar database/Edge evaluator and does not change the StockScout scan generator, canonical scan-data generation or GitHub scan/publication workflow path.
+
+**Risk / decision**
+- The backend/evaluator is now mathematically ready for true D/W and sloped-line alerts, but the current public drawing UI still uses the old V1 browser API/duplicate alert chart. Do not interpret A2 as completing the user-facing UX.
+- Keep the compatibility mirror until the A3/A4 V2 client path and main-chart persistence are validated. Any legacy sloped row with lost pre-A1 interval provenance stays `needs_review` until explicitly resolved.
+- Telegram credentials are still not configured; A2 notification events used `notifyTelegram=false`, so no Telegram end-to-end claim is made.
+- Keep PR #13 draft.
+
+**Next logical step**
+- Phase A3: integrate drawing/editing directly into the main StockScout chart, reuse the proven old StockScout drag/hit-test/logical-index interaction patterns, remove the duplicate chart from the alert dock, and persist main-chart drawings through the V2 drawing API. Add mobile + desktop browser coverage before moving to the right-side manager/global Alerts Center.
+
+## 2026-08-21 — Chart Alerts v2 A3 main-chart drawing gate
+
+**Branch / PR / validated head**
+- Branch: `next-dev`; draft PR #13 remains open, draft and unmerged.
+- Final validated A3 code/test head before this log-only commit: `eeab8d0a62727d65d2961ef86c8c769ecc7a31af`.
+- Relevant late interaction fixes: `3ba85fcfe04759bc1a785f072e1096b84d5a1b0f` moved selected anchors from SVG hit targets to HTML touch targets, `25d2385d09f8531afbece70205a64c6cc917668e` added mobile/desktop touch-target CSS, and `eeab8d0a62727d65d2961ef86c8c769ecc7a31af` disambiguated SVG-vs-handle browser selectors without weakening persistence assertions.
+
+**What changed / why**
+- Horizontal and trendline drawings now live directly on the main StockScout Price chart instead of a duplicate chart inside the Alerts dock.
+- The main-chart overlay uses the A0 trading/logical-bar geometry contract, so visible D/W projection matches the A2 evaluator semantics rather than calendar-day slope.
+- Trendlines render the anchored segment plus a projected right ray; horizontal drawings span the pane. Selected drawings expose anchor editing and whole-line drag while Cursor mode leaves normal Lightweight Charts pan/zoom available.
+- Drawing geometry persists through the V2 drawing API with explicit `D/W`, drawing kind and extension. The Alerts dock is now a manager for the selected ticker/drawing and no longer renders a second chart.
+- Mobile testing exposed that SVG anchor hit targets were not reliable enough for mouse/touch-emulated dragging. Selected anchors were therefore moved to explicit HTML button hit targets layered above the chart, with larger 22 px targets on phone widths. The persistence test still requires a real third drawing upsert after drag and verifies the edit survives reload.
+- Fixed real fixed-control overlaps discovered by Playwright: Groups/Alerts and Original/Groups no longer intercept one another, and the Alerts manager stays above the sticky terminal header.
+
+**Affected files / components**
+- `frontend/src/MainChartDrawingLayer.tsx`.
+- `frontend/src/ChartAlertsProvider.tsx`.
+- `frontend/src/ChartAlertsDock.tsx`.
+- `frontend/src/Root.tsx` and alert/layout CSS.
+- `frontend/src/deepvue/chartAlerts.ts` and its V2 snapshot tests.
+- `frontend/e2e/chart-drawings.spec.ts`.
+- V2 browser Edge gateway: `supabase/functions/stockscout-next-alerts-v2/index.ts`.
+- Existing A2 evaluator function and StockScout scan/model code were not changed by the final A3 interaction repair.
+
+**Live Supabase / gateway validation**
+- `stockscout-next-alerts-v2` browser gateway version 1 is ACTIVE and remains separate from the A2 evaluator function.
+- Authorized device-key snapshot returned HTTP 200; a controlled Weekly V2 drawing create returned HTTP 201 and was present on the following snapshot, proving server persistence. The test drawing was then deleted/cleaned up.
+- Missing device key returned HTTP 401, confirming the browser gateway does not expose the owner snapshot without its capability key.
+- Supabase security advisor showed no new critical finding; the existing private-table RLS INFO pattern and pre-existing `pg_net` / leaked-password warnings remain unchanged.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default ranking or other StockScout Core methodology changed.
+- Frozen LEGACY remains unchanged and shadow-only.
+- Drawings/rules/events remain an isolated user sidecar outside canonical scan data and cannot affect StockScout scores.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Final Frontend Compile Smoke run `32516564376` (#110) on `eeab8d0...`: **success**. Runtime/geometry tests, TypeScript/Vite build and Playwright completed, including the main-chart drawing test on mobile and desktop: create horizontal + trendline, verify right ray, attach a Touch rule, drag the horizontal anchor through the real handle, require an additional drawing persistence upsert, reload and verify both drawings/rule remain, then pan the chart and verify no accidental drawing write occurs.
+- Final StockScout Validation run `32516564336` (#198) on the same `eeab8d0...` head: **success**, including Stable snapshot restore, frozen LEGACY verification, regression/integration/model compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend build.
+- Full Validation was not run because A3 changes the isolated frontend/user-alert browser sidecar and Edge browser gateway; it does not alter the StockScout scanner, canonical scan-data generation or scan/publication workflow path.
+
+**Risk / decision**
+- A3 is code/browser validated, but public Pages has not yet been re-deployed and manually exercised against a real ticker after this final head. Do not treat the public UX as validated until that preview test is done.
+- Keep PR #13 draft. Keep the V1 compatibility mirror until the remaining manager/global-center/cross-device work is proven and a deliberate cleanup phase is reached.
+- Telegram credentials are still not configured and Telegram delivery is not part of the A3 gate.
+
+**Next logical step**
+- Deploy `next-dev` to the temporary GitHub Pages preview and manually verify on a real ticker: horizontal/trendline creation, right-ray appearance, drag/edit persistence after reload, alert-rule save and normal chart pan/zoom.
+- After that real-use check, continue with A4 manager refinement and A5 global Alerts Center; keep Telegram credential setup/in-app secure storage for its planned later slice.
+
+## 2026-08-21 — Chart Alerts v2 A3.1 real-use trend/level disambiguation
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- Trend-first regression: `f164aac09fea66d1529c06c6a872618ad66d8d0a`.
+- Main-chart disambiguation/provenance: `419f3b4b540dd57e76d43d7292b16a970f689cb4`.
+
+**What changed / why**
+- Real-use preview feedback showed two saved chart badges both rendered as generic `W · drawing only`, making a persisted Level indistinguishable from a newly drawn Trend and creating the appearance that the Trend tool had produced a horizontal line.
+- Code review confirmed the Trend capture path itself stores only `kind='trendline'`; the horizontal path is separate and requires the Level tool.
+- Main-chart badges now explicitly identify drawing kind as `Trend` or `Level`, and saved SVG groups expose `data-drawing-kind` for transparent diagnostics.
+- The browser regression was reordered to reproduce the reported workflow: from an empty snapshot it draws Trend first and requires exactly one persisted drawing, `kind='trendline'`, `extension='ray_right'`, distinct anchor prices, a visible right ray and zero horizontal drawings before the Level tool is ever used.
+- Existing persisted Level drawings are intentionally not auto-deleted; persistence is a feature, and destructive cleanup without owner intent would risk removing legitimate technical levels.
+
+**Affected files / components**
+- `frontend/src/MainChartDrawingLayer.tsx`.
+- `frontend/e2e/chart-drawings.spec.ts`.
+- No Supabase schema, evaluator, scanner, canonical data, workflow or Stable code changed.
+
+**Scoring / behavior impact**
+- None. StockScout Core and frozen LEGACY remain unchanged; drawing state remains a private sidecar outside scoring/ranking.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke run `32518783968` (#113) on `419f3b4...`: **success**, including the strengthened mobile + desktop Trend-first regression, TypeScript/Vite build and existing drawing persistence checks.
+- StockScout Validation run `32518783957` (#202) on the same head: **success**, including frozen LEGACY/Core invariance and frontend build.
+- Full Validation was not run because this is frontend/test-only and does not alter scan/data/workflow behavior.
+
+**Risk / decision**
+- The currently deployed Pages preview still serves the prior A3 build until `next-dev` is manually re-deployed. Do not claim the public UI contains this fix until that deployment is verified.
+- If a real ticker still shows an apparently wrong kind after the new preview is deployed, use the explicit `Trend`/`Level` badge plus the Alerts manager row to inspect the persisted owner-side drawing instead of guessing from line appearance.
+
+**Next logical step**
+- Re-deploy `next-dev` to Pages, then retest one clean Trend drawing on a real ticker. Delete any stale persisted `Level` from the Alerts manager only if the user confirms it is unwanted; then continue A4/A5 polish.
+
+## 2026-08-21 — Chart Alerts v2 A3.2 visible future-ray projection
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- Initial future-whitespace attempt: `85a033fd51f2b4597d0374a8b630a6f05b76f0bd`.
+- Strengthened browser regression: `27735ab380caaffce48b37fb418b051250425825`.
+- Final future-edge geometry fix / validated code head: `4b07cfe9441eac2d0aae3c9ddd7b479325313dd2`.
+
+**What changed / why**
+- Real-use preview feedback showed that a Trend ray was visible historically but did not visibly continue into future whitespace to the right of the latest candle.
+- The chart now reserves responsive future space on the Price chart using a transparent visual rule: about 16% of pane width, clamped to 72–180 px. This changes chart presentation only; it does not create future market bars.
+- The first attempt correctly moved realized candles left with `rightOffsetPixels`, but the SVG ray still ended at the last realized logical bar because its endpoint was derived from `getVisibleLogicalRange().to`. A new Playwright assertion measured the ray endpoint relative to the last real candle and exposed this as `0 px` future projection on both phone and desktop.
+- The final fix derives the actual pane-right logical coordinate through `coordinateToLogical(paneWidth - 1)` and extrapolates the same A0 trading-bar slope to that visual logical target. The solid anchor segment remains historical; the dashed ray now continues through the current bar and across the reserved future region to the right edge.
+- This is deliberately a visual projection only. The A2 evaluator still evaluates alerts exclusively on realized D/W bars and does not fire against synthetic future space.
+
+**Affected files / components**
+- `frontend/src/MainChartDrawingLayer.tsx`.
+- `frontend/e2e/chart-drawings.spec.ts`.
+- No Supabase function/schema, scanner, canonical data, Pages workflow, StockScout Core or Stable code changed.
+
+**Scoring / behavior impact**
+- None. Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping/default ranking and frozen LEGACY are unchanged.
+- Stable `Garrincha077/stock-screener2` remains untouched; Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Diagnostic Frontend Compile Smoke run `32530910140` (#116) on `27735ab...`: **failure only in the newly added future-ray browser assertion**; both mobile and desktop measured `0 px`. All 43 Node/runtime tests and TypeScript/Vite build passed. This failed run is the evidence that whitespace alone did not fix the reported bug.
+- StockScout Validation run `32530910217` (#206) on `27735ab...`: **success**.
+- Final Frontend Compile Smoke run `32531100977` (#117) on `4b07cfe...`: **success**, including the strengthened Playwright requirement that the Trend ray extend more than 50 px beyond the latest realized candle on both Pixel 5 and desktop, and that this remains true after reload/persistence.
+- Final StockScout Validation run `32531100994` (#208) on the same `4b07cfe...` head: **success**.
+- Full Validation was not run because A3.2 is frontend/test-only and does not modify scan generation, canonical data or scan/publication workflows.
+
+**Risk / decision**
+- Keep the future-space constant visual and transparent; if real-use feedback prefers more or less whitespace, tune only the 16% / 72–180 px presentation rule without changing evaluator math.
+- Keep PR #13 draft. The public Pages preview still needs a manual `next-dev` redeploy before this visual fix can be judged on a real ticker.
+
+**Next logical step**
+- Re-deploy `next-dev` to Pages and retest one clean Weekly and Daily Trend on a real ticker: the solid segment should remain between anchors and the dashed ray should clearly cross the latest candle into future whitespace. If that real-use check is good, continue with A4 manager refinement and A5 global Alerts Center.
+
+## 2026-08-22 — Chart Alerts v2 A4 current-ticker Alert Manager
+
+**Branch / PR / validated head**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- Final validated A4 code head before this log-only commit: `631c37ca0f4120e7844d052443fdfa5ccdd55132`.
+- Manager/layout sequence: `53d085b7c525408f7810de94ff437891e007162a`, `b9097cfcd4678af14922009828073fc28896e8d6`, `7f88e14e3223fd7c8b156cb173d85ebcc981b755`, browser gate `ce28e35482d9dc2c914191cb902792576f6ab3d9`, optimistic rule-edit fix `631c37ca0f4120e7844d052443fdfa5ccdd55132`.
+
+**What changed / why**
+- Replaced the broad floating Drawings & Alerts panel with a current-ticker Alert Manager. The manager exposes saved D/W drawings, selected drawing/rule state, projected line, latest close, distance, evaluator state/review reason and recent triggers.
+- Alert rule controls now explicitly expose condition (`Cross Above`, `Cross Below`, `Touch`), source (`Close`, `Wick`), lifecycle (`Auto re-arm`, `One shot`), Active, in-app and Telegram flags. Drawing deletion and rule deletion are separate, so a user can remove an alert rule while keeping the technical line.
+- On desktop the manager docks as a 390 px right pane and pushes the StockScout terminal left instead of covering the chart. Mobile uses a bounded bottom drawer above the navigation.
+- The Alerts manager and Original Engine source inspector are mutually exclusive so two right panes cannot compete for the same screen space.
+- Browser testing exposed a real controlled-checkbox latency issue: async rule saves could visually snap Telegram/Active toggles back until the API response. Existing-rule edits are now optimistic in `ChartAlertsProvider`, with server reconciliation and refresh-on-error.
+
+**Affected files / components**
+- `frontend/src/ChartAlertsDock.tsx`.
+- `frontend/src/ChartAlertsProvider.tsx`.
+- `frontend/src/Root.tsx`.
+- `frontend/src/chart-alerts.css`.
+- `frontend/e2e/chart-drawings.spec.ts`.
+- No Supabase schema/evaluator, scanner, canonical data or workflow changed.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping/default ranking or other StockScout Core field changed.
+- Frozen LEGACY remains unchanged/shadow-only. Alert state remains private sidecar data only and cannot influence scores.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Initial Frontend Compile Smoke #122 / run `32532795563` failed only in the new A4 mobile+desktop Playwright flow because an async controlled Telegram checkbox snapped back before the server response. Runtime tests and TypeScript/Vite build were already green; this failure directly motivated the optimistic-edit repair.
+- After that repair, Frontend Compile Smoke #123 / run `32532932718`: **success**, including A4 mobile+desktop workflow coverage for main-chart drawing/manager selection sync, real right-pane desktop push, Touch/Wick rule creation, One-shot lifecycle, Telegram toggle, future-ray persistence and existing drag/pan behavior.
+- StockScout Validation #218 / run `32532932734`: **success**, including Stable snapshot restore, frozen LEGACY verification, regression/integration/model compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend build.
+- Full Validation was not run because A4 is frontend/user-sidecar UI/state only and does not change scan/data/workflow behavior.
+
+**Risk / decision**
+- The current-ticker manager is code/browser validated, but public Pages still needs a fresh manual `next-dev` deploy before this exact A4 UX is claimed live on a real ticker.
+- Telegram credentials remain unconfigured; A4 exposes the per-rule Telegram flag only and does not claim delivery end to end.
+- Keep PR #13 draft. Cross-device identity is still browser capability-key based and remains later work.
+
+**Next logical step**
+- Phase A5: add a global Alerts Center across all tickers with Active, Near Trigger, Triggered, Paused and All Drawings views. Reuse the same V2 snapshot/status fields and rank Near Trigger only by transparent geometric distance, never by StockScout score.
+- After A5, add the planned secure in-app Telegram credential setup without exposing secrets to browser persistence, then run one deliberate Telegram end-to-end trigger test.
