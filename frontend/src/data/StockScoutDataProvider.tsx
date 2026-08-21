@@ -1,4 +1,5 @@
 import {createContext,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react'
+import type {ReviewScope} from '../phase4Review'
 
 export type AssetDescriptor={
   path:string
@@ -93,6 +94,8 @@ type DataContextValue={
   error:string
   selectedTicker:string
   selectTicker:(ticker:string)=>void
+  reviewScope:ReviewScope
+  setReviewScope:(scope:ReviewScope)=>void
   reload:()=>void
   loadLegacyIndex:()=>Promise<LegacyIndex>
   loadLegacyDetail:(ticker:string,force?:boolean)=>Promise<StockScoutRow|null>
@@ -108,6 +111,7 @@ export function StockScoutDataProvider({children}:{children:ReactNode}){
   const[loading,setLoading]=useState(true)
   const[error,setError]=useState('')
   const[selectedTicker,setSelectedTicker]=useState(normalizedTicker)
+  const[reviewScope,setReviewScope]=useState<ReviewScope>(null)
   const[revision,setRevision]=useState(0)
 
   useEffect(()=>{
@@ -194,9 +198,9 @@ export function StockScoutDataProvider({children}:{children:ReactNode}){
   },[])
 
   const value=useMemo<DataContextValue>(()=>({
-    manifest,core,loading,error,selectedTicker,selectTicker,reload,
+    manifest,core,loading,error,selectedTicker,selectTicker,reviewScope,setReviewScope,reload,
     loadLegacyIndex,loadLegacyDetail,loadChart,loadOptional,
-  }),[manifest,core,loading,error,selectedTicker,selectTicker,reload,loadLegacyIndex,loadLegacyDetail,loadChart,loadOptional])
+  }),[manifest,core,loading,error,selectedTicker,selectTicker,reviewScope,reload,loadLegacyIndex,loadLegacyDetail,loadChart,loadOptional])
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>
 }
