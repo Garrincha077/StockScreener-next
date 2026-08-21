@@ -594,3 +594,60 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Verify the `Deploy StockScout Terminal` Pages deployment for merge `5989983...`, then fast-forward `next-dev` to the logged `main` baseline before continuing workflow hardening or Phase 6 journal work.
+
+## 2026-08-21 — Persistent chart drawings + post-scan alerts
+
+**Branch / PR / commits**
+- Branch: `next-dev`.
+- Draft PR: #13 (`next-dev` -> `main`), titled `Next: persistent chart drawings and post-scan alerts`; intentionally remains draft pending real-use validation.
+- Validated feature head before this log-only commit: `0527114c750a00cbebba994c73e4340b9597a8a8`.
+- Key implementation commits in this slice include `75cf478ca70f1ad231ea77b322f591667c7886f4`, `96b23dd64b4e957fd8671bf5fbd76d99277b04b7`, `6d91b53c14dd30a706132b709d54ffc75129c426`, `b8ee495c5253630a7545aaf471ed9f884c49ff34`, `f72a70f1d8f97335ff3f2bdccd8d72a993074539`, `37d0034cd98e0a29f0361d6687ea8bcc32492a26`, `9f6254b393df12997b8e40b43b4d099bedac425e`, `3fde39a21afd397fc05f765ddb7a269eb277d43f`, `df015c7e0a8335eb7f117a32010c1c50bf3d442f`, `9b976c75d27a1ebb7830fd3881c1d91623d368f9`, `bbb152bc9d528c95fee551825b5e75bfaeb70c50`, and `0527114c750a00cbebba994c73e4340b9597a8a8`.
+
+**What changed / why**
+- Reused the proven user-alert concept from the older `Garrincha077/StockScout` implementation rather than inventing a separate methodology. The Next implementation preserves the useful pattern—persistent chart geometry, post-scan evaluation and Telegram delivery—but adapts it to GitHub Pages + Supabase.
+- Added a standalone `Drawings & Alerts` dock for the currently selected ticker rather than making a broad invasive rewrite of `DeepVueTerminal`.
+- User drawings support a two-point trendline and a one-click horizontal line, with explicit alert modes `Cross Above`, `Cross Below`, `Touch`, or alert disabled.
+- Alert geometry and trigger events persist outside canonical scan data. Drawings therefore survive a new scan and can be re-projected to the new market date.
+- `break_up` / `break_down` semantics require a true transition across the projected line using previous close vs previous projected line and new close vs new projected line; this avoids repeated hits merely because price remains on one side. `touch` requires the projected line price to lie inside the latest bar high/low range.
+- Per-scan dedupe is enforced by unique `(alert_id, scan_generated_at)` event identity so the same alert cannot repeatedly fire for the same published snapshot.
+- The evaluator runs hourly as an independent Supabase sidecar check. It reads only the latest already-published Next Pages `manifest.json`/core/chart shards; it does not start or re-enable a Next scan.
+
+**Affected files / components**
+- Frontend alert/drawing client and dock under `frontend/src/`, including the Root-level dock wiring and dedicated styling.
+- Supabase migrations under `supabase/migrations/` for Next chart alerts, runtime/evaluator configuration and the service gateway.
+- Edge Function source: `supabase/functions/stockscout-next-alerts/index.ts`.
+- Supabase runtime architecture uses private persistence plus explicit service RPCs: alert/event data is stored in `stockscout_private`, while only narrow service-role functions are exposed through existing `stockscout_api`.
+- The Edge Function is deployed as `stockscout-next-alerts`; frontend device isolation uses a capability-style device key hashed before persistence.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default ranking or other StockScout Core field/score changed.
+- Frozen LEGACY remains unchanged and shadow-only; alert evaluation is independent of LEGACY scoring and cannot alter StockScout candidate scores.
+- No canonical scan payload, scanner methodology or normal publication behavior is modified by the alert layer.
+- Stable `Garrincha077/stock-screener2` was not modified.
+- Next scheduled nightly scan remains disabled.
+
+**Backend / security validation**
+- Initial implementation exposed a real integration issue: this older Supabase project's Data API does not expose the `public` schema used by the first draft. The design was corrected rather than widening database exposure: persistence moved behind the existing `stockscout_private` + `stockscout_api` service-RPC pattern already used by StockScout.
+- Real browser-style backend list test after the gateway repair returned HTTP `200` with empty `alerts/events`.
+- Real CRUD smoke: create returned HTTP `201`, the created test alert was readable, delete/cleanup succeeded, and the database was returned to `0` test alerts / `0` test events.
+- Real evaluator request returned HTTP `200` against the currently published Next snapshot `generatedAt=2026-08-20T22:09:11.073071+00:00`; with no active user alerts it correctly reported `evaluated: 0`, `fired: 0`.
+- Supabase security advisor reported no new critical issue. The RLS-with-no-policy INFO notices on the alert tables were intentional in the first closed-table iteration because direct anon/auth access was not used; the final service gateway keeps user data behind service-role RPCs. The `pg_net` public-schema warning is an extension placement limitation/pre-existing project-level advisory rather than an exposed alert-data policy.
+- Telegram send support is implemented server-side only. Current status is intentionally `not_configured` because `stockscout_next_telegram_bot_token` and `stockscout_next_telegram_chat_id` have not yet been placed in Supabase Vault/runtime secrets; no token or chat ID was committed to GitHub or sent to the browser.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke #71 / run `32503304465` on feature head `0527114c...`: **success**.
+- StockScout Validation #136 / run `32503304544` on feature head `0527114c...`: **success**.
+- These gates cover existing client/runtime tests, TypeScript/Vite build and StockScout regression/invariance checks; no Core or LEGACY drift was detected.
+- Full Validation was not run for this slice because the alert system is a separate user-sidecar layer and does not change the StockScout scanner, canonical scan-data generation or normal scan/publish workflow path. Do not infer a Full Validation result from the green PR checks.
+
+**Risk / decision**
+- Keep the drawing/alert feature isolated from candidate scoring and canonical scan data. Do not turn alert state, line geometry or trigger history into a StockScout composite score.
+- Keep browser access capability-scoped and database access behind the narrow service gateway; do not expose service-role credentials or Telegram credentials to the frontend.
+- Hourly evaluation is acceptable because it evaluates the latest published snapshot only; it must not become a hidden replacement for or trigger of the disabled Next nightly scanner.
+- PR #13 should remain draft until a real ticker drawing persists across reload/new snapshot and a real alert path is manually verified. Telegram delivery cannot be considered end-to-end verified until its Vault secrets are configured and one controlled test message succeeds.
+
+**Next logical step**
+- Configure the existing Telegram bot token and chat ID as Supabase Vault/runtime secrets without committing them to GitHub.
+- Use a real ticker in the Next UI to verify drawing persistence after reload and then across the next published snapshot.
+- Trigger one controlled `Touch` or crossing case and verify the event appears in `Recent Triggers`; once Telegram credentials are configured, verify the same event is delivered to the intended Telegram chat.
+- Only after that manual end-to-end check should PR #13 be considered for promotion from draft; keep Stable untouched and keep the Next scheduled nightly scan disabled.
