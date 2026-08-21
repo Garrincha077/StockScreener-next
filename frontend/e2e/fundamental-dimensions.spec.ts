@@ -10,7 +10,7 @@ const payload=JSON.stringify({
     ticker:'FUND',price:10,stage:2,stageName:'Stage 2',primarySetup:'Test setup',
     opportunityScore:80,opportunityTier:'READY',opportunityRank:90,
     fundamentalEvidenceScore:72,fundamentalEvidenceConfidence:80,fundamentalEvidenceCoverage:100,
-    fundamentalGrowthScore:77,fundamentalMarginScore:66,fundamentalInventoryScore:55,
+    fundamentalDims:[77,66,55],
   }],
   chartShards:{},
 })
