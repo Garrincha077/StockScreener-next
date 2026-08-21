@@ -61,6 +61,8 @@ test('global alerts center summarizes all tickers and opens the selected drawing
   await page.route('**/functions/v1/stockscout-next-alerts-v2',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot)}))
 
   await page.goto('/')
+  await page.getByRole('button',{name:'Grid',exact:true}).click()
+  await expect(page.getByText('RAPID REVIEW')).toBeVisible()
   const launch=page.getByRole('button',{name:/All Alerts/})
   await expect(launch).toContainText('1')
   await launch.click()
@@ -101,6 +103,10 @@ test('global alerts center summarizes all tickers and opens the selected drawing
   await t2.click()
 
   await expect(center).toHaveCount(0)
+  await expect(page.getByRole('button',{name:'Screener',exact:true})).toHaveClass(/active/)
+  const chartControls=page.locator('.dv-chartcontrols')
+  await expect(chartControls.getByRole('button',{name:'Price',exact:true})).toHaveClass(/active/)
+  await expect(chartControls.getByRole('button',{name:'Daily',exact:true})).toHaveClass(/active/)
   const manager=page.getByRole('complementary',{name:'StockScout drawings and alerts'})
   await expect(manager).toBeVisible()
   await expect(manager).toContainText('T002')
