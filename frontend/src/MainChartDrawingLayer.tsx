@@ -222,7 +222,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
     if(point)setHoverPoint(point)
   },[tool,firstPoint,pointFromClient])
 
-  const renderDrawings=drawings.map(drawing=>editing?.id===drawing.id?editing:drawing)
+  const renderDrawings:ChartDrawing[]=drawings.map(drawing=>editing&&editing.id===drawing.id?editing:drawing)
   const draft=tool==='trendline'&&firstPoint&&hoverPoint?{ticker,kind:'trendline',interval,points:[firstPoint,hoverPoint],extension:'ray_right'} as ChartDrawing:null
 
   const badgeText=(drawing:ChartDrawing)=>{
