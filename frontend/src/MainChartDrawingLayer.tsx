@@ -131,6 +131,8 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
     const from=Number(visible.from),to=Number(visible.to)
     const xFor=(local:number)=>bridge.chart.timeScale().logicalToCoordinate(local)
     const yFor=(price:number)=>bridge.series.priceToCoordinate(price)
+    const paneRightLogical=bridge.chart.timeScale().coordinateToLogical(Math.max(0,paneW-1))
+    const drawTo=paneRightLogical==null?to:Math.max(to,Number(paneRightLogical))
     const lineAtLocal=(local:number)=>priceAtFrameIndex(drawing.points,sourceStart+local)
     const makeLine=(left:number,right:number)=>{
       const p1=lineAtLocal(left),p2=lineAtLocal(right),x1=xFor(left),x2=xFor(right)
@@ -138,7 +140,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
       const y1=yFor(p1),y2=yFor(p2)
       return y1==null||y2==null?null:{x1:Number(x1),y1:Number(y1),x2:Number(x2),y2:Number(y2)}
     }
-    const full=makeLine(from,to)
+    const full=makeLine(from,drawTo)
     if(!full)return null
     const localA=aIndex-sourceStart,localB=bIndex-sourceStart
     const anchor=(local:number,price:number)=>{const x=xFor(local),y=yFor(price);return x==null||y==null?undefined:{x:Number(x),y:Number(y)}}
@@ -147,9 +149,9 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
     if(drawing.kind==='horizontal')segment=full
     else{
       const leftAnchor=Math.min(localA,localB),rightAnchor=Math.max(localA,localB)
-      const segLeft=Math.max(from,leftAnchor),segRight=Math.min(to,rightAnchor)
+      const segLeft=Math.max(from,leftAnchor),segRight=Math.min(drawTo,rightAnchor)
       if(segRight>=segLeft)segment=makeLine(segLeft,segRight)||undefined
-      if(to>=rightAnchor){const rayLeft=Math.max(from,rightAnchor);ray=makeLine(rayLeft,to)||undefined}
+      if(drawTo>=rightAnchor){const rayLeft=Math.max(from,rightAnchor);ray=makeLine(rayLeft,drawTo)||undefined}
     }
     const latestLine=priceAtFrameIndex(drawing.points,frame.length-1)
     const badgeY=latestLine==null?null:yFor(latestLine)
