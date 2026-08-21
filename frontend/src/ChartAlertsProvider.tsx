@@ -28,10 +28,13 @@ const Context=createContext<ChartAlertsContextValue|null>(null)
 export function ChartAlertsProvider({children}:{children:ReactNode}){
   const[snapshot,setSnapshot]=useState<ChartAlertsV2Snapshot>(EMPTY)
   const[loading,setLoading]=useState(true)
-  const[busy,setBusy]=useState(false)
+  const[busyCount,setBusyCount]=useState(0)
   const[error,setError]=useState('')
   const[tool,setToolState]=useState<ChartDrawTool>('cursor')
   const[selectedDrawingId,setSelectedDrawingId]=useState<string|null>(null)
+  const busy=busyCount>0
+  const startMutation=useCallback(()=>setBusyCount(count=>count+1),[])
+  const finishMutation=useCallback(()=>setBusyCount(count=>Math.max(0,count-1)),[])
 
   const refresh=useCallback(async()=>{
     try{const next=await loadChartAlertsV2();setSnapshot(next);setError('')}
@@ -49,18 +52,18 @@ export function ChartAlertsProvider({children}:{children:ReactNode}){
   const selectDrawing=useCallback((id:string|null)=>{setSelectedDrawingId(id);if(id)setToolState('cursor')},[])
 
   const upsertDrawing=useCallback(async(drawing:ChartDrawing)=>{
-    setBusy(true)
+    startMutation()
     try{
       const saved=await saveChartDrawing(drawing)
       setSnapshot(current=>({...current,drawings:[saved,...current.drawings.filter(item=>item.id!==saved.id)]}))
       setSelectedDrawingId(saved.id||null);setError('')
       return saved
     }catch(nextError){setError(String(nextError));throw nextError}
-    finally{setBusy(false)}
-  },[])
+    finally{finishMutation()}
+  },[startMutation,finishMutation])
 
   const removeDrawing=useCallback(async(id:string)=>{
-    setBusy(true)
+    startMutation()
     try{
       await deleteChartDrawing(id)
       setSnapshot(current=>({
@@ -71,21 +74,21 @@ export function ChartAlertsProvider({children}:{children:ReactNode}){
       }))
       setSelectedDrawingId(current=>current===id?null:current);setError('')
     }catch(nextError){setError(String(nextError));throw nextError}
-    finally{setBusy(false)}
-  },[])
+    finally{finishMutation()}
+  },[startMutation,finishMutation])
 
   const upsertRule=useCallback(async(rule:ChartAlertRule)=>{
-    setBusy(true)
+    startMutation()
     try{
       const saved=await saveChartAlertRule(rule)
       setSnapshot(current=>({...current,rules:[saved,...current.rules.filter(item=>item.id!==saved.id&&item.drawingId!==saved.drawingId)]}))
       setError('');return saved
     }catch(nextError){setError(String(nextError));throw nextError}
-    finally{setBusy(false)}
-  },[])
+    finally{finishMutation()}
+  },[startMutation,finishMutation])
 
   const removeRule=useCallback(async(id:string)=>{
-    setBusy(true)
+    startMutation()
     try{
       const drawingId=snapshot.rules.find(item=>item.id===id)?.drawingId
       await deleteChartAlertRule(id)
@@ -96,8 +99,8 @@ export function ChartAlertsProvider({children}:{children:ReactNode}){
       }))
       setError('')
     }catch(nextError){setError(String(nextError));throw nextError}
-    finally{setBusy(false)}
-  },[snapshot.rules])
+    finally{finishMutation()}
+  },[snapshot.rules,startMutation,finishMutation])
 
   const value=useMemo<ChartAlertsContextValue>(()=>({
     snapshot,loading,busy,error,tool,selectedDrawingId,setTool,selectDrawing,refresh,upsertDrawing,removeDrawing,upsertRule,removeRule,
