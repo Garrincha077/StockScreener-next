@@ -651,3 +651,49 @@ This file is the durable handoff for future agents. Update it after every meanin
 - Use a real ticker in the Next UI to verify drawing persistence after reload and then across the next published snapshot.
 - Trigger one controlled `Touch` or crossing case and verify the event appears in `Recent Triggers`; once Telegram credentials are configured, verify the same event is delivered to the intended Telegram chat.
 - Only after that manual end-to-end check should PR #13 be considered for promotion from draft; keep Stable untouched and keep the Next scheduled nightly scan disabled.
+
+## 2026-08-21 — Chart Alerts v2 A0 geometry contract
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft.
+- Alerts v2 roadmap: `0e63849da573bd4a3ec39a16b03f970c856f237c`.
+- Shared golden vectors: `616d7155eaff135446e3527b9ec441ccacb250c7`.
+- Frontend reference contract: `209a7de1e32db7f83d7ec408e76bf67ef363f365`.
+- Evaluator reference contract: `0d2c0e32ecb5fc4e4ada70e44c180bae510f44c3`.
+- Frontend/evaluator parity test head: `c002862fb2cf63d64732225fcacf95c8a14b063f`.
+
+**What changed / why**
+- Phase A0 freezes the intended alert geometry before changing the live UI or Supabase schema. Frontend and evaluator now have independent pure reference implementations that are required to produce identical results on the same golden vectors.
+- Sloped-line projection is defined by trading/logical bar index, not calendar-day distance. Missing weekends and non-trading sessions therefore do not steepen or flatten a line.
+- `D` uses cleaned daily bars. `W` aggregates daily OHLC into Monday-keyed weekly bars and projects by weekly-bar index.
+- Anchor dates must exist in the selected D/W frame. Missing history fails explicitly rather than silently clamping an anchor to the nearest visible bar.
+- `cross_above` / `cross_below` require a true transition between the previous and latest projected line values. Close is the default serious crossing basis; wick crossing is also defined. `touch` is explicitly wick/bar-range based; `touch + close` is rejected as an unsupported combination.
+- Contract types also reserve transparent drawing/lifecycle concepts (`trendline|horizontal`, `ray_right|pane`, `one_shot|rearm`) for the later A1/A6 slices without wiring them into current runtime behavior.
+
+**Affected files / components**
+- `docs/STOCKSCOUT_CHART_ALERTS_V2_ROADMAP.md`.
+- `shared/chartAlertGeometryVectors.ts`.
+- `frontend/src/deepvue/chartAlertGeometryContract.ts`.
+- `frontend/src/deepvue/chartAlertGeometryContract.test.ts`.
+- `supabase/functions/_shared/chartAlertGeometryContract.ts`.
+- Existing `frontend/src/deepvue/chartAlerts.ts`, `ChartAlertsDock.tsx`, the deployed Edge Function, database schema and evaluator cron were intentionally not rewired in A0.
+
+**Scoring / behavior impact**
+- None. StockScout Core, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping and default ranking are untouched.
+- Frozen LEGACY remains shadow-only and unchanged.
+- A0 is contract/test-only: the currently deployed MVP still uses its old calendar-day projection until the later evaluator integration slice. No live alert semantics are being claimed changed yet.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Frontend Compile Smoke run `32507490812` (#77) on feature head `c002862...`: **success**.
+- The frontend job ran 40 Node tests with 40/40 passing, including all 12 new chart-alert geometry/parity vectors; TypeScript/Vite production build succeeded and Playwright reported 8/8 passing.
+- StockScout Validation run `32507490943` (#144) on `c002862...`: **success**. Stable snapshot restore, frozen LEGACY verification, regression/integration tests, current model stack, compatibility audit, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend runtime/build steps all completed successfully.
+- Full Validation was not run because A0 does not modify scan generation, canonical data, publication workflow or the deployed alert evaluator runtime.
+
+**Risk / decision**
+- Do not assume the current live MVP already uses the new bar-index contract. Until A2 wires the deployed evaluator and the main-chart overlay to these semantics, the old calendar-day evaluator remains the live behavior.
+- Keep frontend and evaluator implementations independently testable against the same golden vectors so future UI/backend refactors cannot silently diverge.
+- Keep PR #13 draft; this A0 gate validates semantics, not end-to-end alert delivery.
+
+**Next logical step**
+- Phase A1: separate persisted drawings from alert rules in a backward-compatible, reversible schema/API migration. Preserve existing MVP rows during migration and do not yet change StockScout scoring, scanner behavior or the disabled nightly schedule.
