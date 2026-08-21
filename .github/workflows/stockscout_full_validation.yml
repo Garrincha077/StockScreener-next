@@ -1,7 +1,7 @@
 name: StockScout Full Validation
 
 # Final gate for StockScout Next scan/data/workflow changes.
-# Full-run trigger: 2026-08-20 read-only LEGACY shadow integration validation
+# Full-run trigger: 2026-08-21 read-only Stable snapshot bridge validation
 on:
   push:
     paths:
