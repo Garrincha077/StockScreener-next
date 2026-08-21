@@ -6,6 +6,7 @@ import {nextGridCount} from './deepvue/runtime'
 import {useStockScoutData} from './data/StockScoutDataProvider'
 import {applyMultiSort} from './deepvue/multiSort'
 import {matchesReviewScope} from './phase4Review'
+import MainChartDrawingLayer,{type MainChartBridge} from './MainChartDrawingLayer'
 
 type Bar={time:string;open:number;high:number;low:number;close:number;volume:number;rs:number}
 type RawBar=[string,number,number,number,number,number,number]
@@ -60,14 +61,18 @@ function ma(values:number[],n:number){const out:(number|null)[]=[];let sum=0;for
 function ema(values:number[],n:number){const out:(number|null)[]=[];if(!values.length)return out;const k=2/(n+1);let value=values[0];for(let i=0;i<values.length;i++){value=i===0?values[i]:values[i]*k+value*(1-k);out.push(i+1>=n?value:null)}return out}
 function rangeCount(r:Range,i:Interval){return i==='W'?({"3M":13,"6M":26,"1Y":52,"2Y":104,"5Y":260} as any)[r]:({"3M":66,"6M":132,"1Y":252,"2Y":504,"5Y":1265} as any)[r]}
 
-function PriceChart({bars,interval='W',range='5Y',mode='Price',mini=false}:{bars:Bar[];interval?:Interval;range?:Range;mode?:ChartMode;mini?:boolean}){
+function PriceChart({bars,interval='W',range='5Y',mode='Price',mini=false,ticker=''}:{bars:Bar[];interval?:Interval;range?:Range;mode?:ChartMode;mini?:boolean;ticker?:string}){
   const ref=useRef<HTMLDivElement>(null)
+  const[bridge,setBridge]=useState<MainChartBridge|null>(null)
+  const source=useMemo(()=>(interval==='W'?aggregateWeekly(bars):bars).slice(-rangeCount(range,interval)),[bars,interval,range])
   useEffect(()=>{
-    if(!ref.current||!bars.length)return
-    const source=(interval==='W'?aggregateWeekly(bars):bars).slice(-rangeCount(range,interval))
-    const chart=createChart(ref.current,{autoSize:true,layout:{background:{type:ColorType.Solid,color:'#08111d'},textColor:mini?'#63758d':'#8396ae',attributionLogo:false},grid:{vertLines:{color:mini?'transparent':'#142238'},horzLines:{color:mini?'#102033':'#142238'}},timeScale:{borderVisible:!mini,borderColor:'#243248',rightOffset:2,timeVisible:false},rightPriceScale:{borderVisible:!mini,borderColor:'#243248',scaleMargins:mini?{top:.08,bottom:.16}:undefined},handleScroll:!mini,handleScale:!mini})
+    if(!ref.current||!source.length)return
+    const container=ref.current
+    const chart=createChart(container,{autoSize:true,layout:{background:{type:ColorType.Solid,color:'#08111d'},textColor:mini?'#63758d':'#8396ae',attributionLogo:false},grid:{vertLines:{color:mini?'transparent':'#142238'},horzLines:{color:mini?'#102033':'#142238'}},timeScale:{borderVisible:!mini,borderColor:'#243248',rightOffset:2,timeVisible:false},rightPriceScale:{borderVisible:!mini,borderColor:'#243248',scaleMargins:mini?{top:.08,bottom:.16}:undefined},handleScroll:!mini,handleScale:!mini})
+    let priceSeries:any=null
     if(mode==='Price'){
       const c=chart.addSeries(CandlestickSeries,{upColor:'#20d886',downColor:'#f05d6c',wickUpColor:'#20d886',wickDownColor:'#f05d6c',borderVisible:false,priceLineVisible:!mini,lastValueVisible:!mini})
+      priceSeries=c
       c.setData(source.map(b=>({time:b.time,open:b.open,high:b.high,low:b.low,close:b.close})) as any)
       const closes=source.map(b=>b.close)
       const specs=interval==='W'?[[10,'#f3c85b','sma'],[20,'#4ca3ff','sma']]:[[10,'#f3c85b','ema'],[20,'#4ca3ff','ema'],[50,'#a36cff','sma'],[200,'#26c7b7','sma']]
@@ -78,9 +83,13 @@ function PriceChart({bars,interval='W',range='5Y',mode='Price',mini=false}:{bars
     }else{
       const v=chart.addSeries(HistogramSeries,{priceFormat:{type:'volume'},priceScaleId:'',priceLineVisible:false});v.setData(source.map(b=>({time:b.time,value:b.volume,color:b.close>=b.open?'rgba(32,216,134,.72)':'rgba(240,93,108,.72)'})) as any)
     }
-    chart.timeScale().fitContent();return()=>chart.remove()
-  },[bars,interval,range,mode,mini])
-  return <div className={mini?'dv-minichart':'dv-chart'} ref={ref}/>
+    chart.timeScale().fitContent()
+    if(!mini&&mode==='Price'&&priceSeries)setBridge({chart,series:priceSeries,container})
+    else setBridge(null)
+    return()=>{setBridge(null);chart.remove()}
+  },[source,interval,mode,mini])
+  if(mini)return <div className="dv-minichart" ref={ref}/>
+  return <div className="dv-chart"><div className="dv-chart-surface" ref={ref}/>{bridge&&mode==='Price'&&ticker&&<MainChartDrawingLayer bridge={bridge} ticker={ticker} bars={bars} source={source} interval={interval}/>}</div>
 }
 
 function DeepVueTerminal(){
@@ -274,7 +283,7 @@ function Detail({stock,chart,retryChart,interval,setInterval,range,setRange,mode
     {(stock.changeLabels||[]).length>0&&<div className="dv-todaybox"><b>CHANGED SINCE LAST SCAN</b>{stock.changeLabels!.map(x=><span key={x}>{x}</span>)}</div>}
     <div className="dv-tags">{tagsOf(stock).map(t=><span key={t} className={t.startsWith('⚠')?'warn':''}>{t}</span>)}</div>
     <div className="dv-chartcontrols"><div>{(['Price','RS','Volume'] as ChartMode[]).map(x=><button className={mode===x?'active':''} onClick={()=>setMode(x)} key={x}>{x}</button>)}</div><div>{(['D','W'] as Interval[]).map(x=><button className={interval===x?'active':''} onClick={()=>setInterval(x)} key={x}>{x==='D'?'Daily':'Weekly'}</button>)}</div><div>{(['3M','6M','1Y','2Y','5Y'] as Range[]).map(x=><button className={range===x?'active':''} onClick={()=>setRange(x)} key={x}>{x}</button>)}</div></div><div className="dv-ma-note">{interval==='D'?'EMA 10 · EMA 20 · SMA 50 · SMA 200':'SMA 10W · SMA 20W'}</div>
-    <div className="dv-chartbox">{chart.status==='loading'?<div className="dv-chartmsg">Loading 5Y history…</div>:chart.status==='ready'?<PriceChart bars={chart.bars} interval={interval} range={range} mode={mode}/>:chart.status==='unavailable'?<div className="dv-chartmsg">Chart unavailable for this ticker</div>:<div className="dv-chartmsg">Chart request failed. <button onClick={retryChart}>Retry</button></div>}</div>
+    <div className="dv-chartbox">{chart.status==='loading'?<div className="dv-chartmsg">Loading 5Y history…</div>:chart.status==='ready'?<PriceChart bars={chart.bars} interval={interval} range={range} mode={mode} ticker={stock.ticker}/>:chart.status==='unavailable'?<div className="dv-chartmsg">Chart unavailable for this ticker</div>:<div className="dv-chartmsg">Chart request failed. <button onClick={retryChart}>Retry</button></div>}</div>
     <div className="dv-kpis"><K l="RS Rank" v={fmt(stock.rsRank,0)} d={stock.rsRankDelta}/><K l="RS Δ" v={fmt(stock.rsAcceleration,2)}/><K l="Group" v={fmt(stock.groupRank,0)}/><K l="Group RS" v={signed(stock.groupRS)}/><K l="Group conf" v={`${fmt(stock.groupConfidence,0)}%`}/><K l="TT" v={`${fmt(stock.trendTemplatePasses,0)}/8`}/><K l="EMA 10D" v={fmt(stock.ema10d,2)}/><K l="EMA 20D" v={fmt(stock.ema20d,2)}/><K l="D EMA X" v={stock.ema10d20dCross?`${stock.ema10d20dCross} ${fmt(stock.ema10d20dCrossAge,0)}d`:'—'}/><K l="D EMA spread" v={signed(stock.ema10d20dSpreadPct,2)}/><K l="SMA 10W" v={fmt(stock.sma10w,2)}/><K l="SMA 20W" v={fmt(stock.sma20w,2)}/><K l="W SMA X" v={stock.sma10w20wCross?`${stock.sma10w20wCross} ${fmt(stock.sma10w20wCrossAge,0)}w`:'—'}/><K l="W SMA spread" v={signed(stock.sma10w20wSpreadPct,2)}/><K l="S2 age" v={`${fmt(stock.stage2AgeWeeks,1)}w`}/><K l="Vol" v={`${fmt(stock.volumeRatio,2)}x`} d={stock.volumeRatioDelta}/><K l="Breakout" v={signed(stock.breakoutPct)}/><K l="10W" v={signed(stock.distance10w)}/><K l="30W" v={signed(stock.distance30w)}/><K l="Potential" v={fmt(stock.opportunityPotential,0)}/><K l="Timing" v={fmt(stock.opportunityTiming,0)}/><K l="Opp Rank" v={fmt(stock.opportunityRank,0)}/><K l="Group Δ" v={`${num(stock.opportunityGroupModifier)>0?'+':''}${fmt(stock.opportunityGroupModifier,1)}`}/><K l="Fund Δ" v={`${num(stock.opportunityFundModifier)>0?'+':''}${fmt(stock.opportunityFundModifier,1)}`}/><K l="Fund Ev" v={fmt(stock.fundamentalEvidenceScore,0)}/><K l="Fund conf" v={`${fmt(stock.fundamentalEvidenceConfidence,0)}%`}/></div>
     <div className="dv-dims">{dims.map(([n,v])=><div key={n}><span>{n}</span><i><b style={{width:`${Math.max(0,Math.min(100,num(v)))}%`}}/></i><strong>{fmt(v,0)}</strong></div>)}</div>
     <div className="dv-fundbox"><header><div><b>FUNDAMENTAL EVIDENCE</b><small>confirmation evidence · bounded ±5 Opportunity modifier</small></div><strong className={fundScore>=75?'dv-good':fundScore>=0&&fundScore<40?'dv-bad':''}>{fmt(stock.fundamentalEvidenceScore,0)} {stock.fundamentalEvidenceLabel||''}</strong><span>confidence {fmt(stock.fundamentalEvidenceConfidence,0)}% · coverage {fmt(stock.fundamentalEvidenceCoverage,0)}%</span></header><div className="dv-dims">{fundDims.map(([n,v])=><div key={n}><span>{n}</span><i><b style={{width:`${Math.max(0,Math.min(100,num(v)))}%`}}/></i><strong>{fmt(v,0)}</strong></div>)}</div></div>
