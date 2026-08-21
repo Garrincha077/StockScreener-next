@@ -893,3 +893,41 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Re-deploy `next-dev` to Pages, then retest one clean Trend drawing on a real ticker. Delete any stale persisted `Level` from the Alerts manager only if the user confirms it is unwanted; then continue A4/A5 polish.
+
+## 2026-08-21 — Chart Alerts v2 A3.2 visible future-ray projection
+
+**Branch / PR / commits**
+- Branch: `next-dev`; draft PR #13 remains open/draft and unmerged.
+- Initial future-whitespace attempt: `85a033fd51f2b4597d0374a8b630a6f05b76f0bd`.
+- Strengthened browser regression: `27735ab380caaffce48b37fb418b051250425825`.
+- Final future-edge geometry fix / validated code head: `4b07cfe9441eac2d0aae3c9ddd7b479325313dd2`.
+
+**What changed / why**
+- Real-use preview feedback showed that a Trend ray was visible historically but did not visibly continue into future whitespace to the right of the latest candle.
+- The chart now reserves responsive future space on the Price chart using a transparent visual rule: about 16% of pane width, clamped to 72–180 px. This changes chart presentation only; it does not create future market bars.
+- The first attempt correctly moved realized candles left with `rightOffsetPixels`, but the SVG ray still ended at the last realized logical bar because its endpoint was derived from `getVisibleLogicalRange().to`. A new Playwright assertion measured the ray endpoint relative to the last real candle and exposed this as `0 px` future projection on both phone and desktop.
+- The final fix derives the actual pane-right logical coordinate through `coordinateToLogical(paneWidth - 1)` and extrapolates the same A0 trading-bar slope to that visual logical target. The solid anchor segment remains historical; the dashed ray now continues through the current bar and across the reserved future region to the right edge.
+- This is deliberately a visual projection only. The A2 evaluator still evaluates alerts exclusively on realized D/W bars and does not fire against synthetic future space.
+
+**Affected files / components**
+- `frontend/src/MainChartDrawingLayer.tsx`.
+- `frontend/e2e/chart-drawings.spec.ts`.
+- No Supabase function/schema, scanner, canonical data, Pages workflow, StockScout Core or Stable code changed.
+
+**Scoring / behavior impact**
+- None. Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping/default ranking and frozen LEGACY are unchanged.
+- Stable `Garrincha077/stock-screener2` remains untouched; Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Diagnostic Frontend Compile Smoke run `32530910140` (#116) on `27735ab...`: **failure only in the newly added future-ray browser assertion**; both mobile and desktop measured `0 px`. All 43 Node/runtime tests and TypeScript/Vite build passed. This failed run is the evidence that whitespace alone did not fix the reported bug.
+- StockScout Validation run `32530910217` (#206) on `27735ab...`: **success**.
+- Final Frontend Compile Smoke run `32531100977` (#117) on `4b07cfe...`: **success**, including the strengthened Playwright requirement that the Trend ray extend more than 50 px beyond the latest realized candle on both Pixel 5 and desktop, and that this remains true after reload/persistence.
+- Final StockScout Validation run `32531100994` (#208) on the same `4b07cfe...` head: **success**.
+- Full Validation was not run because A3.2 is frontend/test-only and does not modify scan generation, canonical data or scan/publication workflows.
+
+**Risk / decision**
+- Keep the future-space constant visual and transparent; if real-use feedback prefers more or less whitespace, tune only the 16% / 72–180 px presentation rule without changing evaluator math.
+- Keep PR #13 draft. The public Pages preview still needs a manual `next-dev` redeploy before this visual fix can be judged on a real ticker.
+
+**Next logical step**
+- Re-deploy `next-dev` to Pages and retest one clean Weekly and Daily Trend on a real ticker: the solid segment should remain between anchors and the dashed ray should clearly cross the latest candle into future whitespace. If that real-use check is good, continue with A4 manager refinement and A5 global Alerts Center.
