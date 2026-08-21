@@ -8,7 +8,7 @@ import {
   type AlertLifecycle,
   type GeometryBar as Bar,
   type GeometryPoint as Point,
-} from '../_shared/chartAlertGeometryContract.ts'
+} from './chartAlertGeometryContract.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
