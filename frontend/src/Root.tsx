@@ -32,6 +32,17 @@ function initialEngineWidth(){
 }
 function initialLayer():Layer{try{return localStorage.getItem(LAYER_KEY)==='legacy'?'legacy':'stockscout'}catch{return'stockscout'}}
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value))}
+function clickButton(selector:string,label:string){
+  const button=[...document.querySelectorAll<HTMLButtonElement>(selector)].find(item=>item.textContent?.trim()===label)
+  button?.click()
+}
+function focusDrawingChart(drawing:ChartDrawing){
+  clickButton('.dv-top nav button','Screener')
+  requestAnimationFrame(()=>{
+    clickButton('.dv-chartcontrols button','Price')
+    clickButton('.dv-chartcontrols button',drawing.interval==='D'?'Daily':'Weekly')
+  })
+}
 
 export default function Root(){
   const{selectTicker}=useStockScoutData()
@@ -55,7 +66,7 @@ export default function Root(){
   const chooseLayer=(next:Layer)=>{setLayer(next);setView('terminal');if(next==='legacy'){setEngineOpen(false);setAlertsOpen(false);setAlertsCenterOpen(false)}}
   const openTicker=(ticker:string)=>{selectTicker(ticker);setLayer('stockscout');setView('terminal')}
   const openAlertDrawing=(drawing:ChartDrawing)=>{
-    selectTicker(drawing.ticker);selectDrawing(drawing.id||null);setLayer('stockscout');setView('terminal');setEngineOpen(false);setAlertsCenterOpen(false);setAlertsOpen(true)
+    selectTicker(drawing.ticker);selectDrawing(drawing.id||null);setLayer('stockscout');setView('terminal');setEngineOpen(false);setAlertsCenterOpen(false);setAlertsOpen(true);focusDrawingChart(drawing)
   }
   const maxEngineWidth=()=>Math.min(MAX_ENGINE_WIDTH,Math.max(MIN_ENGINE_WIDTH,window.innerWidth-700))
   const normalizedEngineWidth=(value:number)=>Math.round(clamp(value,MIN_ENGINE_WIDTH,maxEngineWidth()))
