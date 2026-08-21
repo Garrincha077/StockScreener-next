@@ -29,6 +29,7 @@ type LineGeom={
   a?:{x:number;y:number}
   b?:{x:number;y:number}
   badge?:{x:number;y:number;line:number}
+  futurePx?:number
 }
 
 const HIT_WIDTH=14
@@ -37,6 +38,7 @@ const COLOR_BY_CONDITION={cross_above:'#20d886',cross_below:'#f05d6c',touch:'#f3
 const clamp=(value:number,min:number,max:number)=>Math.max(min,Math.min(max,value))
 const conditionLabel=(rule:ChartAlertRule)=>rule.condition==='cross_above'?'Cross ↑':rule.condition==='cross_below'?'Cross ↓':'Touch'
 const drawingKindLabel=(drawing:ChartDrawing)=>drawing.kind==='horizontal'?'Level':'Trend'
+const futureProjectionPixels=(width:number)=>clamp(Math.round(width*.16),72,180)
 
 export default function MainChartDrawingLayer({bridge,ticker,bars,source,interval}:{bridge:MainChartBridge;ticker:string;bars:Bar[];source:Bar[];interval:'D'|'W'}){
   const{snapshot,busy,error,tool,setTool,selectedDrawingId,selectDrawing,upsertDrawing}=useChartAlerts()
@@ -60,10 +62,17 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
   const showEditing=useCallback((drawing:ChartDrawing)=>{editingRef.current=drawing;setEditing(drawing)},[])
 
   useEffect(()=>{
-    let raf=0
+    let raf=0,lastFuturePx=-1
+    const applyFutureSpace=()=>{
+      const next=futureProjectionPixels(bridge.container.clientWidth)
+      if(next===lastFuturePx)return
+      lastFuturePx=next
+      bridge.chart.timeScale().applyOptions({rightOffsetPixels:next})
+    }
     const refresh=()=>{if(raf)return;raf=requestAnimationFrame(()=>{raf=0;setViewportRevision(value=>value+1)})}
+    applyFutureSpace()
     bridge.chart.timeScale().subscribeVisibleLogicalRangeChange(refresh)
-    const observer=new ResizeObserver(refresh);observer.observe(bridge.container)
+    const observer=new ResizeObserver(()=>{applyFutureSpace();refresh()});observer.observe(bridge.container)
     return()=>{bridge.chart.timeScale().unsubscribeVisibleLogicalRangeChange(refresh);observer.disconnect();if(raf)cancelAnimationFrame(raf)}
   },[bridge])
 
@@ -145,7 +154,9 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
     const latestLine=priceAtFrameIndex(drawing.points,frame.length-1)
     const badgeY=latestLine==null?null:yFor(latestLine)
     const badge=latestLine==null||badgeY==null?undefined:{x:Math.max(8,paneW-176),y:clamp(Number(badgeY)-10,6,Math.max(6,paneH-24)),line:latestLine}
-    return{paneW,paneH,segment,ray,full,a,b,badge}
+    const latestDataX=xFor(currentSource.length-1)
+    const futurePx=ray&&latestDataX!=null?Math.max(0,ray.x2-Number(latestDataX)):undefined
+    return{paneW,paneH,segment,ray,full,a,b,badge,futurePx}
   },[bridge,currentSource,frame.length,frameTimes,priceAtFrameIndex,sourceStart])
 
   const stopWindowDrag=useCallback(()=>{
@@ -272,7 +283,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
         const color=selected?'#dcecff':rule?.enabled?COLOR_BY_CONDITION[rule.condition]:'#7c8595'
         return <g key={drawing.id} className={selected?'selected':''} data-drawing-id={drawing.id} data-drawing-kind={drawing.kind}>
           {g.segment&&<line className="cad-main-line" x1={g.segment.x1} y1={g.segment.y1} x2={g.segment.x2} y2={g.segment.y2} stroke={color} strokeWidth={selected?2.4:1.8}/>} 
-          {g.ray&&<line className="cad-main-ray" x1={g.ray.x1} y1={g.ray.y1} x2={g.ray.x2} y2={g.ray.y2} stroke={color} strokeWidth={selected?2.1:1.6} strokeDasharray="7 4"/>}
+          {g.ray&&<line className="cad-main-ray" data-future-px={g.futurePx?.toFixed(1)} x1={g.ray.x1} y1={g.ray.y1} x2={g.ray.x2} y2={g.ray.y2} stroke={color} strokeWidth={selected?2.1:1.6} strokeDasharray="7 4"/>}
           <line className="cad-main-hit" x1={g.full.x1} y1={g.full.y1} x2={g.full.x2} y2={g.full.y2} stroke="transparent" strokeWidth={HIT_WIDTH} onPointerDown={event=>beginDrag(event,drawing,'body')} onMouseDown={event=>beginDrag(event,drawing,'body')}/>
           {g.badge&&<foreignObject className="cad-main-badge-fo" x={g.badge.x} y={g.badge.y} width="168" height="24"><button aria-label={`${interval} ${drawingKindLabel(drawing)} drawing`} className={`cad-main-badge ${selected?'selected':''}`} onPointerDown={event=>{event.stopPropagation();selectDrawing(drawing.id||null)}}>{badgeText(drawing)}</button></foreignObject>}
         </g>
