@@ -5,6 +5,7 @@ import {builtInScreens,fieldDefs,invalidRules,makeGroup,makeRule,matchesGroups,o
 import {nextGridCount} from './deepvue/runtime'
 import {useStockScoutData} from './data/StockScoutDataProvider'
 import {applyMultiSort} from './deepvue/multiSort'
+import {matchesReviewScope} from './phase4Review'
 
 type Bar={time:string;open:number;high:number;low:number;close:number;volume:number;rs:number}
 type RawBar=[string,number,number,number,number,number,number]
@@ -83,7 +84,7 @@ function PriceChart({bars,interval='W',range='5Y',mode='Price',mini=false}:{bars
 }
 
 function DeepVueTerminal(){
-  const{core,error,selectedTicker,selectTicker,reload,loadChart}=useStockScoutData()
+  const{core,error,selectedTicker,selectTicker,reviewScope,reload,loadChart}=useStockScoutData()
   const payload=core as Payload|null
   const[page,setPage]=useState<Page>('Screener'),[recipe,setRecipe]=useState('All'),[query,setQuery]=useState('')
   const[sorting,setSorting]=useState<SortingState>(()=>loadLocal('dv-sorts-v1',[{id:'opportunityScore',desc:true},{id:'rsRank',desc:true}]))
@@ -97,6 +98,7 @@ function DeepVueTerminal(){
   const[selectedChart,setSelectedChart]=useState<ChartLoadState>({status:'loading',bars:[]})
   const[interval,setInterval]=useState<Interval>('W'),[range,setRange]=useState<Range>('5Y'),[chartMode,setChartMode]=useState<ChartMode>('Price')
   const[gridCount,setGridCount]=useState(16),[gridRange,setGridRange]=useState<Range>('2Y')
+  useEffect(()=>{if(reviewScope){setPage('Grid');setGridCount(16);setPagination(p=>({...p,pageIndex:0}))}},[reviewScope])
   useEffect(()=>localStorage.setItem('dv-sorts-v1',JSON.stringify(sorting)),[sorting])
   useEffect(()=>localStorage.setItem('dv-cols-v5',JSON.stringify(visibility)),[visibility])
   useEffect(()=>localStorage.setItem('dv-root-logic',JSON.stringify(rootLogic)),[rootLogic])
@@ -113,12 +115,13 @@ function DeepVueTerminal(){
   const universe=payload?.universe||[]
   const toggleWatch=(ticker:string)=>setWatchlist(w=>w.includes(ticker)?w.filter(x=>x!==ticker):[...w,ticker])
   const filtered=useMemo(()=>universe.filter(s=>{
+    const q=query.trim().toUpperCase();if(q&&!s.ticker.includes(q)&&!tagsOf(s).join(' ').toUpperCase().includes(q)&&(s.changeLabels||[]).join(' ').toUpperCase().includes(q)===false)return false
+    if(reviewScope)return matchesReviewScope(s,reviewScope)
     if(page==='Watchlist'&&!watchlist.includes(s.ticker))return false
     if(page==='Changes'&&!s.changedToday)return false
-    const q=query.trim().toUpperCase();if(q&&!s.ticker.includes(q)&&!tagsOf(s).join(' ').toUpperCase().includes(q)&&(s.changeLabels||[]).join(' ').toUpperCase().includes(q)===false)return false
     if(recipe!=='All'&&!tagsOf(s).includes(recipe))return false
     return matchesGroups(s,groups,rootLogic)
-  }),[universe,page,watchlist,query,recipe,groups,rootLogic])
+  }),[universe,reviewScope,page,watchlist,query,recipe,groups,rootLogic])
   const sortedData=useMemo(()=>applyMultiSort(filtered,sorting),[filtered,sorting])
   const selected=sortedData.find(s=>s.ticker===selectedTicker)||sortedData[0]
   useEffect(()=>{if(sortedData.length&&selectedTicker!==selected?.ticker)selectTicker(sortedData[0].ticker)},[sortedData,selectedTicker,selected?.ticker,selectTicker])
@@ -130,7 +133,7 @@ function DeepVueTerminal(){
     return()=>{live=false}
   },[selected?.ticker,loadBars])
   useEffect(()=>loadSelectedChart(false),[loadSelectedChart])
-  useEffect(()=>setPagination(p=>({...p,pageIndex:0})),[page,recipe,query,groups,rootLogic,sorting])
+  useEffect(()=>setPagination(p=>({...p,pageIndex:0})),[page,recipe,query,groups,rootLogic,sorting,reviewScope])
 
   const columns=useMemo(()=>[
     helper.display({id:'watch',header:'',enableSorting:false,cell:({row})=><button className={`dv-star ${watchlist.includes(row.original.ticker)?'on':''}`} onClick={e=>{e.stopPropagation();toggleWatch(row.original.ticker)}}>★</button>}),
@@ -208,7 +211,7 @@ function DeepVueTerminal(){
   const addGroup=()=>setGroups(g=>[...g,makeGroup('ALL',[makeRule('rsRank')])])
   const updateGroup=(id:string,fn:(g:RuleGroup)=>RuleGroup)=>setGroups(gs=>gs.map(g=>g.id===id?fn(g):g))
   const removeGroup=(id:string)=>setGroups(gs=>gs.filter(g=>g.id!==id))
-  const exportCsv=()=>{const cols=table.getAllLeafColumns().filter(c=>!['watch','todaySignals'].includes(c.id)&&c.getIsVisible());const lines=[cols.map(c=>c.id).join(','),...sortedData.map(s=>cols.map(c=>JSON.stringify((s as any)[c.id]??(c.id==='opportunityScore'?opp(s):c.id==='primarySetup'?setupOf(s):''))).join(','))];const u=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'})),a=document.createElement('a');a.href=u;a.download=`stockscout-${activeScreen.replace(/\W+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u)}
+  const exportCsv=()=>{const cols=table.getAllLeafColumns().filter(c=>!['watch','todaySignals'].includes(c.id)&&c.getIsVisible());const lines=[cols.map(c=>c.id).join(','),...sortedData.map(s=>cols.map(c=>JSON.stringify((s as any)[c.id]??(c.id==='opportunityScore'?opp(s):c.id==='primarySetup'?setupOf(s):''))).join(','))];const u=URL.createObjectURL(new Blob([lines.join('\n')],{type:'text/csv'})),a=document.createElement('a');a.href=u;a.download=`stockscout-${(reviewScope?`review-${reviewScope}`:activeScreen).replace(/\W+/g,'-').toLowerCase()}-${new Date().toISOString().slice(0,10)}.csv`;a.click();URL.revokeObjectURL(u)}
 
   if(!payload)return <div className="dv-loading">{error||'Loading StockScout…'}</div>
   const m=payload.market||{},daily=m.dailyChanges||{},ageH=Math.max(0,Math.round((Date.now()-new Date(payload.generatedAt).getTime())/3600000))
@@ -216,7 +219,7 @@ function DeepVueTerminal(){
     <header className="dv-top"><div className="dv-brand">◉ <b>STOCKSCOUT</b><small>DEEP SCREEN</small></div><nav>{(['Screener','Grid','Changes','Watchlist','Market'] as Page[]).map(p=><button key={p} className={page===p?'active':''} onClick={()=>setPage(p)}>{p}{p==='Changes'&&daily.changed?` ${daily.changed}`:''}</button>)}</nav><div className="dv-live"><b>{m.regime||'UNKNOWN'}</b><span>{universe.length.toLocaleString()} stocks</span><span>{ageH}h old</span><button onClick={reload}>↻</button></div></header>
 
     {page==='Market'?<Market universe={universe} market={m}/>:<>
-      <section className="dv-screenbar"><div className="dv-screenpick"><span>SCREEN</span><select value={allScreens.some(s=>s.name===activeScreen)?activeScreen:''} onChange={e=>{const s=allScreens.find(x=>x.name===e.target.value);if(s)applyScreen(s)}}><option value="">Custom</option>{builtInScreens.map(s=><option key={s.name}>{s.name}</option>)}{customScreens.length>0&&<optgroup label="My screens">{customScreens.map(s=><option key={s.name}>{s.name}</option>)}</optgroup>}</select><button onClick={saveScreen} disabled={invalidRuleCount>0} title={invalidRuleCount?'Fix invalid rules before saving':''}>Save as…</button>{customScreens.some(s=>s.name===activeScreen)&&<button className="danger" onClick={deleteScreen}>Delete</button>}</div><div className="dv-screenmeta"><b>{activeScreen}</b><span className={invalidRuleCount?'dv-rule-warning':''}>{invalidRuleCount?`${invalidRuleCount} invalid · ignored`:`${groups.reduce((n,g)=>n+g.rules.length,0)} rules`}</span><span>{sorting.length} sort levels</span><span>{filtered.length.toLocaleString()} matches</span></div></section>
+      <section className="dv-screenbar"><div className="dv-screenpick"><span>SCREEN</span><select value={allScreens.some(s=>s.name===activeScreen)?activeScreen:''} onChange={e=>{const s=allScreens.find(x=>x.name===e.target.value);if(s)applyScreen(s)}}><option value="">Custom</option>{builtInScreens.map(s=><option key={s.name}>{s.name}</option>)}{customScreens.length>0&&<optgroup label="My screens">{customScreens.map(s=><option key={s.name}>{s.name}</option>)}</optgroup>}</select><button onClick={saveScreen} disabled={invalidRuleCount>0} title={invalidRuleCount?'Fix invalid rules before saving':''}>Save as…</button>{customScreens.some(s=>s.name===activeScreen)&&<button className="danger" onClick={deleteScreen}>Delete</button>}</div><div className="dv-screenmeta"><b>{reviewScope?`Review · ${reviewScope==='today'?'Today':'New since last scan'}`:activeScreen}</b><span className={!reviewScope&&invalidRuleCount?'dv-rule-warning':''}>{reviewScope?'screen membership paused':invalidRuleCount?`${invalidRuleCount} invalid · ignored`:`${groups.reduce((n,g)=>n+g.rules.length,0)} rules`}</span><span>{sorting.length} sort levels</span><span>{filtered.length.toLocaleString()} matches</span></div></section>
 
       <section className="dv-recipes">{recipeTabs.map(t=><button key={t} className={recipe===t?'active':''} onClick={()=>setRecipe(t)}>{t}<small>{t==='All'?universe.length:universe.filter(s=>tagsOf(s).includes(t)).length}</small></button>)}</section>
 
