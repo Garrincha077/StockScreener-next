@@ -451,7 +451,7 @@ This file is the durable handoff for future agents. Update it after every meanin
 **Behavior / scoring impact**
 - No scanner/model code, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, Stage, RS, chart mapping, default rank or frozen LEGACY implementation changed.
 - No canonical dataset was committed by the bridge and no Pages deployment changed.
-- Stable `stock-screener2` remained read-only and untouched.
+- Stable `stockscout-screener2` remained read-only and untouched.
 - Next scheduled nightly scan remains disabled.
 
 **Validation**
@@ -808,3 +808,54 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - Phase A3: integrate drawing/editing directly into the main StockScout chart, reuse the proven old StockScout drag/hit-test/logical-index interaction patterns, remove the duplicate chart from the alert dock, and persist main-chart drawings through the V2 drawing API. Add mobile + desktop browser coverage before moving to the right-side manager/global Alerts Center.
+
+## 2026-08-21 — Chart Alerts v2 A3 main-chart drawing gate
+
+**Branch / PR / validated head**
+- Branch: `next-dev`; draft PR #13 remains open, draft and unmerged.
+- Final validated A3 code/test head before this log-only commit: `eeab8d0a62727d65d2961ef86c8c769ecc7a31af`.
+- Relevant late interaction fixes: `3ba85fcfe04759bc1a785f072e1096b84d5a1b0f` moved selected anchors from SVG hit targets to HTML touch targets, `25d2385d09f8531afbece70205a64c6cc917668e` added mobile/desktop touch-target CSS, and `eeab8d0a62727d65d2961ef86c8c769ecc7a31af` disambiguated SVG-vs-handle browser selectors without weakening persistence assertions.
+
+**What changed / why**
+- Horizontal and trendline drawings now live directly on the main StockScout Price chart instead of a duplicate chart inside the Alerts dock.
+- The main-chart overlay uses the A0 trading/logical-bar geometry contract, so visible D/W projection matches the A2 evaluator semantics rather than calendar-day slope.
+- Trendlines render the anchored segment plus a projected right ray; horizontal drawings span the pane. Selected drawings expose anchor editing and whole-line drag while Cursor mode leaves normal Lightweight Charts pan/zoom available.
+- Drawing geometry persists through the V2 drawing API with explicit `D/W`, drawing kind and extension. The Alerts dock is now a manager for the selected ticker/drawing and no longer renders a second chart.
+- Mobile testing exposed that SVG anchor hit targets were not reliable enough for mouse/touch-emulated dragging. Selected anchors were therefore moved to explicit HTML button hit targets layered above the chart, with larger 22 px targets on phone widths. The persistence test still requires a real third drawing upsert after drag and verifies the edit survives reload.
+- Fixed real fixed-control overlaps discovered by Playwright: Groups/Alerts and Original/Groups no longer intercept one another, and the Alerts manager stays above the sticky terminal header.
+
+**Affected files / components**
+- `frontend/src/MainChartDrawingLayer.tsx`.
+- `frontend/src/ChartAlertsProvider.tsx`.
+- `frontend/src/ChartAlertsDock.tsx`.
+- `frontend/src/Root.tsx` and alert/layout CSS.
+- `frontend/src/deepvue/chartAlerts.ts` and its V2 snapshot tests.
+- `frontend/e2e/chart-drawings.spec.ts`.
+- V2 browser Edge gateway: `supabase/functions/stockscout-next-alerts-v2/index.ts`.
+- Existing A2 evaluator function and StockScout scan/model code were not changed by the final A3 interaction repair.
+
+**Live Supabase / gateway validation**
+- `stockscout-next-alerts-v2` browser gateway version 1 is ACTIVE and remains separate from the A2 evaluator function.
+- Authorized device-key snapshot returned HTTP 200; a controlled Weekly V2 drawing create returned HTTP 201 and was present on the following snapshot, proving server persistence. The test drawing was then deleted/cleaned up.
+- Missing device key returned HTTP 401, confirming the browser gateway does not expose the owner snapshot without its capability key.
+- Supabase security advisor showed no new critical finding; the existing private-table RLS INFO pattern and pre-existing `pg_net` / leaked-password warnings remain unchanged.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default ranking or other StockScout Core methodology changed.
+- Frozen LEGACY remains unchanged and shadow-only.
+- Drawings/rules/events remain an isolated user sidecar outside canonical scan data and cannot affect StockScout scores.
+- Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- Final Frontend Compile Smoke run `32516564376` (#110) on `eeab8d0...`: **success**. Runtime/geometry tests, TypeScript/Vite build and Playwright completed, including the main-chart drawing test on mobile and desktop: create horizontal + trendline, verify right ray, attach a Touch rule, drag the horizontal anchor through the real handle, require an additional drawing persistence upsert, reload and verify both drawings/rule remain, then pan the chart and verify no accidental drawing write occurs.
+- Final StockScout Validation run `32516564336` (#198) on the same `eeab8d0...` head: **success**, including Stable snapshot restore, frozen LEGACY verification, regression/integration/model compatibility, MA Cluster, Scout Tier, exact LEGACY/Core invariance and frontend build.
+- Full Validation was not run because A3 changes the isolated frontend/user-alert browser sidecar and Edge browser gateway; it does not alter the StockScout scanner, canonical scan-data generation or scan/publication workflow path.
+
+**Risk / decision**
+- A3 is code/browser validated, but public Pages has not yet been re-deployed and manually exercised against a real ticker after this final head. Do not treat the public UX as validated until that preview test is done.
+- Keep PR #13 draft. Keep the V1 compatibility mirror until the remaining manager/global-center/cross-device work is proven and a deliberate cleanup phase is reached.
+- Telegram credentials are still not configured and Telegram delivery is not part of the A3 gate.
+
+**Next logical step**
+- Deploy `next-dev` to the temporary GitHub Pages preview and manually verify on a real ticker: horizontal/trendline creation, right-ray appearance, drag/edit persistence after reload, alert-rule save and normal chart pan/zoom.
+- After that real-use check, continue with A4 manager refinement and A5 global Alerts Center; keep Telegram credential setup/in-app secure storage for its planned later slice.
