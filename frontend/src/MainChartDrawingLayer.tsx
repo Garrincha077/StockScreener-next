@@ -160,7 +160,7 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
 
   useEffect(()=>()=>stopWindowDrag(),[stopWindowDrag])
 
-  const beginDrag=useCallback((event:ReactPointerEvent<SVGElement>|ReactMouseEvent<SVGElement>,drawing:ChartDrawing,kind:DragKind)=>{
+  const beginDrag=useCallback((event:ReactPointerEvent<Element>|ReactMouseEvent<Element>,drawing:ChartDrawing,kind:DragKind)=>{
     if(tool!=='cursor'||dragRef.current)return
     const start=logicalAndPriceFromClient(event.clientX,event.clientY)
     const indexes:[number,number]=[frameTimes.indexOf(drawing.points[0].time),frameTimes.indexOf(drawing.points[1].time)]
@@ -239,6 +239,8 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
   },[tool,firstPoint,pointFromClient])
 
   const renderDrawings:ChartDrawing[]=drawings.map(drawing=>editing&&editing.id===drawing.id?editing:drawing)
+  const selectedDrawing=renderDrawings.find(drawing=>drawing.id===selectedDrawingId)
+  const selectedGeometry=selectedDrawing?geometry(selectedDrawing):null
   const draft=tool==='trendline'&&firstPoint&&hoverPoint?{ticker,kind:'trendline',interval,points:[firstPoint,hoverPoint],extension:'ray_right'} as ChartDrawing:null
 
   const badgeText=(drawing:ChartDrawing)=>{
@@ -270,13 +272,17 @@ export default function MainChartDrawingLayer({bridge,ticker,bars,source,interva
           {g.segment&&<line className="cad-main-line" x1={g.segment.x1} y1={g.segment.y1} x2={g.segment.x2} y2={g.segment.y2} stroke={color} strokeWidth={selected?2.4:1.8}/>} 
           {g.ray&&<line className="cad-main-ray" x1={g.ray.x1} y1={g.ray.y1} x2={g.ray.x2} y2={g.ray.y2} stroke={color} strokeWidth={selected?2.1:1.6} strokeDasharray="7 4"/>}
           <line className="cad-main-hit" x1={g.full.x1} y1={g.full.y1} x2={g.full.x2} y2={g.full.y2} stroke="transparent" strokeWidth={HIT_WIDTH} onPointerDown={event=>beginDrag(event,drawing,'body')} onMouseDown={event=>beginDrag(event,drawing,'body')}/>
-          {selected&&g.a&&<circle className="cad-main-handle" cx={g.a.x} cy={g.a.y} r="5.5" onPointerDown={event=>beginDrag(event,drawing,'a')} onMouseDown={event=>beginDrag(event,drawing,'a')}/>} 
-          {selected&&drawing.kind==='trendline'&&g.b&&<circle className="cad-main-handle" cx={g.b.x} cy={g.b.y} r="5.5" onPointerDown={event=>beginDrag(event,drawing,'b')} onMouseDown={event=>beginDrag(event,drawing,'b')}/>} 
           {g.badge&&<foreignObject className="cad-main-badge-fo" x={g.badge.x} y={g.badge.y} width="168" height="24"><button className={`cad-main-badge ${selected?'selected':''}`} onPointerDown={event=>{event.stopPropagation();selectDrawing(drawing.id||null)}}>{badgeText(drawing)}</button></foreignObject>}
         </g>
       })}
       {draft&&(()=>{const g=geometry(draft);return g?.segment?<line className="cad-main-draft" x1={g.segment.x1} y1={g.segment.y1} x2={g.segment.x2} y2={g.segment.y2}/>:null})()}
     </svg>
+    {selectedDrawing&&selectedDrawing.id&&selectedGeometry&&<div className="cad-main-handle-overlay">
+      <div data-drawing-id={selectedDrawing.id}>
+        {selectedGeometry.a&&<button type="button" aria-label="Move anchor A" className="cad-main-handle" style={{left:selectedGeometry.a.x,top:selectedGeometry.a.y}} onPointerDown={event=>beginDrag(event,selectedDrawing,'a')} onMouseDown={event=>beginDrag(event,selectedDrawing,'a')}/>} 
+        {selectedDrawing.kind==='trendline'&&selectedGeometry.b&&<button type="button" aria-label="Move anchor B" className="cad-main-handle" style={{left:selectedGeometry.b.x,top:selectedGeometry.b.y}} onPointerDown={event=>beginDrag(event,selectedDrawing,'b')} onMouseDown={event=>beginDrag(event,selectedDrawing,'b')}/>} 
+      </div>
+    </div>}
     {tool!=='cursor'&&<div className="cad-main-capture" onPointerDown={capturePoint} onPointerMove={captureMove}/>} 
     {error&&<div className="cad-main-error">drawings offline</div>}
   </div>
