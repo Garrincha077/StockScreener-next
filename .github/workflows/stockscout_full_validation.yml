@@ -1,36 +1,98 @@
 name: StockScout Full Validation
 
-# Final gate for StockScout Next scan/data/workflow changes.
-# Full-run trigger: 2026-08-21 current-main reconciliation of Codex app/data hardening
 on:
   push:
     paths:
-      - '.github/workflows/stockscout_full_validation.yml'
-      - '.github/workflows/validate_stable_snapshot_sync.yml'
-      - '.github/workflows/deploy_latest_stable_preview.yml'
+      - '.github/workflows/**'
+      - 'requirements-ci.lock'
+      - 'validate_scan_session.py'
+      - 'validate_snapshot_artifact.py'
+      - 'tests/test_validate_scan_session.py'
+      - 'tests/test_validate_snapshot_artifact.py'
+      - 'tests/test_workflow_hardening.py'
   workflow_dispatch:
+    inputs:
+      force_full_refresh:
+        description: Force refresh all fundamentals
+        required: false
+        type: boolean
+        default: false
+      allow_prior_session_backfill:
+        description: Explicitly validate a prior completed session before 16:30 ET
+        required: false
+        type: boolean
+        default: false
+      publish_snapshot:
+        description: Publish validated-scan-snapshot when running on main
+        required: false
+        type: boolean
+        default: false
+      deploy_pages:
+        description: Deploy the published snapshot when running on main
+        required: false
+        type: boolean
+        default: false
 
-permissions:
-  contents: write
-  pages: write
-  id-token: write
+permissions: {}
 
 jobs:
-  legacy-shadow-unit:
+  workflow-and-projection-tests:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: LEGACY shadow unit and client projection tests
+          cache: pip
+          cache-dependency-path: requirements-ci.lock
+      - name: Install hash-locked CI dependencies
+        run: python -m pip install --require-hashes -r requirements-ci.lock
+      - name: Validate workflow, session and projection contracts
         run: |
-          python -m pip install --upgrade pip pytest
-          python -m pytest tests/test_compute_legacy_confirmation.py tests/test_build_legacy_confirmation_sidecar.py tests/test_prepare_frontend_payloads.py -q
+          python -m pytest tests/test_compute_legacy_confirmation.py tests/test_build_legacy_confirmation_sidecar.py tests/test_prepare_frontend_payloads.py tests/test_validate_scan_session.py tests/test_validate_snapshot_artifact.py tests/test_workflow_hardening.py -q
 
   full-scan:
-    needs: legacy-shadow-unit
+    needs: workflow-and-projection-tests
+    permissions:
+      actions: read
+      contents: read
+      pages: write
+      id-token: write
     uses: ./.github/workflows/daily_screening_git_storage.yml
     with:
-      persist_outputs: false
-      deploy_pages: false
+      force_full_refresh: ${{ inputs.force_full_refresh || false }}
+      allow_prior_session_backfill: ${{ inputs.allow_prior_session_backfill || false }}
+      publish_snapshot: ${{ inputs.publish_snapshot || false }}
+      deploy_pages: ${{ inputs.deploy_pages || false }}
+
+  publish-commit-status:
+    needs: [workflow-and-projection-tests, full-scan]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions:
+      statuses: write
+    steps:
+      - name: Publish stockscout/full-validation commit status
+        env:
+          GH_TOKEN: ${{ github.token }}
+          UNIT_RESULT: ${{ needs.workflow-and-projection-tests.result }}
+          SCAN_RESULT: ${{ needs.full-scan.result }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          state=failure
+          description="Full Validation failed"
+          if [ "$UNIT_RESULT" = "success" ] && [ "$SCAN_RESULT" = "success" ]; then
+            state=success
+            description="Full Validation passed"
+          fi
+          gh api --method POST "/repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA" \
+            -f state="$state" \
+            -f context="stockscout/full-validation" \
+            -f description="$description" \
+            -f target_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          test "$state" = success

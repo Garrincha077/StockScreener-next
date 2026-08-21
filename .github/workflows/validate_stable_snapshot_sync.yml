@@ -30,6 +30,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -100,11 +102,13 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
 
       - name: Test, typecheck and build frontend against fresh Stable data
         working-directory: frontend
         run: |
-          npm install
+          npm ci
           npm run check
 
       - name: Verify workflow did not mutate repositories

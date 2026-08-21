@@ -11,24 +11,26 @@ on:
       - 'tests/test_fundamentals_fetcher_extended.py'
       - 'tests/test_hydrate_rich_fundamentals.py'
       - 'tests/test_fundamental_evidence.py'
+      - 'requirements-ci.lock'
       - '.github/workflows/fundamentals_regression.yml'
   workflow_dispatch:
 
-permissions:
-  contents: read
+permissions: {}
 
 jobs:
   fundamentals-regression:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
-      - run: python -m pip install --upgrade pip
-      - run: pip install -r requirements.txt
+          cache-dependency-path: requirements-ci.lock
+      - run: python -m pip install --require-hashes -r requirements-ci.lock
       - name: Compile fundamental pipeline
         run: python -m py_compile src/data/fundamentals_fetcher.py src/data/extended_fundamentals_fetcher.py hydrate_rich_fundamentals.py fundamental_evidence.py apply_fundamental_evidence.py
       - name: Verify frozen upstream execution graph
