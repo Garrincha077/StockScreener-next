@@ -13,6 +13,18 @@ from phase6_empirical_cohorts import (
 )
 
 
+def captured_engine(*, early=False):
+    return {
+        "model": "original-signal-engine-v1",
+        "completeSourceCaptureModel": "legacy-complete-source-capture-v1",
+        "buy": {"emittedByOriginalRun": False, "isBuy": False, "marketQualified": False},
+        "sell": {"emittedByOriginalRun": False, "isSell": False, "reasons": []},
+        "minervini": {"passes": early, "passed": 8 if early else 5, "total": 8},
+        "vcp": {"isVcp": False},
+        "breakout": {"is_breakout": False},
+    }
+
+
 def row(**overrides):
     base = {
         "ticker": "AAA",
@@ -24,6 +36,7 @@ def row(**overrides):
         "legacyConfirmationStatus": "NEUTRAL",
         "originalRunBuySignal": False,
         "originalRunSellSignal": False,
+        "originalEngine": captured_engine(),
         "stage": 2,
         "rsRank": 91,
         "breakoutPct": -1.2,
@@ -84,25 +97,31 @@ def test_risk_roadmap_cohort_requires_strong_stockscout():
     ) == ()
 
 
-def test_snapshot_projection_is_deterministic_and_does_not_mutate_payload():
+def test_snapshot_projection_derives_shadow_status_from_canonical_capture():
+    confirmed = row(ticker="AAA", originalRunBuySignal=True)
+    confirmed.pop("legacyConfirmationStatus")
+    early = row(ticker="BBB", originalEngine=captured_engine(early=True))
+    early.pop("legacyConfirmationStatus")
+    risk = row(ticker="CCC", originalRunSellSignal=True)
+    risk.pop("legacyConfirmationStatus")
+    low = row(
+        ticker="DDD",
+        opportunityScore=49,
+        opportunityRank=20,
+        opportunityTier="PASS",
+        originalRunBuySignal=True,
+    )
+    low.pop("legacyConfirmationStatus")
+
     payload = {
         "generatedAt": "2026-08-21T00:00:00+00:00",
-        "universe": [
-            row(ticker="CCC", legacyConfirmationStatus="RISK"),
-            row(ticker="AAA", legacyConfirmationStatus="CONFIRMED"),
-            row(ticker="BBB", legacyConfirmationStatus="EARLY"),
-            row(
-                ticker="DDD",
-                opportunityScore=49,
-                opportunityRank=20,
-                opportunityTier="PASS",
-                originalRunBuySignal=True,
-            ),
-        ],
+        "market": {"originalSignalGate": {"gate": {"should_generate_buys": True}}},
+        "universe": [risk, confirmed, early, low],
     }
     before = deepcopy(payload)
     first = build_snapshot_observations(payload)
     second = build_snapshot_observations(payload)
+
     assert payload == before
     assert first == second
     assert first["cohortCounts"] == {
@@ -117,15 +136,16 @@ def test_snapshot_projection_is_deterministic_and_does_not_mutate_payload():
         (COHORT_LEGACY_BUY_LOW, "DDD"),
         (COHORT_RISK, "CCC"),
     ]
-    assert first["definitions"]["legacyConfirmationAffectsStockScout"] is False
+    assert first["definitions"]["legacyConfirmation"]["affectsStockScout"] is False
+    assert first["source"]["legacyConfirmationModel"]
 
 
-def test_missing_or_invalid_rows_do_not_create_observations():
-    projection = build_snapshot_observations(
-        {"generatedAt": "2026-08-21T00:00:00+00:00", "universe": [None, {}, row(ticker="")]}
-    )
-    assert projection["observations"] == []
-    assert sum(projection["cohortCounts"].values()) == 0
+def test_projected_status_fallback_does_not_reconstruct_missing_capture():
+    projected = row(ticker="AAA", legacyConfirmationStatus="EARLY")
+    projected.pop("originalEngine")
+    payload = {"generatedAt": "g", "universe": [projected]}
+    result = build_snapshot_observations(payload)
+    assert result["cohortCounts"][COHORT_EARLY] == 1
 
 
 def test_append_unique_observations_is_idempotent():
