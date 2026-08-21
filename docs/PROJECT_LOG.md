@@ -514,3 +514,51 @@ This file is the durable handoff for future agents. Update it after every meanin
 
 **Next logical step**
 - After PR #6 is safely promoted, land/rebase PR #8 as the small frontend-only UX change and verify it in the public Next app with a real Today/New snapshot. Then return to Phase 6 empirical cohort tracking.
+
+## 2026-08-21 — Codex hardening / Review Scope promotion + Phase 6 observer
+
+**Branch / PR / commits**
+- PR #6 app/data hardening was promoted to Next `main` as merge commit `57dc6fc8ed281e7a641fc3f86cede4f98e58ac6c` after its current validation checks were verified.
+- PR #8 Review Scope UX was retargeted to the new `main` and promoted as merge commit `d2640e61c428831a4037c5d1819554e6a39b5bb4`.
+- Before further development, `next-dev` was fast-forwarded only after verifying that it had 0 commits ahead of `main`.
+- Phase 6 PR #9 final validated head: `5c9f18e85d00164595a326abaec85bf8bb379814`; merged to Next `main` as `d7c959d6803d465db328cf71be08153b99fe045b`.
+- Phase 6 implementation sequence: `b5be1475cb7766682258b5f522a9507bfa5aa5fd`, `65ae0ee1350beba836cb69ee5fdd66934acb8e5d`, `004f5894eebc6ab107c3d8a4f202b85fb8cbae5a`, `1eaa3a015e17e5a2d595493311bdc777fb8dae26`, `5c9f18e85d00164595a326abaec85bf8bb379814`.
+
+**What changed / why**
+- #6 promoted the already-reconciled application/data-provider hardening without changing StockScout scoring/model methodology.
+- #8 promoted the validated Today/New temporary Review Scope UX, preserving Multi Sort/query/review behavior and keeping scope as a reversible view-level membership override.
+- Phase 6 now has an observation-only empirical cohort projection. It does not yet persist a journal or calculate forward performance.
+- Cohort 1 = strong StockScout + LEGACY `CONFIRMED`; cohort 2 = strong StockScout + LEGACY `EARLY`; cohort 3 = captured original-run LEGACY BUY + low StockScout Opportunity; cohort 4 = strong StockScout + LEGACY `RISK`.
+- “Strong StockScout” reuses the existing Phase 5 Prime / Ready Opportunities contract exactly: `opportunityScore >= 80`, `opportunityRank >= 90`, `extended=false`.
+- Roadmap “low StockScout Opportunity” is explicitly mapped to the existing canonical Opportunity v2 `PASS` tier (`score <55`) rather than creating a new threshold or score.
+- Canonical LEGACY status is obtained from the existing read-only confirmation sidecar adapter over the frozen capture. An already-projected client status is only a fail-open fallback; no LEGACY rule is reconstructed or modified.
+
+**Affected files / components**
+- Phase 6: `phase6_empirical_cohorts.py`.
+- Phase 6 tests: `tests/test_phase6_empirical_cohorts.py` and a CI-executed integration smoke in `tests/test_build_legacy_confirmation_sidecar.py`.
+- #6 and #8 retain their own PR/history-level frontend/provider file lists; this log entry records promotion rather than duplicating their full diffs.
+
+**Scoring / behavior impact**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping or default ranking changed.
+- Frozen LEGACY remains read-only/shadow-only and cannot alter StockScout scoring; `affectsStockScout: false` remains the contract.
+- Phase 6 observer is not invoked by the scanner, data publish path or GitHub workflow and does not write canonical data.
+- Stable `Garrincha077/stock-screener2` remained untouched/read-only.
+- Next scheduled nightly scan remains disabled.
+
+**Tests / audits / CI**
+- PR #6 verified checks before promotion: Validate Stable Snapshot Sync `32463989968` **success**, Frontend Compile Smoke `32463989972` **success**, StockScout Validation `32463989993` **success**.
+- PR #8 final checks: Frontend Compile Smoke `32466218700` **success**, StockScout Validation `32466218562` **success**, Validate Stable Snapshot Sync `32466218613` **success**.
+- Phase 6 PR #9 final head `5c9f18e...`: Frontend Compile Smoke `32468222917` (#55) **success** and StockScout Validation `32468222944` (#99) **success**.
+- Phase 6 StockScout Validation passed Stable snapshot restore, frozen LEGACY verification, regression/integration tests including the Phase 6 canonical observer smoke, current model-stack application, model compatibility, MA Cluster audit, Scout Tier audit, exact LEGACY/Core invariance and frontend TypeScript/Vite build.
+- Full Validation was not required for PR #9 because the observer/test slice is not wired into scan/data/workflow runtime. Any later automatic journal/publish wiring is a data/workflow change and must use Full Validation.
+
+**Risk / decision**
+- Do not wire Phase 6 journal persistence into scanner/publish automation until its retention/provenance format is separately reviewed and Full Validation is run.
+- Keep `PASS` as the explicit, transparent current interpretation of roadmap “low Opportunity”; revisit only from empirical evidence rather than through an opaque threshold change.
+- PR #7 workflow hardening remains draft/unmerged. Do not promote it until its required current checks and Full Validation are explicitly verified.
+- No Phase 6 performance conclusion exists yet. Cohort membership is now defined, but 5D/20D returns, MFE, MAE, breakout success/failure, drawdown and hit rate require a longitudinal observation journal and future-session prices.
+
+**Next logical step**
+- Synchronize `next-dev` to this logged controlled `main` baseline.
+- Continue Phase 6 with the smallest reversible journal/forward-price slice: define append-only observation retention and derive future-session pricing from existing validated data/charts before considering automatic capture.
+- If that journal is wired into Stable snapshot sync, scan, publish or workflow persistence, run Full Validation before promotion.
