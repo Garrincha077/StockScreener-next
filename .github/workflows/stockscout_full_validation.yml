@@ -1,13 +1,14 @@
 name: StockScout Full Validation
 
 # Final gate for StockScout Next scan/data/workflow changes.
-# Full-run trigger: 2026-08-21 fundamental client-projection restoration
+# Pages source/publish workflow changes are validation-gated as data-path changes.
 on:
   push:
     paths:
       - '.github/workflows/stockscout_full_validation.yml'
       - '.github/workflows/validate_stable_snapshot_sync.yml'
       - '.github/workflows/deploy_latest_stable_preview.yml'
+      - '.github/workflows/frontend_pages.yml'
   workflow_dispatch:
 
 permissions:
