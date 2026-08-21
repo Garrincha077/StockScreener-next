@@ -1,6 +1,6 @@
 import {useMemo,useState} from 'react'
 import {useChartAlerts} from './ChartAlertsProvider'
-import type {ChartAlertEvent,ChartAlertRule,ChartAlertStatus,ChartDrawing} from './deepvue/chartAlerts'
+import type {ChartAlertRule,ChartAlertStatus,ChartAlertV2Event,ChartDrawing} from './deepvue/chartAlerts'
 
 type View='active'|'near'|'triggered'|'paused'|'all'
 const CONDITION={cross_above:'Cross Above',cross_below:'Cross Below',touch:'Touch'} as const
@@ -27,7 +27,7 @@ export default function ChartAlertsCenter({open,onOpenChange,onOpenDrawing}:{ope
 
   if(!open)return null
 
-  const openEvent=(event:ChartAlertEvent)=>{
+  const openEvent=(event:ChartAlertV2Event)=>{
     const drawing=event.drawingId?drawingById.get(event.drawingId):undefined
     if(drawing)onOpenDrawing(drawing)
   }
