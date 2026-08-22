@@ -71,3 +71,29 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - Perform one controlled real-use A6 validation: create a saved D or W line/rule, reload to prove persistence, deliberately trigger one event, confirm `New` -> read survives reload, then replay the same snapshot and confirm zero duplicate event/message.
 - If that passes, treat A5/A6 as closed and continue to roadmap A7: owner-scoped secure Telegram Settings using Supabase Vault, masked write-only credentials, `getMe`/test message, replace/disconnect and no secret exposure to browser storage/logs.
 - Keep Stable untouched and keep the Next scheduled nightly scan disabled.
+
+## 2026-08-23 — PR13 one-shot GitHub Pages test deployment preparation
+
+**Branch / commits**
+- Branch: `next-dev`; PR #13 remains draft and unmerged.
+- One-shot Pages trigger commit: `a0ce736759ce69d72c748fab2eaeec430901ec6d` temporarily broadened `frontend_pages.yml` push branches from `[main]` to `[main, next-dev]` so that this exact push could build/deploy the current PR13 frontend using the existing protected Pages pipeline.
+- Immediate safety restore: `c1d40cd68787b218540e894c92cabc2f7b8b8eb1` restored `frontend_pages.yml` to `[main]` only. Future `next-dev` pushes therefore do not auto-deploy Pages.
+
+**Why / deployment shape**
+- GitHub's official `actions/deploy-pages` PR-preview mode is still not publicly available, so a distinct native PR preview URL is not available through the existing Pages stack.
+- The one-shot test uses the existing `StockScreener-next` Pages site as a reversible test surface only. It does not touch the Stable `stock-screener2` repository.
+- Existing Pages build behavior remains unchanged: it reads the latest Stable canonical snapshot read-only, builds the lightweight Next projection + frozen LEGACY shadow, hydrates read-only 5Y chart shards best-effort, verifies the Stable snapshot did not advance mid-build, runs frontend checks, validates chart coverage and only then deploys.
+- Chart Alerts v2 frontend requires no Pages secret injection: it calls the existing Next Supabase v2 Edge endpoint through capability-style per-browser device keys; no Telegram secret is exposed to browser build/storage.
+
+**Behavior / model impact**
+- No StockScout score, scanner, ranking, canonical dataset builder, chart mapping or frozen LEGACY behavior changed.
+- Next nightly scheduled scan remains disabled.
+- This is deployment plumbing only; the test site is intended to validate real drawing persistence and alert lifecycle against the already-deployed sidecar.
+
+**Validation status**
+- Code immediately before the deployment preparation was already green on Frontend Compile Smoke #153 and StockScout Validation #265.
+- The workflow trigger and restore commits themselves only changed the branch filter in `.github/workflows/frontend_pages.yml`; the workflow content was restored byte-for-byte to the previous main-only version.
+- Current connector access does not expose push-triggered Pages workflow-run listing, so no Pages deployment SUCCESS is claimed in this log until the published site/run is directly observed.
+
+**Next logical step**
+- Open the StockScreener-next GitHub Pages site and perform the controlled A6 test: draw one D/W level or trendline, assign a rule, reload to prove persistence, then use one deliberate trigger to validate unread/read lifecycle and no duplicate replay.
