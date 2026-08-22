@@ -52,8 +52,15 @@ const snapshot={
   ],
 }
 
-test('global alerts center summarizes all tickers and opens the selected drawing manager',async({page})=>{
+test('global alerts center summarizes all tickers, manages Telegram securely and opens the selected drawing manager',async({page})=>{
   let markedRead=false
+  let telegramConfigured=false
+  let telegramSaved=false
+  let telegramTested=false
+  let telegramDisconnected=false
+  const telegramToken='123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi'
+  const telegramChatId='123456789'
+
   await page.route('**/data/manifest.json*',route=>route.fulfill({status:200,contentType:'application/json',body:manifest}))
   await page.route('**/data/core.json*',route=>route.fulfill({status:200,contentType:'application/json',body:core}))
   await page.route('**/data/charts/000.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({T001:bars,T002:bars})}))
@@ -64,6 +71,23 @@ test('global alerts center summarizes all tickers and opens the selected drawing
     if(body?.action==='event_read'){
       markedRead=body.id==='e1'&&body.read===true
       return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true})})
+    }
+    if(body?.action==='telegram_status'){
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({telegram:telegramConfigured?{configured:true,botId:'42',botUsername:'stockscout_test_bot',updatedAt:'2026-08-23T00:00:00Z'}:{configured:false}})})
+    }
+    if(body?.action==='telegram_save'){
+      telegramSaved=body.token===telegramToken&&body.chatId===telegramChatId
+      telegramConfigured=true
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({telegram:{configured:true,botId:'42',botUsername:'stockscout_test_bot',updatedAt:'2026-08-23T00:00:00Z'}})})
+    }
+    if(body?.action==='telegram_test'){
+      telegramTested=true
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true})})
+    }
+    if(body?.action==='telegram_disconnect'){
+      telegramDisconnected=true
+      telegramConfigured=false
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,telegram:{configured:false}})})
     }
     return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot)})
   })
@@ -81,11 +105,30 @@ test('global alerts center summarizes all tickers and opens the selected drawing
   const triggeredTab=tabs.getByRole('button',{name:/^Triggered 1$/})
   const pausedTab=tabs.getByRole('button',{name:/^Paused 1$/})
   const allTab=tabs.getByRole('button',{name:/^All Drawings 2$/})
+  const settingsTab=tabs.getByRole('button',{name:'Settings'})
   await expect(activeTab).toBeVisible()
   await expect(nearTab).toBeVisible()
   await expect(triggeredTab).toBeVisible()
   await expect(pausedTab).toBeVisible()
   await expect(allTab).toBeVisible()
+  await expect(settingsTab).toBeVisible()
+
+  await settingsTab.click()
+  const telegram=center.getByRole('region',{name:'Telegram notification settings'})
+  await expect(telegram).toContainText('Not configured')
+  await telegram.getByLabel('Telegram bot token').fill(telegramToken)
+  await telegram.getByLabel('Telegram chat ID').fill(telegramChatId)
+  await telegram.getByRole('button',{name:'Save securely'}).click()
+  await expect.poll(()=>telegramSaved).toBe(true)
+  await expect(telegram).toContainText('Connected as @stockscout_test_bot')
+  await expect(telegram).not.toContainText(telegramToken)
+  await expect(telegram).not.toContainText(telegramChatId)
+  await telegram.getByRole('button',{name:'Send test message'}).click()
+  await expect.poll(()=>telegramTested).toBe(true)
+  await expect(telegram).toContainText('Test message sent')
+  await telegram.getByRole('button',{name:'Disconnect Telegram'}).click()
+  await expect.poll(()=>telegramDisconnected).toBe(true)
+  await expect(telegram).toContainText('Not configured')
 
   await nearTab.click()
   await expect(center).toContainText('not a StockScout score')
