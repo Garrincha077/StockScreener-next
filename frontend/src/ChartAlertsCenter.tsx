@@ -1,8 +1,9 @@
 import {useMemo,useState} from 'react'
 import {useChartAlerts} from './ChartAlertsProvider'
+import TelegramSettingsPanel from './TelegramSettingsPanel'
 import type {ChartAlertRule,ChartAlertStatus,ChartAlertV2Event,ChartDrawing} from './deepvue/chartAlerts'
 
-type View='active'|'near'|'triggered'|'paused'|'all'
+type View='active'|'near'|'triggered'|'paused'|'all'|'settings'
 const CONDITION={cross_above:'Cross Above',cross_below:'Cross Below',touch:'Touch'} as const
 const STATE:Record<string,string>={active:'Active',approaching:'Approaching',triggered:'Triggered',paused:'Paused',needs_review:'Needs review'}
 const NEAR_TRIGGER_PCT=2
@@ -49,34 +50,37 @@ export default function ChartAlertsCenter({open,onOpenChange,onOpenDrawing}:{ope
       <button className={view==='triggered'?'active':''} onClick={()=>setView('triggered')}>Triggered <span>{snapshot.events.length}</span></button>
       <button className={view==='paused'?'active':''} onClick={()=>setView('paused')}>Paused <span>{paused.length}</span></button>
       <button className={view==='all'?'active':''} onClick={()=>setView('all')}>All Drawings <span>{all.length}</span></button>
-    </nav><input value={query} onChange={event=>setQuery(event.target.value.toUpperCase())} placeholder="Ticker…" aria-label="Filter global alerts by ticker"/></div>
+      <button className={view==='settings'?'active':''} onClick={()=>setView('settings')}>Settings</button>
+    </nav>{view!=='settings'&&<input value={query} onChange={event=>setQuery(event.target.value.toUpperCase())} placeholder="Ticker…" aria-label="Filter global alerts by ticker"/>}</div>
 
     <div className="cad-center-body">
-      {view==='near'&&<div className="cad-center-note">Near Trigger means ≤{NEAR_TRIGGER_PCT}% absolute geometric distance to the projected line, nearest first. This is not a StockScout score.</div>}
-      {view==='triggered'?<div className="cad-center-events">
-        {triggered.length===0?<p className="cad-empty">No trigger events match this view.</p>:triggered.map(event=>{
-          const canOpen=Boolean(event.drawingId&&drawingById.has(event.drawingId))
-          return <button type="button" key={event.id} className={`cad-center-event ${event.readAt?'':'unread'}`} onClick={()=>openEvent(event)} title={canOpen?'Open this drawing and mark event read':'Mark event read'}>
-            <span className="cad-center-ticker"><b>{event.ticker}</b><small>{event.interval||'—'} · {event.marketDate}</small></span>
-            <span><b>{event.eventType==='break_up'?'Crossed above':event.eventType==='break_down'?'Crossed below':'Touched'}</b><small>line ${fmt(event.currentLinePrice)} · close ${fmt(event.closePrice)}</small></span>
-            <span className="cad-center-telegram">{event.readAt?'':'New · '}Telegram · {event.telegramStatus.replaceAll('_',' ')}</span>
-          </button>
-        })}
-      </div>:<div className="cad-center-rows">
-        {rows.length===0?<p className="cad-empty">No drawings match this view.</p>:rows.map(drawing=>{
-          if(!drawing.id)return null
-          const rule=ruleByDrawing.get(drawing.id),status=statusByDrawing.get(drawing.id)
-          const state=status?STATE[status.state]||status.state:rule?.enabled?'Active':rule?'Paused':'Drawing only'
-          return <button type="button" key={drawing.id} className="cad-center-row" data-drawing-id={drawing.id} onClick={()=>onOpenDrawing(drawing)}>
-            <span className="cad-center-ticker"><b>{drawing.ticker}</b><small>{drawing.interval} · {drawing.kind==='horizontal'?'Level':'Trend'}</small></span>
-            <span className="cad-center-condition"><b>{ruleText(rule)}</b><small>{drawing.kind==='horizontal'?`$${fmt(drawing.points[0].price)}`:`${drawing.points[0].time} → ${drawing.points[1].time}`}</small></span>
-            <span><b>${fmt(status?.projectedLinePrice)}</b><small>projected line</small></span>
-            <span><b>${fmt(status?.latestClose)}</b><small>latest close</small></span>
-            <span className="cad-center-distance"><b>{status?.state==='needs_review'?'Review':distance(status?.distancePct)}</b><small>{status?.state==='needs_review'?(status.reviewReason||'needs review'):'distance'}</small></span>
-            <span className={`cad-state cad-state-${status?.state||'paused'}`}>{state}</span>
-          </button>
-        })}
-      </div>}
+      {view==='settings'?<TelegramSettingsPanel/>:<>
+        {view==='near'&&<div className="cad-center-note">Near Trigger means ≤{NEAR_TRIGGER_PCT}% absolute geometric distance to the projected line, nearest first. This is not a StockScout score.</div>}
+        {view==='triggered'?<div className="cad-center-events">
+          {triggered.length===0?<p className="cad-empty">No trigger events match this view.</p>:triggered.map(event=>{
+            const canOpen=Boolean(event.drawingId&&drawingById.has(event.drawingId))
+            return <button type="button" key={event.id} className={`cad-center-event ${event.readAt?'':'unread'}`} onClick={()=>openEvent(event)} title={canOpen?'Open this drawing and mark event read':'Mark event read'}>
+              <span className="cad-center-ticker"><b>{event.ticker}</b><small>{event.interval||'—'} · {event.marketDate}</small></span>
+              <span><b>{event.eventType==='break_up'?'Crossed above':event.eventType==='break_down'?'Crossed below':'Touched'}</b><small>line ${fmt(event.currentLinePrice)} · close ${fmt(event.closePrice)}</small></span>
+              <span className="cad-center-telegram">{event.readAt?'':'New · '}Telegram · {event.telegramStatus.replaceAll('_',' ')}</span>
+            </button>
+          })}
+        </div>:<div className="cad-center-rows">
+          {rows.length===0?<p className="cad-empty">No drawings match this view.</p>:rows.map(drawing=>{
+            if(!drawing.id)return null
+            const rule=ruleByDrawing.get(drawing.id),status=statusByDrawing.get(drawing.id)
+            const state=status?STATE[status.state]||status.state:rule?.enabled?'Active':rule?'Paused':'Drawing only'
+            return <button type="button" key={drawing.id} className="cad-center-row" data-drawing-id={drawing.id} onClick={()=>onOpenDrawing(drawing)}>
+              <span className="cad-center-ticker"><b>{drawing.ticker}</b><small>{drawing.interval} · {drawing.kind==='horizontal'?'Level':'Trend'}</small></span>
+              <span className="cad-center-condition"><b>{ruleText(rule)}</b><small>{drawing.kind==='horizontal'?`$${fmt(drawing.points[0].price)}`:`${drawing.points[0].time} → ${drawing.points[1].time}`}</small></span>
+              <span><b>${fmt(status?.projectedLinePrice)}</b><small>projected line</small></span>
+              <span><b>${fmt(status?.latestClose)}</b><small>latest close</small></span>
+              <span className="cad-center-distance"><b>{status?.state==='needs_review'?'Review':distance(status?.distancePct)}</b><small>{status?.state==='needs_review'?(status.reviewReason||'needs review'):'distance'}</small></span>
+              <span className={`cad-state cad-state-${status?.state||'paused'}`}>{state}</span>
+            </button>
+          })}
+        </div>}
+      </>}
     </div>
     <footer>Global alert state is a private sidecar. Near Trigger is transparent line distance only; it never changes StockScout or LEGACY scoring.</footer>
   </aside>
