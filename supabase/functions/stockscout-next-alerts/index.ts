@@ -56,6 +56,12 @@ type EvaluatorRow = {
 
 type Snapshot = { alerts?: AlertRow[]; events?: unknown[] }
 
+type TelegramCredentials = {
+  configured?: boolean
+  token?: unknown
+  chatId?: unknown
+}
+
 function json(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
@@ -118,35 +124,28 @@ function toBar(raw: any): Bar | null {
   return null
 }
 
-async function readSecret(name: string) {
-  const envName = name === 'stockscout_next_telegram_bot_token'
-    ? 'STOCKSCOUT_NEXT_TELEGRAM_BOT_TOKEN'
-    : name === 'stockscout_next_telegram_chat_id'
-      ? 'STOCKSCOUT_NEXT_TELEGRAM_CHAT_ID'
-      : ''
-  if (envName) {
-    const direct = Deno.env.get(envName)
-    if (direct) return direct
-  }
-  const { data, error } = await api.rpc('next_chart_alert_secret', { p_name: name })
-  if (error) return ''
-  return typeof data === 'string' ? data : ''
+async function ownerTelegramCredentials(ownerKey: string) {
+  const { data, error } = await api.rpc('next_chart_alert_telegram_credentials', { p_owner_key: ownerKey })
+  if (error || !data || typeof data !== 'object') return null
+  const credentials = data as TelegramCredentials
+  if (credentials.configured !== true || typeof credentials.token !== 'string' || typeof credentials.chatId !== 'string') return null
+  if (!credentials.token || !credentials.chatId) return null
+  return { token: credentials.token, chatId: credentials.chatId }
 }
 
-async function sendTelegram(text: string) {
-  const token = await readSecret('stockscout_next_telegram_bot_token')
-  const chatId = await readSecret('stockscout_next_telegram_chat_id')
-  if (!token || !chatId) return { status: 'not_configured' as const, error: '' }
+async function sendTelegram(ownerKey: string, text: string) {
+  const credentials = await ownerTelegramCredentials(ownerKey)
+  if (!credentials) return { status: 'not_configured' as const, error: '' }
   try {
-    const response = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    const response = await fetch(`https://api.telegram.org/bot${credentials.token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text, disable_web_page_preview: true }),
+      body: JSON.stringify({ chat_id: credentials.chatId, text, disable_web_page_preview: true }),
     })
     if (!response.ok) return { status: 'error' as const, error: `Telegram HTTP ${response.status}` }
     return { status: 'sent' as const, error: '' }
-  } catch (error) {
-    return { status: 'error' as const, error: String(error) }
+  } catch {
+    return { status: 'error' as const, error: 'Telegram request failed' }
   }
 }
 
@@ -288,7 +287,7 @@ async function evaluateAll(req: Request) {
       if (typeof eventId === 'string' && eventId) {
         fired += 1
         if (alert.notify_telegram) {
-          const telegram = await sendTelegram(message)
+          const telegram = await sendTelegram(alert.owner_key, message)
           const { error: updateError } = await api.rpc('next_chart_alert_event_telegram_update', {
             p_id: eventId,
             p_status: telegram.status,
