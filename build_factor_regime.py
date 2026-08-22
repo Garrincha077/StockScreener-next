@@ -155,23 +155,35 @@ def align_factors(
 
 
 def rolling_annualized_premium(values: Sequence[float], window: int = WINDOW_MONTHS) -> list[float]:
-    """Trailing annualised factor premium in percentage points per year.
+    """Trailing geometrically annualised factor premium, in percent per year.
 
-    The chart's V1 definition is transparent and intentionally simple:
-      arithmetic mean of the trailing monthly factor premiums × 12.
+    Each monthly factor return is compounded inside the trailing window and
+    then annualised. This is the convention that reproduces the drought lengths
+    shown in the reference chart much more closely than arithmetic mean × 12.
     """
 
     if window <= 0:
         raise ValueError("window must be positive")
     if len(values) < window:
         return []
-    prefix = [0.0]
+
+    log_growth = []
     for value in values:
+        growth = 1.0 + value / 100.0
+        if growth <= 0 or not math.isfinite(growth):
+            raise ValueError(f"Invalid monthly factor return for compounding: {value}")
+        log_growth.append(math.log(growth))
+
+    prefix = [0.0]
+    for value in log_growth:
         prefix.append(prefix[-1] + value)
-    return [
-        ((prefix[index + 1] - prefix[index + 1 - window]) / window) * 12.0
-        for index in range(window - 1, len(values))
-    ]
+
+    result = []
+    for index in range(window - 1, len(values)):
+        window_log_growth = prefix[index + 1] - prefix[index + 1 - window]
+        annual_log_growth = window_log_growth * (12.0 / window)
+        result.append((math.exp(annual_log_growth) - 1.0) * 100.0)
+    return result
 
 
 def linear_slope(values: Sequence[float]) -> float | None:
@@ -268,7 +280,7 @@ def build_payload(
         delta6 = _delta(rolling, 6)
         delta12 = _delta(rolling, 12)
         slope12 = linear_slope(rolling[-12:])
-        recent12 = statistics.fmean(monthly_values[-12:]) * 12.0 if len(monthly_values) >= 12 else None
+        recent12 = rolling_annualized_premium(monthly_values[-12:], window=12)[-1] if len(monthly_values) >= 12 else None
         percentile = 100.0 * sum(value <= latest for value in rolling) / len(rolling)
 
         factors.append(
@@ -318,7 +330,7 @@ def build_payload(
         },
         "method": {
             "windowMonths": WINDOW_MONTHS,
-            "annualization": "arithmetic mean of trailing monthly factor premiums × 12",
+            "annualization": "geometric annualisation of compounded trailing monthly factor returns",
             "droughtDefinition": "trailing 10-year annualised premium < 0%",
             "deltaDefinition": "change in the trailing 10-year annualised premium, percentage points",
             "stockScoutImpact": "none; read-only independent macro/factor module",
