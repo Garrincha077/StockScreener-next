@@ -1,6 +1,7 @@
 import {useEffect,useRef,useState,type CSSProperties,type KeyboardEvent,type PointerEvent as ReactPointerEvent} from 'react'
 import DeepVueTerminal from './DeepVueTerminal'
 import LegacyTerminal from './LegacyTerminal'
+import FactorRegimePage from './FactorRegimePage'
 import GroupsPage from './GroupsPage'
 import OriginalEngineDock from './OriginalEngineDock'
 import LegacyConfirmationBadge from './LegacyConfirmationBadge'
@@ -22,7 +23,7 @@ const DEFAULT_ENGINE_WIDTH=420
 const MIN_ENGINE_WIDTH=330
 const MAX_ENGINE_WIDTH=650
 
-type Layer='stockscout'|'legacy'
+type Layer='stockscout'|'legacy'|'factors'
 
 function initialEngineWidth(){
   try{
@@ -30,7 +31,12 @@ function initialEngineWidth(){
     return Number.isFinite(value)&&value>=MIN_ENGINE_WIDTH?value:DEFAULT_ENGINE_WIDTH
   }catch{return DEFAULT_ENGINE_WIDTH}
 }
-function initialLayer():Layer{try{return localStorage.getItem(LAYER_KEY)==='legacy'?'legacy':'stockscout'}catch{return'stockscout'}}
+function initialLayer():Layer{
+  try{
+    const value=localStorage.getItem(LAYER_KEY)
+    return value==='legacy'||value==='factors'?value:'stockscout'
+  }catch{return'stockscout'}
+}
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value))}
 function clickButton(selector:string,label:string){
   const button=[...document.querySelectorAll<HTMLButtonElement>(selector)].find(item=>item.textContent?.trim()===label)
@@ -63,7 +69,15 @@ export default function Root(){
     return()=>document.body.classList.remove('cad-manager-open')
   },[alertsOpen,layer,view])
 
-  const chooseLayer=(next:Layer)=>{setLayer(next);setView('terminal');if(next==='legacy'){setEngineOpen(false);setAlertsOpen(false);setAlertsCenterOpen(false)}}
+  const chooseLayer=(next:Layer)=>{
+    setLayer(next)
+    setView('terminal')
+    if(next!=='stockscout'){
+      setEngineOpen(false)
+      setAlertsOpen(false)
+      setAlertsCenterOpen(false)
+    }
+  }
   const openTicker=(ticker:string)=>{selectTicker(ticker);setLayer('stockscout');setView('terminal')}
   const openAlertDrawing=(drawing:ChartDrawing)=>{
     selectTicker(drawing.ticker);selectDrawing(drawing.id||null);setLayer('stockscout');setView('terminal');setEngineOpen(false);setAlertsCenterOpen(false);setAlertsOpen(true);focusDrawingChart(drawing)
@@ -121,19 +135,22 @@ export default function Root(){
     </div>
   </>
 
+  const content=layer==='legacy'?<LegacyTerminal/>:layer==='factors'?<FactorRegimePage/>:stockscout
+
   return <>
     <div className="ss-layer-switch" aria-label="Signal layer">
       <button className={layer==='stockscout'?'active':''} onClick={()=>chooseLayer('stockscout')}>STOCKSCOUT</button>
       <button className={`legacy ${layer==='legacy'?'active':''}`} onClick={()=>chooseLayer('legacy')}>LEGACY</button>
+      <button className={`factors ${layer==='factors'?'active':''}`} onClick={()=>chooseLayer('factors')}>FACTORS</button>
     </div>
     {layer==='stockscout'&&view==='terminal'&&<LegacyConfirmationBadge/>}
-    {layer==='legacy'?<LegacyTerminal/>:stockscout}
+    {content}
     {layer==='stockscout'&&view==='terminal'&&<>
       <button className={`ss-alert-center-launch ${alertsCenterOpen?'active':''}`} onClick={toggleAlertsCenter}>🔔 All Alerts{globalActiveCount?` · ${globalActiveCount}`:''}</button>
       <button className={`ss-alerts-launch ${alertsOpen?'active':''}`} onClick={toggleAlerts}>✏ Ticker Alerts</button>
       <ChartAlertsDock open={alertsOpen} onOpenChange={setAlertsOpen}/>
       <ChartAlertsCenter open={alertsCenterOpen} onOpenChange={setAlertsCenterOpen} onOpenDrawing={openAlertDrawing}/>
     </>}
-    <button className="ss-layout-reset" onClick={()=>{resetPanelSizes();setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)}} title="Reset all resized panels to their default size">↺ Reset layout</button>
+    {layer==='stockscout'&&<button className="ss-layout-reset" onClick={()=>{resetPanelSizes();setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)}} title="Reset all resized panels to their default size">↺ Reset layout</button>}
   </>
 }
