@@ -48,17 +48,25 @@ const snapshot={
     {drawing_id:'d2',rule_id:'r2',projected_line_price:94,latest_close:95,latest_high:96,latest_low:93,distance_pct:1.06,latest_market_date:'2026-08-20',state:'paused',review_reason:null,evaluated_at:'2026-08-20T22:20:00Z',updated_at:'2026-08-20T22:20:00Z'},
   ],
   events:[
-    {id:'e1',drawing_id:'d2',rule_id:'r2',ticker:'T002',event_type:'break_down',interval:'D',source:'close',scan_generated_at:generatedAt,market_date:'2026-08-20',prev_line_price:93,current_line_price:94,close_price:95,message:'test event',telegram_status:'not_configured',telegram_sent_at:null,telegram_error:null,created_at:'2026-08-20T22:20:00Z'},
+    {id:'e1',drawing_id:'d2',rule_id:'r2',ticker:'T002',event_type:'break_down',interval:'D',source:'close',scan_generated_at:generatedAt,market_date:'2026-08-20',prev_line_price:93,current_line_price:94,close_price:95,message:'test event',telegram_status:'not_configured',telegram_sent_at:null,telegram_error:null,read_at:null,created_at:'2026-08-20T22:20:00Z'},
   ],
 }
 
 test('global alerts center summarizes all tickers and opens the selected drawing manager',async({page})=>{
+  let markedRead=false
   await page.route('**/data/manifest.json*',route=>route.fulfill({status:200,contentType:'application/json',body:manifest}))
   await page.route('**/data/core.json*',route=>route.fulfill({status:200,contentType:'application/json',body:core}))
   await page.route('**/data/charts/000.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({T001:bars,T002:bars})}))
   await page.route('**/data/validation-status.json*',route=>route.fulfill({status:404,body:''}))
   await page.route('**/data/shadow/legacy-confirmation.json*',route=>route.fulfill({status:404,body:''}))
-  await page.route('**/functions/v1/stockscout-next-alerts-v2',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot)}))
+  await page.route('**/functions/v1/stockscout-next-alerts-v2',async route=>{
+    const body=route.request().postDataJSON() as any
+    if(body?.action==='event_read'){
+      markedRead=body.id==='e1'&&body.read===true
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true})})
+    }
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot)})
+  })
 
   await page.goto('/')
   const launch=page.getByRole('button',{name:/All Alerts/})
@@ -66,6 +74,7 @@ test('global alerts center summarizes all tickers and opens the selected drawing
   await launch.click()
   const center=page.getByRole('complementary',{name:'Global alerts center'})
   await expect(center).toBeVisible()
+  await expect(center.locator('.cad-center-head')).toContainText('1 unread')
   const tabs=center.getByRole('navigation',{name:'Alert center views'})
   const activeTab=tabs.getByRole('button',{name:/^Active 1$/})
   const nearTab=tabs.getByRole('button',{name:/^Near Trigger 1$/})
@@ -85,11 +94,6 @@ test('global alerts center summarizes all tickers and opens the selected drawing
   await expect(nearRows.first()).toContainText('T001')
   await expect(nearRows.first()).toContainText('1.4% below')
 
-  await triggeredTab.click()
-  await expect(center.locator('.cad-center-event')).toHaveCount(1)
-  await expect(center.locator('.cad-center-event')).toContainText('T002')
-  await expect(center.locator('.cad-center-event')).toContainText('Crossed below')
-
   await allTab.click()
   await expect(center.locator('.cad-center-row')).toHaveCount(2)
   const filter=center.getByLabel('Filter global alerts by ticker')
@@ -98,9 +102,19 @@ test('global alerts center summarizes all tickers and opens the selected drawing
   const t2=center.locator('.cad-center-row').first()
   await expect(t2).toContainText('T002')
   await expect(t2).toContainText('D · Trend')
-  await t2.click()
+  await filter.fill('')
 
+  await triggeredTab.click()
+  const event=center.locator('.cad-center-event')
+  await expect(event).toHaveCount(1)
+  await expect(event).toContainText('T002')
+  await expect(event).toContainText('Crossed below')
+  await expect(event).toContainText('New · Telegram')
+  await event.click()
+
+  await expect.poll(()=>markedRead).toBe(true)
   await expect(center).toHaveCount(0)
+  await expect(launch).not.toContainText('· 1')
   await expect(page.getByRole('button',{name:'Screener',exact:true})).toHaveClass(/active/)
   const chartControls=page.locator('.dv-chartcontrols')
   await expect(chartControls.getByRole('button',{name:'Price',exact:true})).toHaveClass(/active/)
