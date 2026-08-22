@@ -1,99 +1,79 @@
 # StockScout Next — Persistent Project Log
 
-This file is the current durable handoff for StockScreener-next. Historical entries through 2026-08-22 are preserved byte-for-byte in [`PROJECT_LOG_ARCHIVE_THROUGH_2026-08-22.md`](./PROJECT_LOG_ARCHIVE_THROUGH_2026-08-22.md). Read that archive when older decisions or validation history are relevant.
+This file is the current durable handoff for `Garrincha077/StockScreener-next`. Historical entries through 2026-08-22 are preserved byte-for-byte in [`PROJECT_LOG_ARCHIVE_THROUGH_2026-08-22.md`](./PROJECT_LOG_ARCHIVE_THROUGH_2026-08-22.md).
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
-## 2026-08-23 — Chart Alerts v2 A5/A6 closeout and PR13 reconciliation
+## 2026-08-23 — Chart Alerts v2 A7 secure Telegram Settings
 
-**Branch / PR / commits**
-- Branch: `next-dev`; draft PR #13 (`next-dev` -> `main`) remains open, draft and unmerged.
-- A5 viewport-gate repair: `728211d5060cd767dfc62e0c2e7aead11f3deac8`.
-- A6 implementation sequence: `c9599605d4f3ceb51bfef0e73ea9046342ba66b6`, `70a16d17c695adb360571abcc7afd85391715156`, `b2546641e24014458eb9b2343b982067fc902807`, `8692715abb1eb60e8df3757bfda635b92fa57d1a`, `d4a6ce5a5e56e095a696c859339665d6b4df6a63`, `4c3500e85dccff8cb4590b6435ae4473b4bd6817`, `97e2bcf524c186f820e7e24a4c7bc4cf451362e6`, `53e550cde862e6d04d4410bb07cccdca463377bc`.
-- A5 explicit Near Trigger threshold: `702f4cde912e488feedcb91b9b2f39a9696065b8`.
-- First durable log checkpoint: `22a34e4794e26a5b8ba2f4d02f2416543be327aa`.
-- Factor workflow aligned to the already-promoted `main` version: `b76be5f82d4eedf8302d144b5f7c31523cffb98f`.
-- Ancestry-only reconciliation with current `main`: merge commit `7d7e426e026fba7c276bb084efe32981cc7b07fa`; this kept the existing `next-dev` tree while adding `main` as the second parent.
-- Final viewport-neutral A5/A6 browser-test fixes: `f0db1202c26aa95473950e621967f432bac197ff`, then **verified code head** `e6980ee122594582bbaf71e7a06c60d24afdb448`.
+**Branch / PR / key commits**
+- Branch: `next-dev`; draft PR #13 (`next-dev` -> `main`) remains open, draft, clean/mergeable and unmerged.
+- A7 Vault migration: `87e4aab880ac22cf2286b8aa69df45098ac940c9`.
+- Owner-scoped evaluator cutover: `165df61836eb93e2e935a7f6120724062bf297aa`.
+- V2 Telegram settings gateway: `818c5dd58f522f7b965d26d91544aa77678fd813`.
+- Client/API integration: `8cb19ef7af2c3e7aacd0eb0df0cfc8a6fd930dc8`.
+- Settings UI/styles: `f8a423b6aefa8cf5bbe185cab445e290a8d07260`, `eb5243fcf31d70abfc654060f37392078e2d0e48`, `16d643720302eb2ced2271e3837d3a668bfff038`, `bb21eb4861fd7832f113502432152c4fdb7aa359`.
+- Browser/security tests: `b0c16af293f62673842b379a580ae3dd10cea6d2`, verified code head `f30e79afb5732ecde8b2ca01420843a841fe2ae8`.
 
 **What changed / why**
-- Audited the Chart Alerts v2 roadmap against the actual branch. A5 Global Alerts Center was already implemented but had not been formally closed in the durable log. It exposes Active, Near Trigger, Triggered, Paused and All Drawings views, ticker filtering and exact drawing focus.
-- A5 Near Trigger now uses an explicit visible `<=2%` absolute geometric-distance threshold and sorts nearest-first. It remains a transparent geometric distance view, not a StockScout score.
-- The original A5 browser failures were test-only viewport assumptions. The final E2E flow now enters through `All Alerts`, avoids desktop-only top-nav assumptions, verifies Price/Daily chart focus through viewport-neutral DOM selectors, opens the exact saved ticker/drawing, then verifies unread state after the mobile manager is closed.
-- A6 audit confirmed true cross semantics, exact D/W geometry, one-shot handling, re-arm behavior, per-snapshot event dedupe and server-side Telegram sending already existed in the evaluator path. Those mechanics were preserved rather than duplicated.
-- Added the missing A6 in-app read/unread lifecycle: persisted alert events now have `read_at`; a narrow owner-scoped service RPC can mark one event read/unread; the V2 Edge gateway exposes only that capability; the client normalizes `readAt`, updates state optimistically, and refreshes on failure.
-- Global Alerts Center now shows unread count, labels unread trigger events as `New`, and marks a trigger read when opened. The floating `All Alerts` badge counts unread trigger events rather than active rules.
-- Telegram credential management was intentionally not folded into A6. Secure owner-scoped in-app Telegram setup remains roadmap A7.
-- PR13 had become non-mergeable only because PR14 Factor Regime had been promoted independently from a separate branch directly into `main`. Factor page/builder/CSS/tests/published artifact were already equivalent or superseded on `next-dev`; the only relevant mismatch was the older broad Factor workflow. That workflow was aligned to the clean PR14/main version and `main` was then reconciled as a second parent. GitHub now reports PR13 `mergeable=true`, `mergeable_state=clean`.
-- After reconciliation, Factor builder/page/CSS/tests/artifact/workflow no longer appear in PR13 changed filenames; the PR diff is again Chart Alerts plus its direct frontend integration/docs.
+- Added `Alerts -> Settings -> Telegram Notifications` with masked Bot Token, Chat ID, `Save securely`, `Send test message`, `Replace credentials`, and `Disconnect Telegram`.
+- Browser sends credentials once over HTTPS to the existing capability-authenticated V2 Edge Function. Saved token/chat ID are never returned to the browser and are never stored in localStorage/sessionStorage.
+- V2 gateway validates token/chat shape and calls Telegram `getMe` before storing credentials. The controlled test message is fixed text: `StockScout Next Telegram alerts connected successfully.` It does not create a stock alert event.
+- Added private owner-scoped Telegram connection metadata plus two owner-scoped Supabase Vault secrets (bot token + chat ID). Only safe connection metadata (`configured`, bot id/username, timestamps) is available to the UI.
+- Added service-role-only RPCs for status, store/update, decrypted credential retrieval and disconnect. Direct private-table access and RPC execution are revoked from `public`, `anon` and `authenticated`.
+- Evaluator no longer reads the previous global Telegram env/Vault secret path. On a newly inserted deduped alert event it resolves credentials using that alert row's `owner_key`, then sends server-side only. Telegram request failures are reduced to safe status text; token-bearing URLs are not copied into event errors.
+- `Disconnect Telegram` removes the owner's connection row and Vault secrets/references. No global Telegram credential fallback remains in the evaluator.
 
-**Affected files / components**
-- `supabase/migrations/20260823003000_stockscout_next_alerts_v2_a6_event_read_state.sql`.
+**Affected components**
+- `supabase/migrations/20260823011500_stockscout_next_alerts_v2_a7_telegram_vault.sql`.
 - `supabase/functions/stockscout-next-alerts-v2/index.ts`.
+- `supabase/functions/stockscout-next-alerts/index.ts`.
 - `frontend/src/deepvue/chartAlerts.ts`.
-- `frontend/src/ChartAlertsProvider.tsx`.
+- `frontend/src/TelegramSettingsPanel.tsx`.
 - `frontend/src/ChartAlertsCenter.tsx`.
-- `frontend/src/Root.tsx`.
+- `frontend/src/telegram-settings.css` and `frontend/src/main.tsx`.
 - `frontend/e2e/chart-alerts-center.spec.ts`.
 - `frontend/src/deepvue/chartAlertEvaluatorCutover.test.ts`.
-- `.github/workflows/factor_regime_update.yml` was only aligned back to the already-promoted `main` implementation during branch reconciliation; no Factor model/data behavior was newly introduced here.
-- No scanner, canonical scan-data builder, StockScout scoring/model file or frozen LEGACY implementation changed.
 
-**Backend / live sidecar state**
+**Live sidecar state**
 - Supabase project: `jekidjsifihbbuzxrbse`.
-- Applied live migration version `20260822223233`, name `stockscout_next_alerts_v2_a6_event_read_state`; the repository migration filename uses local timestamp `20260823003000` but represents the same SQL contract.
-- Deployed `stockscout-next-alerts-v2` as version **2 ACTIVE**. `verify_jwt=false` remains deliberate because the existing function uses capability-style `x-stockscout-device-key` authentication and hashes the device key to the owner key server-side.
-- Live database smoke confirmed `read_at` exists and an owner-scoped read request for a nonexistent event returns `false` rather than touching another owner. At verification time the live alert-event table contained `0` events, so a real trigger read/unread transition is not yet claimed end-to-end.
+- Applied live migration version `20260822230618`, name `stockscout_next_alerts_v2_a7_telegram_vault`.
+- `stockscout-next-alerts-v2` deployed as **v3 ACTIVE**, `verify_jwt=false` because it retains the existing explicit `x-stockscout-device-key` capability authentication.
+- `stockscout-next-alerts` evaluator deployed as **v5 ACTIVE**, `verify_jwt=false` because it retains the existing evaluator-key/device-key custom authentication paths.
+- Transactional fake-data smoke completed and rolled back. Follow-up verification showed `0` dummy connection rows and `0` dummy Vault secrets; dummy owner status returned `configured:false`.
+- Permission smoke: `anon` and `authenticated` have no execute privilege on Telegram status or decrypted-credentials RPCs; `service_role` does.
+- No real Telegram credential or real test message was used by the agent. A7 real-use gate still requires the user to save their own bot/chat and receive the controlled test message.
 
-**Scoring / behavior impact**
-- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default rank or any other StockScout Core score changed.
+**Tests / CI**
+- Verified code head `f30e79afb5732ecde8b2ca01420843a841fe2ae8`: **Frontend Compile Smoke #166 / run `32604480681` SUCCESS**.
+- Same head: **StockScout Validation #284 / run `32604480678` SUCCESS**.
+- Browser E2E mocks full Telegram flow and asserts saved token/chat are absent from rendered UI after connection.
+- Source-level security tests assert owner-scoped Vault functions, service-role-only credential path, no global Telegram evaluator secret path and no browser Telegram local/session storage.
+- Full Validation was not run: this slice changes only the isolated alert sidecar/API/UI and evaluator notification routing; it does not change scan generation, canonical scan data or publish workflow.
+
+**Scoring / guardrails**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default rank or other StockScout Core behavior changed.
 - Frozen LEGACY remains unchanged and shadow-only.
-- Alert drawing/rule/status/event/read state remains an isolated private sidecar and cannot influence candidate scoring.
 - Stable `Garrincha077/stock-screener2` was not modified.
 - Next scheduled nightly scan remains disabled.
 
-**Tests / audits / CI**
-- Historical A5 head `a7173c25...`: StockScout Validation run `32534114068` succeeded. Frontend Compile Smoke run `32534114414` failed only on two viewport-specific Playwright selectors; 43 runtime tests and TypeScript/Vite build passed.
-- Reconciled head `7d7e426...`: Frontend Compile Smoke #150 reproduced one remaining mobile-only test assumption after all runtime/build steps passed.
-- Head `f0db120...`: Frontend Compile Smoke #151 exposed one final desktop-only `Screener` selector on Pixel 5; again 45 runtime tests and TypeScript/Vite build passed.
-- **Verified code head `e6980ee122594582bbaf71e7a06c60d24afdb448`: Frontend Compile Smoke #152 completed SUCCESS, including runtime tests, TypeScript/Vite build and all 12 Playwright E2E tests.**
-- **Verified code head `e6980ee122594582bbaf71e7a06c60d24afdb448`: StockScout Validation #264 completed SUCCESS**, including frozen LEGACY execution graph/invariance, regression/integration tests, current model application, integrated compatibility audit, MA Cluster audit, Scout Tier audit and frontend runtime/build.
-- A6 source-level tests lock dedupe/Telegram ordering: Telegram send remains gated behind a newly inserted event ID, so replaying a deduped snapshot cannot resend the same message.
-- Full Validation was not run because this slice changes only the isolated alert sidecar/UI/API and a branch-reconciliation copy of the already-promoted Factor workflow; it does not alter StockScout scan generation, canonical scan data or the normal scan/publish workflow path.
+**Risk / next step**
+- User reported the prior Pages A5/A6 drawing/alert test appeared to work, but the agent still does not claim an independently observed real trigger replay/dedupe event.
+- Publish the current A7 head to the reversible StockScreener-next Pages test surface, then perform the A7 real-use gate: Save -> reload -> connected status without secret reveal -> controlled test message arrives -> Disconnect -> status becomes not configured.
+- If that passes, close A7 and continue to roadmap A8 cross-device alert identity/sync. Keep PR13 draft until the remaining real-use gates are accepted.
 
-**Risk / decision**
-- PR13 is clean/mergeable but remains draft intentionally; do not merge it into `main` until a controlled real alert persistence/trigger test is completed and A6 is accepted.
-- A6 live read/unread schema/API is deployed but still lacks a real trigger event for an end-to-end manual persistence test.
-- Existing Telegram send logic must not be called end-to-end configured until A7 securely stores owner-scoped credentials and a controlled test message succeeds.
-- Keep the V1 compatibility mirror until the remaining v2 lifecycle/cross-device cleanup is deliberately validated.
+## 2026-08-23 — One-shot GitHub Pages test deployment preparation
 
-**Next logical step**
-- Perform one controlled real-use A6 validation: create a saved D or W line/rule, reload to prove persistence, deliberately trigger one event, confirm `New` -> read survives reload, then replay the same snapshot and confirm zero duplicate event/message.
-- If that passes, treat A5/A6 as closed and continue to roadmap A7: owner-scoped secure Telegram Settings using Supabase Vault, masked write-only credentials, `getMe`/test message, replace/disconnect and no secret exposure to browser storage/logs.
-- Keep Stable untouched and keep the Next scheduled nightly scan disabled.
+- Commit `a0ce736759ce69d72c748fab2eaeec430901ec6d` temporarily allowed `next-dev` in `.github/workflows/frontend_pages.yml` solely to trigger one Pages test build.
+- Commit `c1d40cd68787b218540e894c92cabc2f7b8b8eb1` immediately restored the workflow byte-for-byte to `main`-only, so later experimental pushes do not auto-deploy Pages.
+- The test surface is the `StockScreener-next` GitHub Pages site only; Stable is untouched. The Pages pipeline still reads the latest Stable canonical snapshot read-only, builds the Next projection/LEGACY shadow, hydrates chart shards best-effort, runs frontend checks and then deploys.
+- User subsequently reported the Pages chart drawing/alert workflow appeared to work. Treat this as a useful manual smoke, not proof of a real trigger replay/dedupe gate.
 
-## 2026-08-23 — PR13 one-shot GitHub Pages test deployment preparation
+## 2026-08-23 — Chart Alerts v2 A5/A6 closeout and PR13 reconciliation
 
-**Branch / commits**
-- Branch: `next-dev`; PR #13 remains draft and unmerged.
-- One-shot Pages trigger commit: `a0ce736759ce69d72c748fab2eaeec430901ec6d` temporarily broadened `frontend_pages.yml` push branches from `[main]` to `[main, next-dev]` so that this exact push could build/deploy the current PR13 frontend using the existing protected Pages pipeline.
-- Immediate safety restore: `c1d40cd68787b218540e894c92cabc2f7b8b8eb1` restored `frontend_pages.yml` to `[main]` only. Future `next-dev` pushes therefore do not auto-deploy Pages.
-
-**Why / deployment shape**
-- GitHub's official `actions/deploy-pages` PR-preview mode is still not publicly available, so a distinct native PR preview URL is not available through the existing Pages stack.
-- The one-shot test uses the existing `StockScreener-next` Pages site as a reversible test surface only. It does not touch the Stable `stock-screener2` repository.
-- Existing Pages build behavior remains unchanged: it reads the latest Stable canonical snapshot read-only, builds the lightweight Next projection + frozen LEGACY shadow, hydrates read-only 5Y chart shards best-effort, verifies the Stable snapshot did not advance mid-build, runs frontend checks, validates chart coverage and only then deploys.
-- Chart Alerts v2 frontend requires no Pages secret injection: it calls the existing Next Supabase v2 Edge endpoint through capability-style per-browser device keys; no Telegram secret is exposed to browser build/storage.
-
-**Behavior / model impact**
-- No StockScout score, scanner, ranking, canonical dataset builder, chart mapping or frozen LEGACY behavior changed.
-- Next nightly scheduled scan remains disabled.
-- This is deployment plumbing only; the test site is intended to validate real drawing persistence and alert lifecycle against the already-deployed sidecar.
-
-**Validation status**
-- Code immediately before the deployment preparation was already green on Frontend Compile Smoke #153 and StockScout Validation #265.
-- The workflow trigger and restore commits themselves only changed the branch filter in `.github/workflows/frontend_pages.yml`; the workflow content was restored byte-for-byte to the previous main-only version.
-- Current connector access does not expose push-triggered Pages workflow-run listing, so no Pages deployment SUCCESS is claimed in this log until the published site/run is directly observed.
-
-**Next logical step**
-- Open the StockScreener-next GitHub Pages site and perform the controlled A6 test: draw one D/W level or trendline, assign a rule, reload to prove persistence, then use one deliberate trigger to validate unread/read lifecycle and no duplicate replay.
+- A5 Global Alerts Center exposes Active, Near Trigger, Triggered, Paused and All Drawings; Near Trigger is an explicit `<=2%` geometric-distance view, not a score.
+- A6 added persisted event `read_at`, owner-scoped read/unread RPC/API/UI, unread `New` labels and unread count on the global Alerts launcher.
+- Existing true-cross D/W geometry, one-shot/re-arm mechanics and event dedupe were preserved. Telegram send remains gated behind a newly inserted event id, so a deduped replay cannot resend the same event.
+- PR13 ancestry was reconciled with already-promoted PR14 Factor Regime via `7d7e426e026fba7c276bb084efe32981cc7b07fa`; Factor files/workflow are no longer accidental PR13 diff noise.
+- Verified A5/A6 code head `e6980ee122594582bbaf71e7a06c60d24afdb448`: Frontend Compile Smoke #152 SUCCESS and StockScout Validation #264 SUCCESS. Subsequent docs head also passed #153/#265.
+- A6 live migration `20260822223233` is applied and V2 Edge read/unread support is live. At that verification point there were no real alert events, so the agent did not claim a real trigger/read/replay gate.
