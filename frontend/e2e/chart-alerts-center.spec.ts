@@ -114,7 +114,6 @@ test('global alerts center summarizes all tickers and opens the selected drawing
 
   await expect.poll(()=>markedRead).toBe(true)
   await expect(center).toHaveCount(0)
-  await expect(launch).not.toContainText('· 1')
   await expect(page.getByRole('button',{name:'Screener',exact:true})).toHaveClass(/active/)
   const chartControls=page.locator('.dv-chartcontrols')
   await expect(chartControls.getByRole('button',{name:'Price',exact:true})).toHaveClass(/active/)
@@ -125,4 +124,6 @@ test('global alerts center summarizes all tickers and opens the selected drawing
   await expect(manager.getByRole('region',{name:'Selected drawing alert settings'})).toContainText('Trend')
   await expect.poll(()=>page.evaluate(()=>location.hash)).toBe('#T002')
   await expect(page.locator('.cad-main-svg [data-drawing-id="d2"]')).toBeVisible()
+  await manager.getByRole('button',{name:'Close drawings and alerts'}).click()
+  await expect(page.getByRole('button',{name:/All Alerts/})).not.toContainText('· 1')
 })
