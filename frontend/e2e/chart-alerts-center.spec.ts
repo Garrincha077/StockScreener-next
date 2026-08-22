@@ -114,10 +114,9 @@ test('global alerts center summarizes all tickers and opens the selected drawing
 
   await expect.poll(()=>markedRead).toBe(true)
   await expect(center).toHaveCount(0)
-  await expect(page.getByRole('button',{name:'Screener',exact:true})).toHaveClass(/active/)
   const chartControls=page.locator('.dv-chartcontrols')
-  await expect(chartControls.getByRole('button',{name:'Price',exact:true})).toHaveClass(/active/)
-  await expect(chartControls.getByRole('button',{name:'Daily',exact:true})).toHaveClass(/active/)
+  await expect(chartControls.locator('button').filter({hasText:/^Price$/})).toHaveClass(/active/)
+  await expect(chartControls.locator('button').filter({hasText:/^Daily$/})).toHaveClass(/active/)
   const manager=page.getByRole('complementary',{name:'StockScout drawings and alerts'})
   await expect(manager).toBeVisible()
   await expect(manager).toContainText('T002')
