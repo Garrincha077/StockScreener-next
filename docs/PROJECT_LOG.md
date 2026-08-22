@@ -973,3 +973,35 @@ This file is the durable handoff for future agents. Update it after every meanin
 **Next logical step**
 - Phase A5: add a global Alerts Center across all tickers with Active, Near Trigger, Triggered, Paused and All Drawings views. Reuse the same V2 snapshot/status fields and rank Near Trigger only by transparent geometric distance, never by StockScout score.
 - After A5, add the planned secure in-app Telegram credential setup without exposing secrets to browser persistence, then run one deliberate Telegram end-to-end trigger test.
+
+## 2026-08-22 — Factor Regime drought dashboard
+
+**Branch / PR / implementation**
+- Branch: `next-dev`; existing draft PR #13 remains open/draft and unmerged.
+- Added independent factor engine `build_factor_regime.py`, factor unit tests, `FactorRegimePage`, responsive factor-regime styling and a third read-only `FACTORS` application layer.
+- Added isolated `Factor Regime Update` workflow. It checks Kenneth R. French data weekly, commits only substantive dataset changes and does not run or re-enable the Next stock scanner.
+
+**Method / data**
+- Canonical source is Kenneth R. French Data Library monthly FF5 + Momentum files: Mkt-RF, SMB, HML, RMW, CMA and Mom.
+- The reference chart was reverse-validated: trailing 120 monthly factor returns are geometrically compounded and annualised; drought means the trailing 10Y annualised premium is below zero.
+- Current artifact is aligned from `1963-07` through `2026-06`; the first 10Y observation is `1973-06`.
+- Longest droughts reproduce the reference chart: Market `3y`, SMB `11y 2m`, HML `11y 10m` ongoing, RMW `2y 8m`, CMA `3y 2m` ongoing, Momentum `9y 8m`.
+- UI also exposes current 10Y premium, Δ1M/6M/12M, 12M slope/recent factor return, historical percentile, current/maximum drought and transparent regimes `STRONG`, `DETERIORATING`, `RECOVERY`, `DEEPENING_DROUGHT`.
+
+**Scoring / behavior impact**
+- Factor Regime is a separate read-only evidence page. `stockScoutImpact` is explicitly `none`; no factor value is read by Opportunity v2, Emerging Leader, MA Cluster, Groups, Fundamentals, RS, Stage, default rank or any other StockScout Core score.
+- Frozen LEGACY remains unchanged/shadow-only. Stable `stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+
+**Validation**
+- Factor refresh workflow successfully downloaded/parsed the real French datasets and committed the current artifact on `next-dev`; factor-engine unit tests passed in that workflow.
+- Current StockScout Validation PR run `32600522469` succeeded, including frozen LEGACY/Core invariance and frontend build checks.
+- Current Frontend Compile Smoke `32600522432` passed client/shadow tests plus TypeScript/Vite production build; its Playwright stage failed in the existing `chart-alerts-center.spec.ts` Grid/Rapid Review flow. Therefore broad browser CI is not claimed fully green by this entry; the Factor Regime code itself compiled successfully.
+- Full Validation was not run because this module does not alter scanner/canonical StockScout generation. If factor data is ever wired into StockScout scoring or the canonical scan path, treat that as a separate model/data change requiring Full Validation.
+
+**Risk / decision**
+- Keep factor history as independent evidence and preserve source/method provenance because Kenneth French can revise historical series.
+- Do not convert drought extremity into a hidden StockScout score without a separate empirical validation phase.
+- Keep PR #13 draft; promotion to `main` remains a separate decision.
+
+**Next logical step**
+- Use the new Factor Regime page in real review, then decide separately whether to add 5Y/15Y/20Y windows, international factors or an empirically tested opportunity score. Keep any such additions transparent and independent from StockScout Core by default.
