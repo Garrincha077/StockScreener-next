@@ -1,6 +1,6 @@
 import {createContext,useCallback,useContext,useEffect,useMemo,useState,type ReactNode} from 'react'
 import {
-  deleteChartAlertRule,deleteChartDrawing,loadChartAlertsV2,saveChartAlertRule,saveChartDrawing,
+  deleteChartAlertRule,deleteChartDrawing,loadChartAlertsV2,saveChartAlertRule,saveChartDrawing,setChartAlertEventRead,
   type ChartAlertRule,type ChartAlertsV2Snapshot,type ChartDrawing,
 } from './deepvue/chartAlerts'
 
@@ -20,6 +20,7 @@ type ChartAlertsContextValue={
   removeDrawing:(id:string)=>Promise<void>
   upsertRule:(rule:ChartAlertRule)=>Promise<ChartAlertRule>
   removeRule:(id:string)=>Promise<void>
+  markEventRead:(id:string,read?:boolean)=>Promise<void>
 }
 
 const EMPTY:ChartAlertsV2Snapshot={drawings:[],rules:[],status:[],events:[]}
@@ -108,9 +109,21 @@ export function ChartAlertsProvider({children}:{children:ReactNode}){
     finally{finishMutation()}
   },[snapshot.rules,startMutation,finishMutation])
 
+  const markEventRead=useCallback(async(id:string,read=true)=>{
+    startMutation()
+    const readAt=read?new Date().toISOString():null
+    setSnapshot(current=>({...current,events:current.events.map(event=>event.id===id?{...event,readAt}:event)}))
+    try{
+      await setChartAlertEventRead(id,read)
+      setError('')
+    }catch(nextError){
+      setError(String(nextError));void refresh();throw nextError
+    }finally{finishMutation()}
+  },[startMutation,finishMutation,refresh])
+
   const value=useMemo<ChartAlertsContextValue>(()=>({
-    snapshot,loading,busy,error,tool,selectedDrawingId,setTool,selectDrawing,refresh,upsertDrawing,removeDrawing,upsertRule,removeRule,
-  }),[snapshot,loading,busy,error,tool,selectedDrawingId,setTool,selectDrawing,refresh,upsertDrawing,removeDrawing,upsertRule,removeRule])
+    snapshot,loading,busy,error,tool,selectedDrawingId,setTool,selectDrawing,refresh,upsertDrawing,removeDrawing,upsertRule,removeRule,markEventRead,
+  }),[snapshot,loading,busy,error,tool,selectedDrawingId,setTool,selectDrawing,refresh,upsertDrawing,removeDrawing,upsertRule,removeRule,markEventRead])
 
   return <Context.Provider value={value}>{children}</Context.Provider>
 }
