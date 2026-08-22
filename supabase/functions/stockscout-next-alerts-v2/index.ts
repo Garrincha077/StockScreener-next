@@ -55,6 +55,13 @@ Deno.serve(async(req:Request)=>{
       if(error)return json({error:error.message},errorStatus(error))
       return json({ok:data===true})
     }
+    if(action==='event_read'){
+      const id=String(body?.id??'')
+      if(!id)return json({error:'Missing event id'},400)
+      const{data,error}=await api.rpc('next_chart_alert_event_set_read',{p_owner_key:ownerKey,p_id:id,p_read:body?.read!==false})
+      if(error)return json({error:error.message},errorStatus(error))
+      return json({ok:data===true})
+    }
     return json({error:'Unknown action'},400)
   }catch(error){return json({error:String(error)},500)}
 })
