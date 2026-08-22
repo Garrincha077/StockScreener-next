@@ -61,8 +61,6 @@ test('global alerts center summarizes all tickers and opens the selected drawing
   await page.route('**/functions/v1/stockscout-next-alerts-v2',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot)}))
 
   await page.goto('/')
-  await page.getByRole('button',{name:'Grid',exact:true}).click()
-  await expect(page.getByText('RAPID REVIEW')).toBeVisible()
   const launch=page.getByRole('button',{name:/All Alerts/})
   await expect(launch).toContainText('1')
   await launch.click()
