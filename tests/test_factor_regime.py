@@ -44,11 +44,11 @@ class FactorRegimeTests(unittest.TestCase):
         self.assertEqual(aligned[-1]["MOM"], 7.0)
         self.assertNotIn("2020-01", [row["month"] for row in aligned])
 
-    def test_rolling_annualized_premium_is_mean_times_twelve(self):
+    def test_rolling_annualized_premium_compounds_then_annualizes(self):
         values = [1.0] * 120 + [2.0]
         series = rolling_annualized_premium(values)
-        self.assertAlmostEqual(series[0], 12.0)
-        self.assertAlmostEqual(series[1], ((119 * 1.0 + 2.0) / 120) * 12.0)
+        self.assertAlmostEqual(series[0], ((1.01**120) ** (12 / 120) - 1) * 100)
+        self.assertAlmostEqual(series[1], (((1.01**119) * 1.02) ** (12 / 120) - 1) * 100)
 
     def test_droughts_detect_completed_and_ongoing_runs(self):
         runs = droughts([1.0, -1.0, -2.0, 0.1, -0.2, -0.3, -0.4])
