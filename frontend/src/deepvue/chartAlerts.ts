@@ -93,6 +93,13 @@ export type ChartAlertV2Event={
   createdAt:string
 }
 export type ChartAlertsV2Snapshot={drawings:ChartDrawing[];rules:ChartAlertRule[];status:ChartAlertStatus[];events:ChartAlertV2Event[]}
+export type TelegramConnection={
+  configured:boolean
+  botId?:string|null
+  botUsername?:string|null
+  connectedAt?:string|null
+  updatedAt?:string|null
+}
 
 const ENDPOINT='https://jekidjsifihbbuzxrbse.supabase.co/functions/v1/stockscout-next-alerts'
 const V2_ENDPOINT='https://jekidjsifihbbuzxrbse.supabase.co/functions/v1/stockscout-next-alerts-v2'
@@ -168,6 +175,15 @@ function eventFromRow(row:any):ChartAlertV2Event{
     message:String(row?.message||''),telegramStatus:['pending','sent','error'].includes(row?.telegram_status)?row.telegram_status:'not_configured',telegramSentAt:row?.telegram_sent_at??null,telegramError:row?.telegram_error??null,readAt:row?.read_at??null,createdAt:String(row?.created_at||''),
   }
 }
+function telegramFromRaw(raw:any):TelegramConnection{
+  return{
+    configured:raw?.configured===true,
+    botId:raw?.botId==null?null:String(raw.botId),
+    botUsername:raw?.botUsername==null?null:String(raw.botUsername),
+    connectedAt:raw?.connectedAt==null?null:String(raw.connectedAt),
+    updatedAt:raw?.updatedAt==null?null:String(raw.updatedAt),
+  }
+}
 
 export function normalizeChartAlertsV2Snapshot(raw:any):ChartAlertsV2Snapshot{
   return{
@@ -216,4 +232,22 @@ export async function deleteChartAlertRule(id:string):Promise<void>{
 
 export async function setChartAlertEventRead(id:string,read=true):Promise<void>{
   await requestV2<{ok:boolean}>({action:'event_read',id,read})
+}
+
+export async function loadTelegramConnection():Promise<TelegramConnection>{
+  const data=await requestV2<{telegram:any}>({action:'telegram_status'})
+  return telegramFromRaw(data.telegram)
+}
+
+export async function saveTelegramConnection(token:string,chatId:string):Promise<TelegramConnection>{
+  const data=await requestV2<{telegram:any}>({action:'telegram_save',token,chatId})
+  return telegramFromRaw(data.telegram)
+}
+
+export async function sendTelegramTestMessage():Promise<void>{
+  await requestV2<{ok:boolean}>({action:'telegram_test'})
+}
+
+export async function disconnectTelegram():Promise<void>{
+  await requestV2<{ok:boolean}>({action:'telegram_disconnect'})
 }
