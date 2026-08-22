@@ -60,7 +60,7 @@ export default function Root(){
   const[alertsCenterOpen,setAlertsCenterOpen]=useState(false)
   const[engineWidth,setEngineWidth]=useState(initialEngineWidth)
   const drag=useRef<{startX:number;startWidth:number;currentWidth:number;pointerId:number}|null>(null)
-  const globalActiveCount=snapshot.rules.filter(rule=>rule.enabled).length
+  const unreadTriggerCount=snapshot.events.filter(event=>!event.readAt).length
   useResizablePanels()
   useEffect(()=>{try{localStorage.setItem(LAYER_KEY,layer)}catch{}},[layer])
   useEffect(()=>{
@@ -146,7 +146,7 @@ export default function Root(){
     {layer==='stockscout'&&view==='terminal'&&<LegacyConfirmationBadge/>}
     {content}
     {layer==='stockscout'&&view==='terminal'&&<>
-      <button className={`ss-alert-center-launch ${alertsCenterOpen?'active':''}`} onClick={toggleAlertsCenter}>🔔 All Alerts{globalActiveCount?` · ${globalActiveCount}`:''}</button>
+      <button className={`ss-alert-center-launch ${alertsCenterOpen?'active':''}`} onClick={toggleAlertsCenter}>🔔 All Alerts{unreadTriggerCount?` · ${unreadTriggerCount}`:''}</button>
       <button className={`ss-alerts-launch ${alertsOpen?'active':''}`} onClick={toggleAlerts}>✏ Ticker Alerts</button>
       <ChartAlertsDock open={alertsOpen} onOpenChange={setAlertsOpen}/>
       <ChartAlertsCenter open={alertsCenterOpen} onOpenChange={setAlertsCenterOpen} onOpenDrawing={openAlertDrawing}/>
