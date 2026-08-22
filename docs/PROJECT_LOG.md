@@ -14,6 +14,8 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - Client/API integration: `8cb19ef7af2c3e7aacd0eb0df0cfc8a6fd930dc8`.
 - Settings UI/styles: `f8a423b6aefa8cf5bbe185cab445e290a8d07260`, `eb5243fcf31d70abfc654060f37392078e2d0e48`, `16d643720302eb2ced2271e3837d3a668bfff038`, `bb21eb4861fd7832f113502432152c4fdb7aa359`.
 - Browser/security tests: `b0c16af293f62673842b379a580ae3dd10cea6d2`, verified code head `f30e79afb5732ecde8b2ca01420843a841fe2ae8`.
+- Durable A7 checkpoint: `d1379d974e94049f02c5f10620ac0bdafd9d99f3`.
+- One-shot A7 Pages trigger: `1c51c79ed1f6e5f60e51762a4d7ad6b382ec48a5`; immediate main-only safety restore/final workflow head: `520831a1a8d3aebba644a1c18cfda5364e2bcdcf`.
 
 **What changed / why**
 - Added `Alerts -> Settings -> Telegram Notifications` with masked Bot Token, Chat ID, `Save securely`, `Send test message`, `Replace credentials`, and `Disconnect Telegram`.
@@ -23,6 +25,7 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - Added service-role-only RPCs for status, store/update, decrypted credential retrieval and disconnect. Direct private-table access and RPC execution are revoked from `public`, `anon` and `authenticated`.
 - Evaluator no longer reads the previous global Telegram env/Vault secret path. On a newly inserted deduped alert event it resolves credentials using that alert row's `owner_key`, then sends server-side only. Telegram request failures are reduced to safe status text; token-bearing URLs are not copied into event errors.
 - `Disconnect Telegram` removes the owner's connection row and Vault secrets/references. No global Telegram credential fallback remains in the evaluator.
+- For the real-use A7 gate, Pages was staged exactly once by temporarily allowing `next-dev` in `frontend_pages.yml`; the very next commit restored the workflow byte-for-byte to `main`-only. Future experimental pushes therefore do not auto-deploy Pages.
 
 **Affected components**
 - `supabase/migrations/20260823011500_stockscout_next_alerts_v2_a7_telegram_vault.sql`.
@@ -34,6 +37,7 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - `frontend/src/telegram-settings.css` and `frontend/src/main.tsx`.
 - `frontend/e2e/chart-alerts-center.spec.ts`.
 - `frontend/src/deepvue/chartAlertEvaluatorCutover.test.ts`.
+- `.github/workflows/frontend_pages.yml` was only temporarily broadened for the one-shot A7 test deploy and then restored to its original main-only content.
 
 **Live sidecar state**
 - Supabase project: `jekidjsifihbbuzxrbse`.
@@ -45,11 +49,11 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - No real Telegram credential or real test message was used by the agent. A7 real-use gate still requires the user to save their own bot/chat and receive the controlled test message.
 
 **Tests / CI**
-- Verified code head `f30e79afb5732ecde8b2ca01420843a841fe2ae8`: **Frontend Compile Smoke #166 / run `32604480681` SUCCESS**.
-- Same head: **StockScout Validation #284 / run `32604480678` SUCCESS**.
+- Verified code head `f30e79afb5732ecde8b2ca01420843a841fe2ae8`: **Frontend Compile Smoke #166 / run `32604480681` SUCCESS** and **StockScout Validation #284 / run `32604480678` SUCCESS**.
+- Verified final workflow head `520831a1a8d3aebba644a1c18cfda5364e2bcdcf`: **Frontend Compile Smoke #169 / run `32604647149` SUCCESS** and **StockScout Validation #287 / run `32604647163` SUCCESS**. The frontend run included runtime tests, TypeScript/Vite build and mobile Playwright; StockScout Validation included frozen LEGACY graph/invariance, regression/integration, model compatibility, MA Cluster, Scout Tier and frontend checks.
 - Browser E2E mocks full Telegram flow and asserts saved token/chat are absent from rendered UI after connection.
 - Source-level security tests assert owner-scoped Vault functions, service-role-only credential path, no global Telegram evaluator secret path and no browser Telegram local/session storage.
-- Full Validation was not run: this slice changes only the isolated alert sidecar/API/UI and evaluator notification routing; it does not change scan generation, canonical scan data or publish workflow.
+- Full Validation was not run: this slice changes only the isolated alert sidecar/API/UI/evaluator notification routing plus the reversible Pages branch-filter trigger; it does not change scan generation, canonical scan data or the production-style scan/publish workflow behavior.
 
 **Scoring / guardrails**
 - No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default rank or other StockScout Core behavior changed.
@@ -59,10 +63,10 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 
 **Risk / next step**
 - User reported the prior Pages A5/A6 drawing/alert test appeared to work, but the agent still does not claim an independently observed real trigger replay/dedupe event.
-- Publish the current A7 head to the reversible StockScreener-next Pages test surface, then perform the A7 real-use gate: Save -> reload -> connected status without secret reveal -> controlled test message arrives -> Disconnect -> status becomes not configured.
+- A7 code/backend/security gates are green. Perform the A7 real-use test on the Pages surface: Save -> reload -> connected status without secret reveal -> controlled test message arrives -> Disconnect -> status becomes not configured.
 - If that passes, close A7 and continue to roadmap A8 cross-device alert identity/sync. Keep PR13 draft until the remaining real-use gates are accepted.
 
-## 2026-08-23 — One-shot GitHub Pages test deployment preparation
+## 2026-08-23 — Earlier one-shot GitHub Pages test deployment preparation
 
 - Commit `a0ce736759ce69d72c748fab2eaeec430901ec6d` temporarily allowed `next-dev` in `.github/workflows/frontend_pages.yml` solely to trigger one Pages test build.
 - Commit `c1d40cd68787b218540e894c92cabc2f7b8b8eb1` immediately restored the workflow byte-for-byte to `main`-only, so later experimental pushes do not auto-deploy Pages.
