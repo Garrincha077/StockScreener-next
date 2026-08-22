@@ -1,0 +1,86 @@
+name: Factor Regime Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    # French factor files update monthly; a weekly check is cheap and commits only on change.
+    - cron: '17 8 * * 6'
+  push:
+    branches: [main, next-dev]
+    paths:
+      - 'build_factor_regime.py'
+      - 'tests/test_factor_regime.py'
+      - '.github/workflows/factor_regime_update.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: factor-regime-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Run factor-engine unit tests
+        run: python -m unittest tests.test_factor_regime -v
+
+      - name: Build current Kenneth French factor dataset
+        run: python build_factor_regime.py --output frontend/public/data/factors/factor-regime.json
+
+      - name: Validate published factor artifact
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path('frontend/public/data/factors/factor-regime.json')
+          payload=json.loads(path.read_text(encoding='utf-8'))
+          factors=payload.get('factors') or []
+          assert payload.get('schemaVersion') == 1
+          assert len(factors) == 6
+          assert (payload.get('range') or {}).get('lastMonth')
+          assert all(len(factor.get('series') or []) >= 500 for factor in factors)
+          assert (payload.get('method') or {}).get('stockScoutImpact') == 'none; read-only independent macro/factor module'
+          assert all((factor.get('latest') or {}).get('month') == payload['range']['lastMonth'] for factor in factors)
+          print('Factor data through:', payload['range']['lastMonth'])
+          print('Active droughts:', (payload.get('summary') or {}).get('activeDroughts'))
+          for factor in factors:
+              latest=factor['latest']
+              drought=factor['currentDrought']
+              print(f"{factor['sourceCode']}: {latest['premiumPct']:+.2f}% | d12={latest['delta12mPp']:+.2f}pp | {latest['regime']} | drought={drought['duration']}")
+          PY
+
+      - name: Commit changed factor data
+        id: commit
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add frontend/public/data/factors/factor-regime.json
+          if git diff --cached --quiet; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Kenneth French factor artifact is unchanged."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: refresh factor regime"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      - name: Refresh Pages after main data update
+        if: steps.commit.outputs.changed == 'true' && github.ref_name == 'main'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run frontend_pages.yml --ref main
