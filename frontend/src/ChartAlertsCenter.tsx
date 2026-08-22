@@ -5,6 +5,7 @@ import type {ChartAlertRule,ChartAlertStatus,ChartAlertV2Event,ChartDrawing} fro
 type View='active'|'near'|'triggered'|'paused'|'all'
 const CONDITION={cross_above:'Cross Above',cross_below:'Cross Below',touch:'Touch'} as const
 const STATE:Record<string,string>={active:'Active',approaching:'Approaching',triggered:'Triggered',paused:'Paused',needs_review:'Needs review'}
+const NEAR_TRIGGER_PCT=2
 const fmt=(value:number|null|undefined,digits=2)=>typeof value==='number'&&Number.isFinite(value)?value.toFixed(digits):'—'
 const distance=(value:number|null|undefined)=>typeof value==='number'&&Number.isFinite(value)?`${Math.abs(value).toFixed(1)}% ${value>=0?'above':'below'}`:'—'
 const absDistance=(status?:ChartAlertStatus)=>typeof status?.distancePct==='number'&&Number.isFinite(status.distancePct)?Math.abs(status.distancePct):Number.POSITIVE_INFINITY
@@ -20,7 +21,12 @@ export default function ChartAlertsCenter({open,onOpenChange,onOpenDrawing}:{ope
   const q=query.trim().toUpperCase()
 
   const active=useMemo(()=>snapshot.drawings.filter(drawing=>drawing.id&&ruleByDrawing.get(drawing.id)?.enabled),[snapshot.drawings,ruleByDrawing])
-  const near=useMemo(()=>active.filter(drawing=>drawing.id&&statusByDrawing.get(drawing.id)?.state!=='needs_review'&&Number.isFinite(absDistance(statusByDrawing.get(drawing.id)))).sort((a,b)=>absDistance(statusByDrawing.get(a.id!))-absDistance(statusByDrawing.get(b.id!))),[active,statusByDrawing])
+  const near=useMemo(()=>active.filter(drawing=>{
+    if(!drawing.id)return false
+    const status=statusByDrawing.get(drawing.id)
+    const gap=absDistance(status)
+    return status?.state!=='needs_review'&&Number.isFinite(gap)&&gap<=NEAR_TRIGGER_PCT
+  }).sort((a,b)=>absDistance(statusByDrawing.get(a.id!))-absDistance(statusByDrawing.get(b.id!))),[active,statusByDrawing])
   const paused=useMemo(()=>snapshot.drawings.filter(drawing=>drawing.id&&ruleByDrawing.has(drawing.id)&&!ruleByDrawing.get(drawing.id)?.enabled),[snapshot.drawings,ruleByDrawing])
   const all=useMemo(()=>[...snapshot.drawings].sort((a,b)=>a.ticker.localeCompare(b.ticker)||a.interval.localeCompare(b.interval)),[snapshot.drawings])
   const triggered=useMemo(()=>snapshot.events.filter(event=>!q||event.ticker.includes(q)),[snapshot.events,q])
@@ -46,7 +52,7 @@ export default function ChartAlertsCenter({open,onOpenChange,onOpenDrawing}:{ope
     </nav><input value={query} onChange={event=>setQuery(event.target.value.toUpperCase())} placeholder="Ticker…" aria-label="Filter global alerts by ticker"/></div>
 
     <div className="cad-center-body">
-      {view==='near'&&<div className="cad-center-note">Nearest first by absolute geometric distance to the projected line. This is not a StockScout score.</div>}
+      {view==='near'&&<div className="cad-center-note">Near Trigger means ≤{NEAR_TRIGGER_PCT}% absolute geometric distance to the projected line, nearest first. This is not a StockScout score.</div>}
       {view==='triggered'?<div className="cad-center-events">
         {triggered.length===0?<p className="cad-empty">No trigger events match this view.</p>:triggered.map(event=>{
           const canOpen=Boolean(event.drawingId&&drawingById.has(event.drawingId))
