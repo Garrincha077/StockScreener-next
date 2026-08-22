@@ -89,6 +89,7 @@ export type ChartAlertV2Event={
   telegramStatus:'not_configured'|'pending'|'sent'|'error'
   telegramSentAt?:string|null
   telegramError?:string|null
+  readAt?:string|null
   createdAt:string
 }
 export type ChartAlertsV2Snapshot={drawings:ChartDrawing[];rules:ChartAlertRule[];status:ChartAlertStatus[];events:ChartAlertV2Event[]}
@@ -164,7 +165,7 @@ function eventFromRow(row:any):ChartAlertV2Event{
     id:String(row?.id||''),drawingId:row?.drawing_id?String(row.drawing_id):null,ruleId:row?.rule_id?String(row.rule_id):null,ticker:String(row?.ticker||'').toUpperCase(),
     eventType:['break_up','break_down','touch'].includes(row?.event_type)?row.event_type:'touch',interval:row?.interval==='W'?'W':row?.interval==='D'?'D':null,source:row?.source==='wick'?'wick':row?.source==='close'?'close':null,
     scanGeneratedAt:String(row?.scan_generated_at||''),marketDate:String(row?.market_date||''),prevLinePrice:maybeNumber(row?.prev_line_price),currentLinePrice:maybeNumber(row?.current_line_price??row?.line_price),closePrice:maybeNumber(row?.close_price),
-    message:String(row?.message||''),telegramStatus:['pending','sent','error'].includes(row?.telegram_status)?row.telegram_status:'not_configured',telegramSentAt:row?.telegram_sent_at??null,telegramError:row?.telegram_error??null,createdAt:String(row?.created_at||''),
+    message:String(row?.message||''),telegramStatus:['pending','sent','error'].includes(row?.telegram_status)?row.telegram_status:'not_configured',telegramSentAt:row?.telegram_sent_at??null,telegramError:row?.telegram_error??null,readAt:row?.read_at??null,createdAt:String(row?.created_at||''),
   }
 }
 
@@ -211,4 +212,8 @@ export async function saveChartAlertRule(rule:ChartAlertRule):Promise<ChartAlert
 
 export async function deleteChartAlertRule(id:string):Promise<void>{
   await requestV2<{ok:boolean}>({action:'rule_delete',id})
+}
+
+export async function setChartAlertEventRead(id:string,read=true):Promise<void>{
+  await requestV2<{ok:boolean}>({action:'event_read',id,read})
 }
