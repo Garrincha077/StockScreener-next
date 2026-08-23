@@ -1,6 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {fieldDefs,matchesRule} from './filterEngine.ts'
+import {isSpaceAdvanceKey,shouldIgnoreSpaceTarget} from './keyboardNavigation.ts'
 import {RetryJsonCache,chartIntervalForRange,fetchJsonWithRetry,mergeLegacyConfirmationSidecar,nextGridCount} from './runtime.ts'
 
 test('chart ranges select daily for short views and weekly for long views',()=>{
@@ -15,6 +16,27 @@ test('nextGridCount advances in bounded batches',()=>{
   assert.equal(nextGridCount(16,123),32)
   assert.equal(nextGridCount(112,123),123)
   assert.equal(nextGridCount(123,123),123)
+})
+
+test('space ticker navigation accepts only a plain non-repeating Space press',()=>{
+  const plain={key:' ',code:'Space',altKey:false,ctrlKey:false,metaKey:false,repeat:false}
+  assert.equal(isSpaceAdvanceKey(plain),true)
+  assert.equal(isSpaceAdvanceKey({...plain,ctrlKey:true}),false)
+  assert.equal(isSpaceAdvanceKey({...plain,metaKey:true}),false)
+  assert.equal(isSpaceAdvanceKey({...plain,altKey:true}),false)
+  assert.equal(isSpaceAdvanceKey({...plain,repeat:true}),false)
+  assert.equal(isSpaceAdvanceKey({...plain,key:'Enter',code:'Enter'}),false)
+})
+
+test('space ticker navigation preserves native editable and control behavior',()=>{
+  for(const tagName of ['input','textarea','select','button','summary']){
+    assert.equal(shouldIgnoreSpaceTarget({tagName}),true,tagName)
+  }
+  assert.equal(shouldIgnoreSpaceTarget({tagName:'a',hasHref:true}),true)
+  assert.equal(shouldIgnoreSpaceTarget({tagName:'div',contentEditable:true}),true)
+  assert.equal(shouldIgnoreSpaceTarget({tagName:'div',role:'textbox'}),true)
+  assert.equal(shouldIgnoreSpaceTarget({tagName:'div',role:'slider'}),true)
+  assert.equal(shouldIgnoreSpaceTarget({tagName:'div'}),false)
 })
 
 test('fetchJsonWithRetry recovers from a transient HTTP failure',async()=>{
