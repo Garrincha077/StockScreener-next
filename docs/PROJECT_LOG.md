@@ -4,6 +4,13 @@ This file is the current durable handoff for `Garrincha077/StockScreener-next`. 
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — A8 Pages staging checkpoint
+
+- A8 one-shot Pages trigger commit: `448549238be66a198e39c718ce6a26f1309565da` temporarily allowed `next-dev` in `.github/workflows/frontend_pages.yml` solely to stage the already-green A8 frontend on the StockScreener-next Pages test surface.
+- Immediate safety restore: `ed906d5ee1340de2dccad4765a9e01fd5a43346b` restored the Pages workflow byte-for-byte to `main`-only. Future experimental `next-dev` pushes therefore do not auto-deploy Pages.
+- Final workflow restore head `ed906d5ee1340de2dccad4765a9e01fd5a43346b`: **Frontend Compile Smoke #186 / run `32626436528` SUCCESS** and **StockScout Validation #311 / run `32626436517` SUCCESS**.
+- This staging change did not alter scan generation, canonical data, StockScout Core, frozen LEGACY, Stable, or the disabled Next nightly schedule. A8 now waits only for the real two-device Pages gate described below.
+
 ## 2026-08-23 — Chart Alerts v2 A8 cross-device recovery-key sync
 
 **Branch / PR / key commits**
@@ -71,7 +78,7 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - Next scheduled nightly scan remains disabled.
 
 **Next logical step / A8 real-use gate**
-- Publish this A8 frontend once to the reversible StockScreener-next Pages test surface, immediately restoring the workflow trigger to `main`-only.
+- A8 has been staged once to the reversible StockScreener-next Pages test surface and the workflow trigger is back to `main`-only.
 - On the device that should keep the current Telegram connection/canonical alert set, enable sync and save the one-time recovery key privately.
 - On the second device, enter that key and link. Existing drawings on the second browser should merge rather than disappear. Because live state currently has only one Telegram connection, the expected join path has no credential conflict.
 - Verify both devices show the same drawings/rules/Telegram connection metadata; create one new drawing on either device and refresh the other to prove cross-device propagation.
