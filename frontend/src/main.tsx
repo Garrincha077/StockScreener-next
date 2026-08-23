@@ -17,6 +17,7 @@ import './mobile-layer-fix.css'
 import './mobile-grid-scroll.css'
 import './alert-sync-settings.css'
 import './telegram-settings.css'
+import './p1-closeout.css'
 
 installSpaceTickerNavigation()
 
