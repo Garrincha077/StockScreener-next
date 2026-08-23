@@ -6,19 +6,20 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
-## 2026-08-23 — PR #19 P1 daily review start/resume UX in progress
+## 2026-08-23 — PR #19 P1 daily review start/resume UX merged
 
-- Development resumed from the controlled post-PR #18 baseline where `main` and `next-dev` were identical at `daf5696051f34f054d11996580bf50d608b210b5`. Current implementation head before this log commit: `c875a899537f9f3c3c8ffad021f7e4fe2ecd9755` on `next-dev`.
+- PR #19 (`next-dev` -> `main`) was squash-merged as `7ef491efa26d772195418907689735a2e9713de3`. Development started from the controlled post-PR #18 baseline `daf5696051f34f054d11996580bf50d608b210b5`; final validated PR head was `5487f1fca91b1c0174c8271a44c78b0d4a2c8b74`.
 - Simplified the daily review path by removing the mandatory `List -> ticker` detour after selecting Today or New Since Last Scan. An active review scope now exposes one primary `Start review` / `Resume review` action that opens the first unseen candidate directly and preserves the existing queue/Why navigation.
 - Added explicit scope progress (`reviewed / total`) with a small progress bar. When all candidates are already seen, the same control becomes `Review again` and starts from the first candidate. The existing List drawer remains available as a secondary overview rather than being removed.
+- Reviewed state remains scan-wide by ticker and keyed by scan `generatedAt`: a ticker reviewed in Today is already reviewed when it also appears in New Since Last Scan. The browser acceptance test was corrected during development to preserve this existing contract rather than accidentally imply per-scope review state.
 - Refined the Rapid Review helper copy to expose the existing laptop `Space = next ticker` behavior and made the scope controls/progress adapt cleanly to mobile without changing the existing desktop/mobile resize architecture.
-- Affected files/components: `frontend/src/Phase4ReviewBar.tsx`, `frontend/src/phase4-review.css`, `frontend/e2e/mobile-rapid-review.spec.ts`.
-- Behavior/model impact: intentional review-flow UX only. No scan/data/provenance workflow, canonical payload, saved-screen semantics, sort semantics, chart mapping, alerts, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage or LEGACY logic changed. Stable `Garrincha077/stock-screener2` remains untouched.
-- Test coverage was updated to exercise one-click Start review, queue progression, visible progress, Resume review, List fallback, Today/New scope switching and existing mobile/laptop behavior. CI has not yet been verified for this head; no green claim is made here. Full Validation is not required for the current UI-only scope unless the PR expands into scan/data/workflow paths.
-- Regression risk/decision: reviewed state remains session-local and keyed by scan `generatedAt`, matching the prior contract. Start/Resume selects the first unseen ticker in current scope and falls back to the first ticker only when all are already reviewed; it does not reorder the scope or mutate ranking.
+- Affected files/components: `frontend/src/Phase4ReviewBar.tsx`, `frontend/src/phase4-review.css`, `frontend/e2e/mobile-rapid-review.spec.ts`, `docs/PROJECT_LOG.md`.
+- Behavior/model impact: intentional review-flow UX only. No scan/data/provenance workflow, canonical payload, saved-screen semantics, sort semantics, chart mapping, alerts, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage or LEGACY logic changed. Stable `Garrincha077/stock-screener2` remained untouched.
+- Final accepted gates on `5487f1fc...`: **Frontend Compile Smoke #243 / run `32649153710` SUCCESS** and **StockScout Validation #410 / run `32649153717` SUCCESS**. Frontend runtime tests, TypeScript/Vite build and Playwright Mobile Rapid Review smoke passed; StockScout regression/integration, model compatibility, MA Cluster, Scout Tier and exact LEGACY/Core invariance all passed. Review threads were empty before merge. Full Validation was not required because the slice remained UI-only and did not touch scan/data/workflow paths.
+- Regression risk/decision: Start/Resume selects the first unseen ticker in the existing scope and falls back to the first ticker only when all are already reviewed; it does not reorder the scope or mutate ranking. List remains available for explicit manual selection.
 
 **Next logical step**
-- Open PR #19 from `next-dev` to `main`, verify Frontend Compile Smoke and StockScout Validation including Playwright desktop/mobile coverage, then keep iterating on P1 only if those gates stay clean. A later P1 slice can consolidate chart/watchlist/alert actions after this review entry point is accepted.
+- Align `next-dev` to this merged baseline and continue P1 with the next small UX slice: consolidate selected-ticker chart/watchlist/alert actions so the daily path becomes scope -> review -> action -> next ticker with fewer context switches. Keep the first production-candidate nightly acceptance as a separate operational checkpoint and do not mix workflow/data changes into the UX PR.
 
 ## 2026-08-23 — PR #18 scan identity/publication reliability + Next nightly production-candidate promotion merged
 
