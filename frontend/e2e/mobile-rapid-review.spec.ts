@@ -78,7 +78,9 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
 
   const todayButton=page.locator('.p4-inbox-actions button').filter({hasText:/Today/})
   const newButton=page.locator('.p4-inbox-actions button').filter({hasText:/New since last scan/})
+  const whyButton=page.locator('.p4-inbox-actions button').filter({hasText:/Why this stock\?/})
   const gridButton=page.locator('.dv-top nav button').filter({hasText:/^Grid$/})
+  const screenerButton=page.locator('.dv-top nav button').filter({hasText:/^Screener$/})
   const rapidHeader=page.locator('.dv-gridview > header')
   const summary=page.locator('.dv-gridview > header span')
   const cards=page.locator('.dv-minicard')
@@ -107,6 +109,23 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
   await expect(why).toContainText('Opportunity')
   await expect(todayButton).toContainText('2 unseen')
   await expect(scope).toContainText('1 / 3 reviewed')
+
+  await why.getByRole('button',{name:'Open T001 chart'}).click()
+  await expect(why).toHaveCount(0)
+  await expect(screenerButton).toHaveClass(/active/)
+  await whyButton.click()
+  await expect(why).toContainText('WHY T001?')
+  await expect(why).toContainText('Review 1 / 3')
+
+  await why.getByRole('button',{name:'Open T001 ticker alerts'}).click()
+  await expect(why).toHaveCount(0)
+  const tickerAlerts=page.getByRole('complementary',{name:'StockScout drawings and alerts'})
+  await expect(tickerAlerts).toBeVisible()
+  await expect(tickerAlerts).toContainText('T001')
+  await page.getByRole('button',{name:'Close drawings and alerts'}).click()
+  await whyButton.click()
+  await expect(why).toContainText('WHY T001?')
+  await expect(why).toContainText('Review 1 / 3')
 
   await page.locator('.p4-next').click()
   await expect(why).toContainText('WHY T002?')
@@ -145,7 +164,6 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
   if(testInfo.project.name==='mobile-pixel-5')expect(initialCount).toBe(16)
 
   await cards.nth(3).click()
-  const whyButton=page.locator('.p4-inbox-actions button').filter({hasText:/Why this stock\?/})
   await expect(whyButton).toContainText('T004',{timeout:2_000})
   expect(coreRequests).toBe(1)
   await whyButton.click()
