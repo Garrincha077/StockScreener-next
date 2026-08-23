@@ -140,7 +140,12 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
   await expect(detailWatch).not.toHaveClass(/on/)
   expect(await page.evaluate(()=>localStorage.getItem('stockscout-watchlist'))).toBe('[]')
 
-  await continuation.getByRole('button',{name:'Next review candidate from review bar'}).click()
+  if(testInfo.project.name==='mobile-pixel-5'){
+    await continuation.getByRole('button',{name:'Next review candidate from review bar'}).click()
+  }else{
+    await page.evaluate(()=>{if(document.activeElement instanceof HTMLElement)document.activeElement.blur()})
+    await page.keyboard.press('Space')
+  }
   await expect(why).toContainText('WHY T002?')
   await expect(why).toContainText('Review 2 / 3')
   await expect(why.getByRole('button',{name:'Add T002 to watchlist'})).toBeVisible()
