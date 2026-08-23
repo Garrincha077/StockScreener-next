@@ -34,9 +34,11 @@ test('A9 Pages keeps main-only deployment while caching charts by exact Stable s
   assertPublicationContract(workflow)
 })
 
-test('A9 scheduled Stable preview uses the same validated chart cache and remains a read-only preview',()=>{
+test('Stable fallback remains validated but cannot periodically overwrite promoted Next nightly Pages',()=>{
   assert.match(preview,/branches:\s*\[main\]/)
-  assert.match(preview,/without enabling a Next scan schedule/)
+  assert.match(preview,/Read-only Stable fallback deploy/)
+  assert.doesNotMatch(preview,/\n  schedule:/)
+  assert.match(preview,/workflow_dispatch:/)
   assertSnapshotCache(preview)
   assert.match(preview,/Refresh chart descriptor and enforce preview data quality/)
   assert.match(preview,/python prepare_frontend_payloads\.py/)
@@ -44,13 +46,15 @@ test('A9 scheduled Stable preview uses the same validated chart cache and remain
   assert.match(preview,/Refuse a Stable snapshot that advanced during build/)
 })
 
-test('production-candidate Next nightly is post-close, persistent, strict and validation-isolated',()=>{
+test('production-candidate Next nightly is staggered post-close, persistent, strict and validation-isolated',()=>{
   assert.match(nightly,/schedule:/)
-  assert.match(nightly,/cron: '45 21 \* \* 1-5'/)
+  assert.match(nightly,/cron: '45 22 \* \* 1-5'/)
+  assert.match(nightly,/staggers Next one hour behind Stable/)
   assert.match(nightly,/github\.event_name == 'schedule' \|\| inputs\.persist_outputs/)
   assert.match(nightly,/github\.event_name == 'schedule' \|\| inputs\.deploy_pages/)
   assert.match(nightly,/stockscout-validation-scan/)
   assert.match(nightly,/inputs\.persist_outputs == false/)
+  assert.match(nightly,/inputs\.deploy_pages == false/)
   assert.match(nightly,/stamp_frontend_manifest\.py/)
   assert.match(nightly,/--source-repository "\$GITHUB_REPOSITORY"/)
   assert.match(nightly,/--source-ref "\$GITHUB_REF_NAME"/)
