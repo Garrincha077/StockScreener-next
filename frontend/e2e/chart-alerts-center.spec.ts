@@ -1,0 +1,209 @@
+import {expect,test} from '@playwright/test'
+
+const generatedAt='2026-08-20T22:09:11.073071+00:00'
+const tickers=['T001','T002']
+const bars=(()=>{
+  const out:any[]=[]
+  const date=new Date('2026-01-05T00:00:00Z')
+  let index=0
+  while(out.length<165){
+    const day=date.getUTCDay()
+    if(day!==0&&day!==6){
+      const base=100+index*.28+Math.sin(index/7)*2
+      out.push([date.toISOString().slice(0,10),base-.5,base+1.8,base-1.7,base+.4,900_000+index*1200,40+index*.05])
+      index++
+    }
+    date.setUTCDate(date.getUTCDate()+1)
+  }
+  return out
+})()
+const core=JSON.stringify({
+  version:8,generatedAt,market:{regime:'TEST',dailyChanges:{changed:0}},
+  universe:tickers.map((ticker,index)=>({ticker,price:bars.at(-1)[4]+index,stage:2,stageName:'Stage 2',primarySetup:'Fresh Stage 2',opportunityScore:90-index,opportunityTier:'READY',opportunityRank:97-index,rsRank:94-index,fundamentalEvidenceScore:70,volumeRatio:1.2,distance10w:1})),
+  chartShards:{T001:'000.json',T002:'000.json'},
+})
+const manifest=JSON.stringify({
+  manifestVersion:2,model:'test',generatedAt,universe:2,
+  marketSession:{date:'2026-08-20',status:'closed',timezone:'America/New_York'},
+  provenance:{source:{kind:'canonical-audit',path:'latest.json',sha256:'source',bytes:1},publication:{kind:'frontend-projection',model:'test',sourceSha256:'source'}},
+  assets:{
+    core:{path:'core.json',sha256:'core',bytes:1,coverage:2,coveragePct:100},
+    legacyIndex:{path:'legacy/index.json',sha256:'index',bytes:1,coverage:2,coveragePct:100},
+    legacyDetails:{path:'legacy/details',sha256:'details',bytes:1,coverage:2,coveragePct:100,shardCount:128},
+    legacyConfirmation:{path:'shadow/legacy-confirmation.json',sha256:'confirmation',bytes:1,coverage:2,coveragePct:100},
+    charts:{path:'charts',sha256:'charts-sha',bytes:1,coverage:2,coveragePct:100,shardCount:128},
+  },
+})
+const snapshot={
+  drawings:[
+    {id:'d1',ticker:'T001',kind:'horizontal',interval:'W',points:[{time:'2026-08-17',price:145},{time:'2026-08-17',price:145}],extension:'pane',label:null,style:{},metadata:{},created_at:'2026-08-20T12:00:00Z',updated_at:'2026-08-20T12:00:00Z'},
+    {id:'d2',ticker:'T002',kind:'trendline',interval:'D',points:[{time:'2026-08-14',price:92},{time:'2026-08-18',price:94}],extension:'ray_right',label:null,style:{},metadata:{},created_at:'2026-08-20T12:00:00Z',updated_at:'2026-08-20T12:00:00Z'},
+  ],
+  rules:[
+    {id:'r1',drawing_id:'d1',condition:'cross_above',source:'close',lifecycle:'rearm',enabled:true,notify_in_app:true,notify_telegram:true,created_at:'2026-08-20T12:00:00Z',updated_at:'2026-08-20T12:00:00Z'},
+    {id:'r2',drawing_id:'d2',condition:'cross_below',source:'close',lifecycle:'one_shot',enabled:false,notify_in_app:true,notify_telegram:false,created_at:'2026-08-20T12:00:00Z',updated_at:'2026-08-20T12:00:00Z'},
+  ],
+  status:[
+    {drawing_id:'d1',rule_id:'r1',projected_line_price:145,latest_close:143,latest_high:144,latest_low:141,distance_pct:-1.38,latest_market_date:'2026-08-17',state:'active',review_reason:null,evaluated_at:'2026-08-20T22:20:00Z',updated_at:'2026-08-20T22:20:00Z'},
+    {drawing_id:'d2',rule_id:'r2',projected_line_price:94,latest_close:95,latest_high:96,latest_low:93,distance_pct:1.06,latest_market_date:'2026-08-20',state:'paused',review_reason:null,evaluated_at:'2026-08-20T22:20:00Z',updated_at:'2026-08-20T22:20:00Z'},
+  ],
+  events:[
+    {id:'e1',drawing_id:'d2',rule_id:'r2',ticker:'T002',event_type:'break_down',interval:'D',source:'close',scan_generated_at:generatedAt,market_date:'2026-08-20',prev_line_price:93,current_line_price:94,close_price:95,message:'test event',telegram_status:'not_configured',telegram_sent_at:null,telegram_error:null,read_at:null,created_at:'2026-08-20T22:20:00Z'},
+  ],
+}
+
+test('global alerts center manages A8 sync, Telegram securely and opens the selected drawing manager',async({page})=>{
+  let markedRead=false
+  let telegramConfigured=false
+  let telegramSaved=false
+  let telegramTested=false
+  let telegramDisconnected=false
+  let syncEnabled=false
+  let syncCreated=false
+  let syncRotated=false
+  let latestRecoveryKey=''
+  const telegramToken='123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi'
+  const telegramChatId='123456789'
+
+  await page.route('**/data/manifest.json*',route=>route.fulfill({status:200,contentType:'application/json',body:manifest}))
+  await page.route('**/data/core.json*',route=>route.fulfill({status:200,contentType:'application/json',body:core}))
+  await page.route('**/data/charts/000.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({T001:bars,T002:bars})}))
+  await page.route('**/data/validation-status.json*',route=>route.fulfill({status:404,body:''}))
+  await page.route('**/data/shadow/legacy-confirmation.json*',route=>route.fulfill({status:404,body:''}))
+  await page.route('**/functions/v1/stockscout-next-alert-sync',async route=>{
+    const body=route.request().postDataJSON() as any
+    if(body?.action==='status')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sync:syncEnabled?{enabled:true,linked:true,primaryDevice:true,deviceCount:1,updatedAt:'2026-08-23T07:30:00Z'}:{enabled:false,linked:false,primaryDevice:false,deviceCount:0}})})
+    if(body?.action==='create'){
+      latestRecoveryKey=String(body.recoveryKey||'')
+      syncCreated=/^SSN2(?:-[A-F0-9]{4}){8}$/.test(latestRecoveryKey)
+      syncEnabled=true
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sync:{enabled:true,linked:true,primaryDevice:true,deviceCount:1,updatedAt:'2026-08-23T07:30:00Z'}})})
+    }
+    if(body?.action==='rotate'){
+      const next=String(body.recoveryKey||'')
+      syncRotated=/^SSN2(?:-[A-F0-9]{4}){8}$/.test(next)&&next!==latestRecoveryKey
+      latestRecoveryKey=next
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sync:{enabled:true,linked:true,primaryDevice:true,deviceCount:1,updatedAt:'2026-08-23T07:31:00Z'}})})
+    }
+    return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'unexpected sync action'})})
+  })
+  await page.route('**/functions/v1/stockscout-next-alerts-v2',async route=>{
+    const body=route.request().postDataJSON() as any
+    if(body?.action==='event_read'){
+      markedRead=body.id==='e1'&&body.read===true
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true})})
+    }
+    if(body?.action==='telegram_status'){
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({telegram:telegramConfigured?{configured:true,botId:'42',botUsername:'stockscout_test_bot',updatedAt:'2026-08-23T00:00:00Z'}:{configured:false}})})
+    }
+    if(body?.action==='telegram_save'){
+      telegramSaved=body.token===telegramToken&&body.chatId===telegramChatId
+      telegramConfigured=true
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({telegram:{configured:true,botId:'42',botUsername:'stockscout_test_bot',updatedAt:'2026-08-23T00:00:00Z'}})})
+    }
+    if(body?.action==='telegram_test'){
+      telegramTested=true
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true})})
+    }
+    if(body?.action==='telegram_disconnect'){
+      telegramDisconnected=true
+      telegramConfigured=false
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({ok:true,telegram:{configured:false}})})
+    }
+    return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify(snapshot)})
+  })
+
+  await page.goto('/')
+  const launch=page.getByRole('button',{name:/All Alerts/})
+  await expect(launch).toContainText('1')
+  await launch.click()
+  const center=page.getByRole('complementary',{name:'Global alerts center'})
+  await expect(center).toBeVisible()
+  await expect(center.locator('.cad-center-head')).toContainText('1 unread')
+  const tabs=center.getByRole('navigation',{name:'Alert center views'})
+  const activeTab=tabs.getByRole('button',{name:/^Active 1$/})
+  const nearTab=tabs.getByRole('button',{name:/^Near Trigger 1$/})
+  const triggeredTab=tabs.getByRole('button',{name:/^Triggered 1$/})
+  const pausedTab=tabs.getByRole('button',{name:/^Paused 1$/})
+  const allTab=tabs.getByRole('button',{name:/^All Drawings 2$/})
+  const settingsTab=tabs.getByRole('button',{name:'Settings'})
+  await expect(activeTab).toBeVisible()
+  await expect(nearTab).toBeVisible()
+  await expect(triggeredTab).toBeVisible()
+  await expect(pausedTab).toBeVisible()
+  await expect(allTab).toBeVisible()
+  await expect(settingsTab).toBeVisible()
+
+  await settingsTab.click()
+  const sync=center.getByRole('region',{name:'Cross-device alert sync settings'})
+  await expect(sync).toContainText('Off')
+  await sync.getByRole('button',{name:'Enable sync on this device'}).click()
+  await expect.poll(()=>syncCreated).toBe(true)
+  await expect(sync).toContainText('On · 1 device')
+  const recoveryCode=sync.locator('code')
+  await expect(recoveryCode).toBeVisible()
+  const firstRecoveryKey=await recoveryCode.textContent()
+  expect(firstRecoveryKey).toMatch(/^SSN2(?:-[A-F0-9]{4}){8}$/)
+  const browserStorage=await page.evaluate(()=>({local:Object.values(localStorage),session:Object.values(sessionStorage)}))
+  expect([...browserStorage.local,...browserStorage.session].join('|')).not.toContain(firstRecoveryKey!)
+  await sync.getByRole('button',{name:'I saved it'}).click()
+  await expect(recoveryCode).toHaveCount(0)
+  await sync.getByRole('button',{name:'Generate new recovery key'}).click()
+  await expect.poll(()=>syncRotated).toBe(true)
+  await expect(sync.locator('code')).toBeVisible()
+
+  const telegram=center.getByRole('region',{name:'Telegram notification settings'})
+  await expect(telegram).toContainText('Not configured')
+  await telegram.getByLabel('Telegram bot token').fill(telegramToken)
+  await telegram.getByLabel('Telegram chat ID').fill(telegramChatId)
+  await telegram.getByRole('button',{name:'Save securely'}).click()
+  await expect.poll(()=>telegramSaved).toBe(true)
+  await expect(telegram).toContainText('Connected as @stockscout_test_bot')
+  await expect(telegram).not.toContainText(telegramToken)
+  await expect(telegram).not.toContainText(telegramChatId)
+  await telegram.getByRole('button',{name:'Send test message'}).click()
+  await expect.poll(()=>telegramTested).toBe(true)
+  await expect(telegram).toContainText('Test message sent')
+  await telegram.getByRole('button',{name:'Disconnect Telegram'}).click()
+  await expect.poll(()=>telegramDisconnected).toBe(true)
+  await expect(telegram).toContainText('Not configured')
+
+  await nearTab.click()
+  await expect(center).toContainText('not a StockScout score')
+  const nearRows=center.locator('.cad-center-row')
+  await expect(nearRows).toHaveCount(1)
+  await expect(nearRows.first()).toContainText('T001')
+  await expect(nearRows.first()).toContainText('1.4% below')
+
+  await allTab.click()
+  await expect(center.locator('.cad-center-row')).toHaveCount(2)
+  const filter=center.getByLabel('Filter global alerts by ticker')
+  await filter.fill('T002')
+  await expect(center.locator('.cad-center-row')).toHaveCount(1)
+  const t2=center.locator('.cad-center-row').first()
+  await expect(t2).toContainText('T002')
+  await expect(t2).toContainText('D · Trend')
+  await filter.fill('')
+
+  await triggeredTab.click()
+  const event=center.locator('.cad-center-event')
+  await expect(event).toHaveCount(1)
+  await expect(event).toContainText('T002')
+  await expect(event).toContainText('Crossed below')
+  await expect(event).toContainText('New · Telegram')
+  await event.click()
+
+  await expect.poll(()=>markedRead).toBe(true)
+  await expect(center).toHaveCount(0)
+  const chartControls=page.locator('.dv-chartcontrols')
+  await expect(chartControls.locator('button').filter({hasText:/^Price$/})).toHaveClass(/active/)
+  await expect(chartControls.locator('button').filter({hasText:/^Daily$/})).toHaveClass(/active/)
+  const manager=page.getByRole('complementary',{name:'StockScout drawings and alerts'})
+  await expect(manager).toBeVisible()
+  await expect(manager).toContainText('T002')
+  await expect(manager.getByRole('region',{name:'Selected drawing alert settings'})).toContainText('Trend')
+  await expect.poll(()=>page.evaluate(()=>location.hash)).toBe('#T002')
+  await expect(page.locator('.cad-main-svg [data-drawing-id="d2"]')).toBeVisible()
+  await manager.getByRole('button',{name:'Close drawings and alerts'}).click()
+  await expect(page.getByRole('button',{name:/All Alerts/})).not.toContainText('· 1')
+})

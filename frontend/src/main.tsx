@@ -4,6 +4,7 @@ import './deepvue/legacyConfirmationUi'
 import './deepvue/phase5Cohorts'
 import App from './App'
 import {StockScoutDataProvider} from './data/StockScoutDataProvider'
+import {ChartAlertsProvider} from './ChartAlertsProvider'
 import './styles.css'
 import './terminal.css'
 import './datafirst.css'
@@ -13,9 +14,11 @@ import './mobile-tradingview.css'
 import './fundamental-evidence.css'
 import './mobile-layer-fix.css'
 import './mobile-grid-scroll.css'
+import './alert-sync-settings.css'
+import './telegram-settings.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <StockScoutDataProvider><App /></StockScoutDataProvider>
+    <StockScoutDataProvider><ChartAlertsProvider><App /></ChartAlertsProvider></StockScoutDataProvider>
   </StrictMode>,
 )
