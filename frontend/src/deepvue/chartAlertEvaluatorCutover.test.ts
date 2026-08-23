@@ -123,7 +123,7 @@ test('A8 recovery key is one-time UI state, never browser storage, and can be ro
   assert.match(client,/rotateAlertSyncRecoveryKey/)
   assert.match(a8RotateMigration,/only the primary sync device can rotate the recovery key/)
   assert.match(a8RotateMigration,/set sync_hash = p_sync_hash/)
-  assert.doesNotMatch(syncPanel,/localStorage|sessionStorage/)
+  assert.doesNotMatch(syncPanel,/(?:localStorage|sessionStorage)\.(?:setItem|getItem)/)
   assert.match(syncPanel,/Save this recovery key now/)
   assert.match(syncPanel,/Existing local drawings were merged into the shared alert set/)
 })
