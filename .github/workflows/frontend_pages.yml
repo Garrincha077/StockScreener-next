@@ -2,7 +2,7 @@ name: Deploy StockScout Terminal
 
 on:
   push:
-    branches: [main, next-dev]
+    branches: [main]
     paths:
       - 'frontend/src/**'
       - 'frontend/index.html'
