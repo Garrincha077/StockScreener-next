@@ -1,13 +1,13 @@
 import {useEffect,useMemo,useState} from 'react'
-import {buildReviewInbox,dataHealth,explainStock,reviewScopeLabel,type ReviewManifest,type ReviewPayload,type ReviewScope,type ValidationStatus} from './phase4Review'
+import {buildReviewInbox,explainStock,reviewScopeLabel,type ReviewPayload,type ReviewScope,type ValidationStatus} from './phase4Review'
 import {useStockScoutData} from './data/StockScoutDataProvider'
+import ScanDataHealthPanel from './ScanDataHealthPanel'
 
 type InboxMode=Exclude<ReviewScope,null>
 
 export default function Phase4ReviewBar(){
   const{core,manifest:selectedManifest,selectedTicker,selectTicker,reviewScope,setReviewScope,loadOptional}=useStockScoutData()
   const payload=core as ReviewPayload|null
-  const manifest=selectedManifest as ReviewManifest|null
   const[validation,setValidation]=useState<ValidationStatus|null>(null)
   const[inboxMode,setInboxMode]=useState<InboxMode|null>(null)
   const[queueMode,setQueueMode]=useState<InboxMode|null>(null)
@@ -32,7 +32,6 @@ export default function Phase4ReviewBar(){
   const inbox=useMemo(()=>buildReviewInbox(payload?.universe||[]),[payload])
   const selected=useMemo(()=>payload?.universe.find(stock=>stock.ticker===selectedTicker)||null,[payload,selectedTicker])
   const why=useMemo(()=>selected?explainStock(selected):[],[selected])
-  const health=useMemo(()=>dataHealth(payload,manifest,validation),[payload,manifest,validation])
   const reviewedSet=useMemo(()=>new Set(reviewed),[reviewed])
   const rows=inboxMode==='today'?inbox.today:inboxMode==='new'?inbox.newSinceLastScan:[]
   const queueRows=queueMode==='today'?inbox.today:queueMode==='new'?inbox.newSinceLastScan:[]
@@ -84,12 +83,7 @@ export default function Phase4ReviewBar(){
 
   return <section className="p4-review" aria-label="Phase 4 review workflow">
     <div className="p4-review-main">
-      <div className={`p4-health ${health.level}`} title={health.detail}>
-        <span className="p4-health-dot"/>
-        <b>{health.label}</b>
-        {health.ageHours!==null&&<small>{Math.round(health.ageHours)}h snapshot</small>}
-        <span>{validation?.conclusion==='success'?`validation #${validation.run_id??'—'}`:validation?.conclusion?`validation: ${validation.conclusion}`:'validation status: unknown'}</span>
-      </div>
+      <ScanDataHealthPanel core={core} manifest={selectedManifest} validation={validation}/>
       <div className="p4-inbox-actions">
         <button className={reviewScope==='today'?'active':''} onClick={()=>toggleScope('today')} aria-pressed={reviewScope==='today'}><b>Today</b><span>{inbox.today.length}<small>{unseenLabel(todayUnseen)}</small></span></button>
         <button className={reviewScope==='new'?'active':''} onClick={()=>toggleScope('new')} aria-pressed={reviewScope==='new'}><b>New since last scan</b><span>{inbox.newSinceLastScan.length}<small>{unseenLabel(newUnseen)}</small></span></button>
