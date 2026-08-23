@@ -82,6 +82,14 @@ export default function Root(){
   const openAlertDrawing=(drawing:ChartDrawing)=>{
     selectTicker(drawing.ticker);selectDrawing(drawing.id||null);setLayer('stockscout');setView('terminal');setEngineOpen(false);setAlertsCenterOpen(false);setAlertsOpen(true);focusDrawingChart(drawing)
   }
+  const focusSelectedTickerChart=()=>{
+    setLayer('stockscout');setView('terminal');setEngineOpen(false);setAlertsOpen(false);setAlertsCenterOpen(false)
+    requestAnimationFrame(()=>{clickButton('.dv-top nav button','Screener');requestAnimationFrame(()=>clickButton('.dv-chartcontrols button','Price'))})
+  }
+  const openSelectedTickerAlerts=()=>{
+    setLayer('stockscout');setView('terminal');setEngineOpen(false);setAlertsCenterOpen(false);setAlertsOpen(true)
+    requestAnimationFrame(()=>clickButton('.dv-top nav button','Screener'))
+  }
   const maxEngineWidth=()=>Math.min(MAX_ENGINE_WIDTH,Math.max(MIN_ENGINE_WIDTH,window.innerWidth-700))
   const normalizedEngineWidth=(value:number)=>Math.round(clamp(value,MIN_ENGINE_WIDTH,maxEngineWidth()))
   const setAndPersistEngineWidth=(value:number)=>{
@@ -126,7 +134,7 @@ export default function Root(){
   }
 
   const stockscout=view==='groups'?<GroupsPage onBack={()=>setView('terminal')} onOpenTicker={openTicker}/>:<>
-    <Phase4ReviewBar/>
+    <Phase4ReviewBar onOpenChart={focusSelectedTickerChart} onOpenTickerAlerts={openSelectedTickerAlerts}/>
     <div className={`ss-root-shell ${engineOpen?'oe-open':''} ${alertsOpen?'cad-open':''}`} style={{'--oe-pane-width':`${engineWidth}px`} as CSSProperties}>
       <div className="ss-terminal-host"><DeepVueTerminal/></div>
       {engineOpen&&<div className="oe-pane-splitter" role="separator" aria-label="Resize LEGACY source inspector" aria-orientation="vertical" tabIndex={0} onPointerDown={startEngineResize} onKeyDown={resizeWithKeyboard} onDoubleClick={()=>setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)} title="Drag left/right to resize · double-click to reset"><span>↔</span></div>}
