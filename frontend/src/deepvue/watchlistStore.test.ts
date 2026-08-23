@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import {normalizeWatchlist,WATCHLIST_KEY} from '../watchlistStore'
+import {normalizeWatchlist,WATCHLIST_KEY} from '../watchlistStore.ts'
 
 test('shared watchlist preserves the existing storage key',()=>{
   assert.equal(WATCHLIST_KEY,'stockscout-watchlist')
