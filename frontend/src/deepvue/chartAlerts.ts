@@ -100,9 +100,18 @@ export type TelegramConnection={
   connectedAt?:string|null
   updatedAt?:string|null
 }
+export type AlertSyncStatus={
+  enabled:boolean
+  linked:boolean
+  primaryDevice:boolean
+  deviceCount:number
+  createdAt?:string|null
+  updatedAt?:string|null
+}
 
 const ENDPOINT='https://jekidjsifihbbuzxrbse.supabase.co/functions/v1/stockscout-next-alerts'
 const V2_ENDPOINT='https://jekidjsifihbbuzxrbse.supabase.co/functions/v1/stockscout-next-alerts-v2'
+const SYNC_ENDPOINT='https://jekidjsifihbbuzxrbse.supabase.co/functions/v1/stockscout-next-alert-sync'
 const DEVICE_KEY='stockscout-next-alert-device-key-v1'
 
 export function isHorizontalAlert(alert:Pick<ChartAlert,'points'>){
@@ -141,6 +150,7 @@ async function requestAt<T>(endpoint:string,body?:Record<string,unknown>,method=
 }
 const request=<T>(body?:Record<string,unknown>,method='POST')=>requestAt<T>(ENDPOINT,body,method)
 const requestV2=<T>(body?:Record<string,unknown>)=>requestAt<T>(V2_ENDPOINT,body,'POST')
+const requestSync=<T>(body?:Record<string,unknown>)=>requestAt<T>(SYNC_ENDPOINT,body,'POST')
 
 const maybeNumber=(value:unknown)=>value==null?null:Number.isFinite(Number(value))?Number(value):null
 function drawingFromRow(row:any):ChartDrawing{
@@ -183,6 +193,22 @@ function telegramFromRaw(raw:any):TelegramConnection{
     connectedAt:raw?.connectedAt==null?null:String(raw.connectedAt),
     updatedAt:raw?.updatedAt==null?null:String(raw.updatedAt),
   }
+}
+function syncFromRaw(raw:any):AlertSyncStatus{
+  return{
+    enabled:raw?.enabled===true,
+    linked:raw?.linked===true,
+    primaryDevice:raw?.primaryDevice===true,
+    deviceCount:Number.isFinite(Number(raw?.deviceCount))?Math.max(0,Number(raw.deviceCount)):0,
+    createdAt:raw?.createdAt==null?null:String(raw.createdAt),
+    updatedAt:raw?.updatedAt==null?null:String(raw.updatedAt),
+  }
+}
+function generateRecoveryKey(){
+  const bytes=new Uint8Array(16)
+  crypto.getRandomValues(bytes)
+  const hex=Array.from(bytes).map(value=>value.toString(16).padStart(2,'0')).join('').toUpperCase()
+  return `SSN2-${hex.match(/.{4}/g)!.join('-')}`
 }
 
 export function normalizeChartAlertsV2Snapshot(raw:any):ChartAlertsV2Snapshot{
@@ -250,4 +276,31 @@ export async function sendTelegramTestMessage():Promise<void>{
 
 export async function disconnectTelegram():Promise<void>{
   await requestV2<{ok:boolean}>({action:'telegram_disconnect'})
+}
+
+export async function loadAlertSyncStatus():Promise<AlertSyncStatus>{
+  const data=await requestSync<{sync:any}>({action:'status'})
+  return syncFromRaw(data.sync)
+}
+
+export async function createAlertSync():Promise<{status:AlertSyncStatus;recoveryKey:string}>{
+  const recoveryKey=generateRecoveryKey()
+  const data=await requestSync<{sync:any}>({action:'create',recoveryKey})
+  return{status:syncFromRaw(data.sync),recoveryKey}
+}
+
+export async function rotateAlertSyncRecoveryKey():Promise<{status:AlertSyncStatus;recoveryKey:string}>{
+  const recoveryKey=generateRecoveryKey()
+  const data=await requestSync<{sync:any}>({action:'rotate',recoveryKey})
+  return{status:syncFromRaw(data.sync),recoveryKey}
+}
+
+export async function joinAlertSync(recoveryKey:string):Promise<AlertSyncStatus>{
+  const data=await requestSync<{sync:any}>({action:'join',recoveryKey:recoveryKey.trim().toUpperCase()})
+  return syncFromRaw(data.sync)
+}
+
+export async function unlinkAlertSync():Promise<AlertSyncStatus>{
+  const data=await requestSync<{sync:any}>({action:'unlink'})
+  return syncFromRaw(data.sync)
 }
