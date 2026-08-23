@@ -1,13 +1,14 @@
 import {useSyncExternalStore} from 'react'
 
 const WATCHLIST_KEY='stockscout-watchlist'
+const EMPTY_WATCHLIST:string[]=[]
 
 function readWatchlist():string[]{
-  if(typeof localStorage==='undefined')return[]
+  if(typeof localStorage==='undefined')return EMPTY_WATCHLIST
   try{
     const value=JSON.parse(localStorage.getItem(WATCHLIST_KEY)||'[]')
-    return Array.isArray(value)?value.filter((ticker):ticker is string=>typeof ticker==='string'):[]
-  }catch{return[]}
+    return Array.isArray(value)?value.filter((ticker):ticker is string=>typeof ticker==='string'):EMPTY_WATCHLIST
+  }catch{return EMPTY_WATCHLIST}
 }
 
 let current=readWatchlist()
@@ -16,7 +17,7 @@ const listeners=new Set<()=>void>()
 function emit(){for(const listener of listeners)listener()}
 function subscribe(listener:()=>void){listeners.add(listener);return()=>listeners.delete(listener)}
 function getSnapshot(){return current}
-function getServerSnapshot(){return[] as string[]}
+function getServerSnapshot(){return EMPTY_WATCHLIST}
 function replaceWatchlist(next:string[]){
   current=next
   try{localStorage.setItem(WATCHLIST_KEY,JSON.stringify(next))}catch{}
