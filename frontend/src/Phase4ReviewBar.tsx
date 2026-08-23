@@ -39,6 +39,9 @@ export default function Phase4ReviewBar(){
   const queueIndex=queueRows.findIndex(stock=>stock.ticker===selectedTicker)
   const todayUnseen=inbox.today.filter(stock=>!reviewedSet.has(stock.ticker)).length
   const newUnseen=inbox.newSinceLastScan.filter(stock=>!reviewedSet.has(stock.ticker)).length
+  const scopeReviewed=scopeRows.filter(stock=>reviewedSet.has(stock.ticker)).length
+  const scopeUnseen=Math.max(0,scopeRows.length-scopeReviewed)
+  const scopeProgress=scopeRows.length?Math.round(scopeReviewed/scopeRows.length*100):0
 
   useEffect(()=>{
     if(queueMode&&selectedTicker&&queueRows.length&&queueIndex<0)setQueueMode(null)
@@ -80,6 +83,14 @@ export default function Phase4ReviewBar(){
     setInboxMode(null)
     setQueueMode(null)
   }
+  const startReview=(scope:InboxMode)=>{
+    const candidates=scope==='today'?inbox.today:inbox.newSinceLastScan
+    if(!candidates.length)return
+    if(reviewScope!==scope)setReviewScope(scope)
+    const next=candidates.find(stock=>!reviewedSet.has(stock.ticker))||candidates[0]
+    openTicker(next.ticker,scope)
+  }
+  const startLabel=scopeUnseen===0?'Review again':scopeReviewed>0?'Resume review':'Start review'
 
   return <section className="p4-review" aria-label="Phase 4 review workflow">
     <div className="p4-review-main">
@@ -89,11 +100,13 @@ export default function Phase4ReviewBar(){
         <button className={reviewScope==='new'?'active':''} onClick={()=>toggleScope('new')} aria-pressed={reviewScope==='new'}><b>New since last scan</b><span>{inbox.newSinceLastScan.length}<small>{unseenLabel(newUnseen)}</small></span></button>
         <button className={whyOpen?'active':''} disabled={!selected} onClick={()=>{setWhyOpen(open=>!open);if(whyOpen)setQueueMode(null)}}><b>Why this stock?</b><span>{selected?.ticker||'—'}</span></button>
       </div>
-      <div className="p4-rapid-note"><b>Rapid Review</b><span>Grid now favors continuous mobile review; scroll to keep loading matches.</span></div>
+      <div className="p4-rapid-note"><b>Rapid Review</b><span>Space = next ticker · scope stays visible · cards load continuously.</span></div>
       {reviewScope&&<div className="p4-review-scope" role="status">
-        <div><b>Review scope · {reviewScopeLabel(reviewScope)}</b><span>{scopeRows.length.toLocaleString()} candidates · saved-screen membership paused · sort preserved</span></div>
-        <button onClick={()=>setInboxMode(reviewScope)}>List</button>
-        <button className="clear" aria-label="Clear review scope" onClick={clearScope}>×</button>
+        <div className="p4-scope-copy">
+          <div className="p4-scope-text"><b>Review scope · {reviewScopeLabel(reviewScope)}</b><span>{scopeRows.length.toLocaleString()} candidates · {scopeReviewed} / {scopeRows.length} reviewed · saved-screen membership paused · sort preserved</span></div>
+          <div className="p4-review-progress" aria-label={`Review progress ${scopeReviewed} of ${scopeRows.length}`}><span style={{width:`${scopeProgress}%`}}/></div>
+        </div>
+        <div className="p4-scope-actions"><button className="primary" disabled={!scopeRows.length} onClick={()=>startReview(reviewScope)}>{startLabel}</button><button onClick={()=>setInboxMode(reviewScope)}>List</button><button className="clear" aria-label="Clear review scope" onClick={clearScope}>×</button></div>
       </div>}
     </div>
 
