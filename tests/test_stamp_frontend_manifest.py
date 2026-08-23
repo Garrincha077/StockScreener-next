@@ -82,7 +82,6 @@ def test_scan_id_is_stable_across_publication_runs(tmp_path):
     first = stamp_manifest(manifest_path, canonical_path, meta_path, publication_run_id="100")
     first_id = first["scanId"]
 
-    # Regenerate the minimal projection manifest to simulate another publish of the same source.
     source_sha = hashlib.sha256(canonical_path.read_bytes()).hexdigest()
     regenerated = {
         "manifestVersion": 2,
@@ -101,7 +100,35 @@ def test_scan_id_is_stable_across_publication_runs(tmp_path):
     assert second["provenance"]["publication"]["workflowRunId"] == "101"
 
 
-def test_stamp_fails_closed_when_stable_meta_does_not_match_snapshot(tmp_path):
+def test_stamp_supports_next_as_the_authoritative_scan_source(tmp_path):
+    canonical, canonical_bytes, manifest_path, canonical_path, meta_path = fixture_files(tmp_path)
+    stamped = stamp_manifest(
+        manifest_path,
+        canonical_path,
+        meta_path,
+        source_repository="Garrincha077/StockScreener-next",
+        source_ref="main",
+        publication_repository="Garrincha077/StockScreener-next",
+        publication_ref="main",
+        publication_run_id="32530930150",
+        publication_commit_sha="abc123",
+    )
+    source_sha = hashlib.sha256(canonical_bytes).hexdigest()
+    assert stamped["scanId"] == deterministic_scan_id(canonical["generatedAt"], source_sha)
+    assert stamped["provenance"]["source"]["repository"] == "Garrincha077/StockScreener-next"
+    assert stamped["provenance"]["source"]["ref"] == "main"
+    assert stamped["provenance"]["source"]["workflowRunId"] == "32530930150"
+    verify_identity(
+        stamped,
+        canonical_bytes,
+        canonical,
+        json.loads(meta_path.read_text()),
+        source_repository="Garrincha077/StockScreener-next",
+        source_ref="main",
+    )
+
+
+def test_stamp_fails_closed_when_source_meta_does_not_match_snapshot(tmp_path):
     _, _, manifest_path, canonical_path, meta_path = fixture_files(tmp_path)
     meta = json.loads(meta_path.read_text())
     meta["generated_at_utc"] = "2026-08-20T22:21:16.292856+00:00"
