@@ -53,6 +53,7 @@ body.ss-is-splitting *{cursor:col-resize!important}
 .fr-chart-card.ss-resize-both{min-width:720px;min-height:420px;max-width:calc(100vw - 28px);max-height:1200px}
 .fr-chart-card.ss-resize-both .fr-chart-scroll{height:calc(100% - 72px);min-height:300px;overflow:auto}
 .fr-factor-card.ss-resize-vertical{min-height:270px;max-height:760px;overflow:auto!important}
+.fr-method.ss-resize-both{min-height:140px}
 
 /* Groups: resizing the right leader pane gives/takes width from the board. */
 .grp-layout{grid-template-columns:minmax(560px,1fr) auto!important;align-items:start}
@@ -70,9 +71,12 @@ body.ss-is-splitting *{cursor:col-resize!important}
 }
 
 @media(max-width:1050px){
-  .ss-resizable{resize:none!important;width:auto!important;height:auto!important;max-width:none!important;max-height:none!important}
+  .ss-resizable{resize:none!important}
   .ss-resizable::after,.ss-layout-reset,.ss-pane-splitter{display:none!important}
   .dv-work{display:grid!important;grid-template-columns:1fr!important;width:auto!important;gap:8px!important}
   .dv-tablebox,.dv-detail{grid-column:1!important;flex:none!important;width:auto!important;min-width:0!important;border-radius:8px!important}
+  .p4-review-main.ss-resize-vertical,.p4-inbox-drawer.ss-resize-both,.p4-why.ss-resize-vertical,.dv-detail.ss-resize-vertical,.dv-tablebox.ss-resize-vertical,.dv-gridview.ss-resize-both,.dv-market>section.ss-resize-both,.lg-tablebox.ss-resize-vertical,.lg-detail.ss-resize-both,.fr-hero.ss-resize-vertical,.fr-summary.ss-resize-both,.fr-chart-card.ss-resize-both,.fr-factor-grid.ss-resize-both,.fr-factor-card.ss-resize-vertical,.fr-method.ss-resize-both,.grp-hero>div.ss-resize-both,.grp-note.ss-resize-vertical,.grp-board.ss-resize-vertical,.grp-leaders.ss-resize-both{width:auto!important;height:auto!important;min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important}
+  .cad-center.ss-resize-both{min-width:0!important;min-height:0!important;max-width:none!important;max-height:none!important}
+  .cad-dock.ss-resize-vertical{min-height:0!important;max-height:none!important}
   .dv-chartbox.ss-resize-vertical{width:auto!important;height:380px!important;min-height:220px!important;max-height:none!important}
 }
