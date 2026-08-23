@@ -37,11 +37,11 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 
 **A9 evaluator health / explanations**
 - A9 evaluator-health migration repo commit: `4b1cc3d458239b3d1f1c1860537030d903c9bbde`; live Supabase migration version `20260823090711`, name `stockscout_next_alerts_v2_a9_evaluator_health`.
-- Client/provider/UI commits: `9ff9b65e960371578b27bd1a9cfaddcadf5bb5ed`, `8faae221a952b5c99fa14483ec64531cb949bc79`, `67c8f05347c8cebe8ea54ff39b7067f2c38b0fd9`; tests `dd90b1b43539a57ec5aafb07541afed8193b85f7`, `60c79c1f5d4b4fba5bfe7d474e2f44b2e0c4f36c`.
+- Client/provider/UI commits: `9ff9b65e960371578b27bd1a9cfaddcadf5bb5ed`, `8faae221a952b5c99fa14483ec64531cb949bc79`, `67c8f05347c8cebe8ea54ff39b7067f2c38b0fd9`; tests `dd90b1b43539a57ec5aafb07541afed8193b85f7`, `60c79c1f5d4bfa5bfe7d474e2f44b2e0c4f36c`.
 - `evaluatorHealth` is derived from actual enabled-rule `evaluated_at` state, not a synthetic score. It exposes `idle`, `waiting`, `stale`, `attention` or `healthy`, active/evaluated/needs-review/stale counts and last-evaluated timestamp. Missing health fails safe to `waiting` rather than claiming green.
 - Alerts Center now translates known `needs_review` codes into explicit explanations for missing chart history, missing anchor, malformed source/rule geometry, unavailable published chart snapshot and legacy interval review. Corporate-action review labels are supported, but no new heuristic corporate-action detector was introduced.
 - Live hourly evaluator at `2026-08-23T09:15:03Z` evaluated `3/3` active rules with `0` stale. Health correctly returned `attention` because `1` rule is fail-safe `needs_review`; the live reason is `missing_anchor`. That rule remains non-firing until its geometry is reviewable.
-- Verified health code head `60c79c1f5d4bba5bfe7d474e2f44b2e0c4f36c` is superseded by the exact value below if this line is inspected against Git history; use the original A9 entry and commit history as authority for historical hashes.
+- Verified health code head `60c79c1f5d4bfa5bfe7d474e2f44b2e0c4f36c`: Frontend Compile Smoke #193 / run `32630101080` SUCCESS and StockScout Validation #323 / run `32630101076` SUCCESS.
 
 **A9 Pages / chart hydration hardening**
 - Hydration progress commit `c368042997df85d263851157334058c143e626ff` now reports bounded main and retry batch progress (`N/M`) while retaining the existing `>=95%` coverage gate and byte-for-byte canonical `latest.json` invariance check.
