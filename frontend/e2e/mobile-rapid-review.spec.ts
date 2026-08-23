@@ -62,7 +62,7 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
 
   const healthTrigger=page.locator('.sdh-trigger')
   await expect(healthTrigger).toBeVisible()
-  await expect(healthTrigger).toContainText('PARTIAL')
+  await expect(healthTrigger).toContainText('STALE')
   await expect(healthTrigger).toContainText('Scan 2099-01-01')
   await expect(healthTrigger).toContainText('SHA source')
   await healthTrigger.click()
