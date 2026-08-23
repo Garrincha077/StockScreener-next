@@ -11,15 +11,40 @@ export type AssetDescriptor={
   shardCount?:number
 }
 
+export type ScanSourceProvenance={
+  kind:string
+  path:string
+  sha256:string
+  bytes:number
+  repository?:string|null
+  ref?:string|null
+  workflowRunId?:string|number|null
+  workflowRunAttempt?:string|number|null
+  sourceCommit?:string|null
+  generatedAt?:string|null
+}
+
+export type PublicationProvenance={
+  kind:string
+  model:string
+  sourceSha256:string
+  repository?:string|null
+  ref?:string|null
+  workflowRunId?:string|number|null
+  commitSha?:string|null
+  publicationId?:string|null
+}
+
 export type StockScoutManifest={
   manifestVersion:2
   model:string
+  scanId?:string|null
   generatedAt:string
   marketSession?:{date?:string|null;status?:string;timezone?:string}
   universe:number
   provenance:{
-    source:{kind:string;path:string;sha256:string;bytes:number}
-    publication:{kind:string;model:string;sourceSha256:string}
+    source:ScanSourceProvenance
+    publication:PublicationProvenance
   }
   assets:{
     core:AssetDescriptor

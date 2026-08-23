@@ -1,14 +1,39 @@
 name: StockScout Full Validation
 
 # Final gate for StockScout Next scan/data/workflow changes.
-# Pages source/publish workflow changes are validation-gated as data-path changes.
+# Pages source/publish and nightly workflow changes are validation-gated as data-path changes.
+# Experimental development is gated by pull_request; push validation is reserved
+# for controlled main promotion so next-dev commits do not duplicate the same
+# expensive full scan. Reusable validation scans run non-persistent/non-deploying.
 on:
   push:
+    branches: [main]
     paths:
       - '.github/workflows/stockscout_full_validation.yml'
+      - '.github/workflows/daily_screening_git_storage.yml'
       - '.github/workflows/validate_stable_snapshot_sync.yml'
       - '.github/workflows/deploy_latest_stable_preview.yml'
       - '.github/workflows/frontend_pages.yml'
+      - 'stamp_frontend_manifest.py'
+      - 'validate_frontend_charts.py'
+      - 'validate_scan_session.py'
+      - 'tests/test_stamp_frontend_manifest.py'
+      - 'tests/test_validate_frontend_charts.py'
+      - 'tests/test_validate_scan_session.py'
+  pull_request:
+    branches: [main]
+    paths:
+      - '.github/workflows/stockscout_full_validation.yml'
+      - '.github/workflows/daily_screening_git_storage.yml'
+      - '.github/workflows/validate_stable_snapshot_sync.yml'
+      - '.github/workflows/deploy_latest_stable_preview.yml'
+      - '.github/workflows/frontend_pages.yml'
+      - 'stamp_frontend_manifest.py'
+      - 'validate_frontend_charts.py'
+      - 'validate_scan_session.py'
+      - 'tests/test_stamp_frontend_manifest.py'
+      - 'tests/test_validate_frontend_charts.py'
+      - 'tests/test_validate_scan_session.py'
   workflow_dispatch:
 
 permissions:
@@ -24,10 +49,16 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: LEGACY shadow unit and client projection tests
+      - name: LEGACY shadow, client projection and publication contract tests
         run: |
-          python -m pip install --upgrade pip pytest
-          python -m pytest tests/test_compute_legacy_confirmation.py tests/test_build_legacy_confirmation_sidecar.py tests/test_prepare_frontend_payloads.py -q
+          python -m pip install --upgrade pip pytest pandas
+          python -m pytest \
+            tests/test_compute_legacy_confirmation.py \
+            tests/test_build_legacy_confirmation_sidecar.py \
+            tests/test_prepare_frontend_payloads.py \
+            tests/test_stamp_frontend_manifest.py \
+            tests/test_validate_frontend_charts.py \
+            tests/test_validate_scan_session.py -q
 
   full-scan:
     needs: legacy-shadow-unit

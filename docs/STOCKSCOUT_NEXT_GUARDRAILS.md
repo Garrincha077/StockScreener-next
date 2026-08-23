@@ -107,10 +107,23 @@ Add automated checks in this order:
 
 ## Production promotion gate
 
-Do not enable the automatic Next nightly scan until:
+Historical default: the automatic Next nightly scan stays disabled until the repository owner explicitly promotes Next to production-candidate operation.
 
-- architecture cleanup is complete;
-- confirmation runs in shadow mode successfully;
-- separate Pages output is verified;
-- 10 consecutive Full Validation runs are green;
-- unexplained core drift is zero.
+### Explicit promotion decision — 2026-08-23
+
+The repository owner explicitly promoted StockScout Next to production-candidate nightly operation and authorized re-enabling the automatic weekday post-market scan. That explicit decision satisfies the project-level disabled-nightly guardrail for this promotion.
+
+The prior target of 10 consecutive green Full Validation runs remains useful evidence but is no longer a blocking prerequisite for this owner-approved promotion. The enabling change itself still requires a fresh green Full Validation before merge.
+
+Nightly operation is permitted only while all of these controls remain true:
+
+- schedule is after the completed US regular session;
+- scheduled runs persist canonical outputs and deploy Pages only after canonical/model/LEGACY/chart gates pass;
+- chart coverage is a hard publish gate at >=95%;
+- reusable Full Validation scans remain non-persistent and non-deploying;
+- canonical `latest.json` is never mutated by projection/provenance stamping;
+- manifest provenance identifies the exact scan workflow run, canonical SHA and publication run;
+- frozen LEGACY remains shadow-only and does not alter StockScout scoring;
+- `Garrincha077/stock-screener2` remains the stable fallback and is not modified by Next promotion work.
+
+If unexplained core drift appears, publication identity becomes inconsistent, or repeated nightly publication failures occur, disable the Next schedule and return to manual/read-only operation until the failure is understood and revalidated.
