@@ -7,6 +7,7 @@ import {useStockScoutData} from './data/StockScoutDataProvider'
 import {applyMultiSort} from './deepvue/multiSort'
 import {matchesReviewScope} from './phase4Review'
 import MainChartDrawingLayer,{type MainChartBridge} from './MainChartDrawingLayer'
+import {useStockScoutWatchlist} from './watchlistStore'
 
 type Bar={time:string;open:number;high:number;low:number;close:number;volume:number;rs:number}
 type RawBar=[string,number,number,number,number,number,number]
@@ -103,7 +104,7 @@ function DeepVueTerminal(){
   const[groups,setGroups]=useState<RuleGroup[]>(()=>loadLocal('dv-groups-v1',[]))
   const[customScreens,setCustomScreens]=useState<ScreenState[]>(()=>loadLocal('dv-custom-screens-v1',[]))
   const[activeScreen,setActiveScreen]=useState('Custom'),[builderOpen,setBuilderOpen]=useState(false),[columnsOpen,setColumnsOpen]=useState(false)
-  const[watchlist,setWatchlist]=useState<string[]>(()=>loadLocal('stockscout-watchlist',[]))
+  const{watchlist,toggleWatch}=useStockScoutWatchlist()
   const[selectedChart,setSelectedChart]=useState<ChartLoadState>({status:'loading',bars:[]})
   const[interval,setInterval]=useState<Interval>('W'),[range,setRange]=useState<Range>('5Y'),[chartMode,setChartMode]=useState<ChartMode>('Price')
   const[gridCount,setGridCount]=useState(16),[gridRange,setGridRange]=useState<Range>('2Y')
@@ -113,7 +114,6 @@ function DeepVueTerminal(){
   useEffect(()=>localStorage.setItem('dv-root-logic',JSON.stringify(rootLogic)),[rootLogic])
   useEffect(()=>localStorage.setItem('dv-groups-v1',JSON.stringify(groups)),[groups])
   useEffect(()=>localStorage.setItem('dv-custom-screens-v1',JSON.stringify(customScreens)),[customScreens])
-  useEffect(()=>localStorage.setItem('stockscout-watchlist',JSON.stringify(watchlist)),[watchlist])
   const loadBars=useCallback(async(ticker:string,retry=false):Promise<ChartLoadState>=>{
     const result=await loadChart(ticker,retry)
     if(result.status!=='ready')return{...result,bars:[]}
@@ -122,7 +122,6 @@ function DeepVueTerminal(){
   },[loadChart])
 
   const universe=payload?.universe||[]
-  const toggleWatch=(ticker:string)=>setWatchlist(w=>w.includes(ticker)?w.filter(x=>x!==ticker):[...w,ticker])
   const filtered=useMemo(()=>universe.filter(s=>{
     const q=query.trim().toUpperCase();if(q&&!s.ticker.includes(q)&&!tagsOf(s).join(' ').toUpperCase().includes(q)&&(s.changeLabels||[]).join(' ').toUpperCase().includes(q)===false)return false
     if(reviewScope)return matchesReviewScope(s,reviewScope)
