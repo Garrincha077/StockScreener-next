@@ -47,9 +47,26 @@ export function scanDataHealth(core:StockScoutCore|null,manifest:StockScoutManif
 export function scanIdentity(manifest:StockScoutManifest|null){
   const session=manifest?.marketSession?.date||null
   const generatedAt=manifest?.generatedAt||null
-  const sourceSha=manifest?.provenance?.source?.sha256||null
-  const sourceRunId=(manifest?.provenance?.source as unknown as {workflowRunId?:string|number})?.workflowRunId??null
-  const publicationRunId=(manifest?.provenance?.publication as unknown as {workflowRunId?:string|number})?.workflowRunId??null
-  const id=session&&sourceSha?`${session}:${sourceSha.slice(0,12)}`:generatedAt&&sourceSha?`${generatedAt}:${sourceSha.slice(0,12)}`:generatedAt||sourceSha||'unknown'
-  return{id,session,generatedAt,sourceSha,sourceRunId,publicationRunId}
+  const source=manifest?.provenance?.source
+  const publication=manifest?.provenance?.publication
+  const sourceSha=source?.sha256||null
+  const sourceRunId=source?.workflowRunId??null
+  const publicationRunId=publication?.workflowRunId??null
+  const fallbackId=session&&sourceSha?`${session}:${sourceSha.slice(0,12)}`:generatedAt&&sourceSha?`${generatedAt}:${sourceSha.slice(0,12)}`:generatedAt||sourceSha||'unknown'
+  return{
+    id:manifest?.scanId||fallbackId,
+    session,
+    generatedAt,
+    sourceSha,
+    sourceRunId,
+    sourceRunAttempt:source?.workflowRunAttempt??null,
+    sourceRepository:source?.repository||null,
+    sourceRef:source?.ref||null,
+    sourceCommit:source?.sourceCommit||null,
+    publicationRunId,
+    publicationRepository:publication?.repository||null,
+    publicationRef:publication?.ref||null,
+    publicationCommitSha:publication?.commitSha||null,
+    publicationId:publication?.publicationId||null,
+  }
 }
