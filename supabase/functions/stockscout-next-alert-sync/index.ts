@@ -32,11 +32,11 @@ Deno.serve(async(req:Request)=>{
       return json({sync:data&&typeof data==='object'?data:{enabled:false,linked:false,primaryDevice:false,deviceCount:0}})
     }
 
-    if(action==='create'||action==='join'){
+    if(action==='create'||action==='join'||action==='rotate'){
       const key=normalizeRecoveryKey(body?.recoveryKey)
       if(!RECOVERY_KEY.test(key))return json({error:'Recovery key format is invalid'},400)
       const syncHash=await sha256(key)
-      const rpc=action==='create'?'next_chart_alert_sync_create':'next_chart_alert_sync_join'
+      const rpc=action==='create'?'next_chart_alert_sync_create':action==='join'?'next_chart_alert_sync_join':'next_chart_alert_sync_rotate'
       const{data,error}=await api.rpc(rpc,{p_device_owner_key:deviceOwnerKey,p_sync_hash:syncHash})
       if(error)return json({error:String(error.message||'Unable to update cross-device sync')},errorStatus(error))
       return json({sync:data&&typeof data==='object'?data:{enabled:true,linked:true}})
