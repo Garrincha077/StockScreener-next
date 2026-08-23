@@ -52,12 +52,16 @@ const snapshot={
   ],
 }
 
-test('global alerts center summarizes all tickers, manages Telegram securely and opens the selected drawing manager',async({page})=>{
+test('global alerts center manages A8 sync, Telegram securely and opens the selected drawing manager',async({page})=>{
   let markedRead=false
   let telegramConfigured=false
   let telegramSaved=false
   let telegramTested=false
   let telegramDisconnected=false
+  let syncEnabled=false
+  let syncCreated=false
+  let syncRotated=false
+  let latestRecoveryKey=''
   const telegramToken='123456789:ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghi'
   const telegramChatId='123456789'
 
@@ -66,6 +70,23 @@ test('global alerts center summarizes all tickers, manages Telegram securely and
   await page.route('**/data/charts/000.json*',route=>route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({T001:bars,T002:bars})}))
   await page.route('**/data/validation-status.json*',route=>route.fulfill({status:404,body:''}))
   await page.route('**/data/shadow/legacy-confirmation.json*',route=>route.fulfill({status:404,body:''}))
+  await page.route('**/functions/v1/stockscout-next-alert-sync',async route=>{
+    const body=route.request().postDataJSON() as any
+    if(body?.action==='status')return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sync:syncEnabled?{enabled:true,linked:true,primaryDevice:true,deviceCount:1,updatedAt:'2026-08-23T07:30:00Z'}:{enabled:false,linked:false,primaryDevice:false,deviceCount:0}})})
+    if(body?.action==='create'){
+      latestRecoveryKey=String(body.recoveryKey||'')
+      syncCreated=/^SSN2(?:-[A-F0-9]{4}){8}$/.test(latestRecoveryKey)
+      syncEnabled=true
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sync:{enabled:true,linked:true,primaryDevice:true,deviceCount:1,updatedAt:'2026-08-23T07:30:00Z'}})})
+    }
+    if(body?.action==='rotate'){
+      const next=String(body.recoveryKey||'')
+      syncRotated=/^SSN2(?:-[A-F0-9]{4}){8}$/.test(next)&&next!==latestRecoveryKey
+      latestRecoveryKey=next
+      return route.fulfill({status:200,contentType:'application/json',body:JSON.stringify({sync:{enabled:true,linked:true,primaryDevice:true,deviceCount:1,updatedAt:'2026-08-23T07:31:00Z'}})})
+    }
+    return route.fulfill({status:400,contentType:'application/json',body:JSON.stringify({error:'unexpected sync action'})})
+  })
   await page.route('**/functions/v1/stockscout-next-alerts-v2',async route=>{
     const body=route.request().postDataJSON() as any
     if(body?.action==='event_read'){
@@ -114,6 +135,23 @@ test('global alerts center summarizes all tickers, manages Telegram securely and
   await expect(settingsTab).toBeVisible()
 
   await settingsTab.click()
+  const sync=center.getByRole('region',{name:'Cross-device alert sync settings'})
+  await expect(sync).toContainText('Off')
+  await sync.getByRole('button',{name:'Enable sync on this device'}).click()
+  await expect.poll(()=>syncCreated).toBe(true)
+  await expect(sync).toContainText('On · 1 device')
+  const recoveryCode=sync.locator('code')
+  await expect(recoveryCode).toBeVisible()
+  const firstRecoveryKey=await recoveryCode.textContent()
+  expect(firstRecoveryKey).toMatch(/^SSN2(?:-[A-F0-9]{4}){8}$/)
+  const browserStorage=await page.evaluate(()=>({local:Object.values(localStorage),session:Object.values(sessionStorage)}))
+  expect([...browserStorage.local,...browserStorage.session].join('|')).not.toContain(firstRecoveryKey!)
+  await sync.getByRole('button',{name:'I saved it'}).click()
+  await expect(recoveryCode).toHaveCount(0)
+  await sync.getByRole('button',{name:'Generate new recovery key'}).click()
+  await expect.poll(()=>syncRotated).toBe(true)
+  await expect(sync.locator('code')).toBeVisible()
+
   const telegram=center.getByRole('region',{name:'Telegram notification settings'})
   await expect(telegram).toContainText('Not configured')
   await telegram.getByLabel('Telegram bot token').fill(telegramToken)
