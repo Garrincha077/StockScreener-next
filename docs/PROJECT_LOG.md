@@ -4,6 +4,18 @@ This file is the current durable handoff for `Garrincha077/StockScreener-next`. 
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — A9 Full Validation accepted; promotion audit
+
+- User visually confirmed the latest A9-triggered **StockScout Full Validation** run is green in the GitHub Actions UI on 2026-08-23. Treat the A9 workflow-level gate as accepted. The GitHub connector available in this session cannot enumerate push-triggered Full Validation runs, and the existing `data/daily_scans/full_validation_status.json` recorder is stale at the older 2026-08-20 run, so the exact new run id/SHA is intentionally not guessed or fabricated.
+- Current PR #13 promotion head before this documentation-only closeout was `c60b31dc9eb73cddc4e2bfb0c68db090dfb29975`: **Frontend Compile Smoke #199 / run `32630694597` SUCCESS** and **StockScout Validation #331 / run `32630694612` SUCCESS**.
+- Promotion audit on PR #13: open, draft, unmerged and mergeable; chart-alert diff is confined to alert sidecar/frontend/workflow/docs files and does not include protected StockScout Core scoring/model files. Shared golden-vector tests enforce frontend/evaluator D/W geometry parity; browser smoke covers main-chart trend/horizontal draw, right-ray projection, edit, reload persistence, manager navigation, global Alerts Center, Telegram secure save/test/disconnect and recovery-key browser-storage isolation. Evaluator cutover tests lock v2 geometry, one-shot disable, deduped-event Telegram gating, owner-scoped read state, secure Telegram Vault paths, A8 canonical-owner sync and A9 fail-safe health/review semantics.
+- User already accepted A7 secure Telegram and A8 two-device sync in real use. A9 operational/UX hardening is therefore considered **closed**. The older “Full Validation pending” checkpoint below is superseded by this closeout entry.
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping or default-ranking behavior was changed. Frozen LEGACY remains shadow-only. Stable `Garrincha077/stock-screener2` remains untouched and the Next scheduled nightly scan remains disabled.
+- PR #13 remains **draft** until the explicit promotion decision. Do not change workflow plumbing merely to repair the stale Full Validation status recorder before promotion; that would unnecessarily retrigger the expensive gate. Repair the recorder separately after this promotion cycle.
+
+**Next logical step**
+- Perform only the final controlled real-use smoke needed for promotion confidence, then make an explicit decision to move PR #13 out of draft and merge it into Next `main`. Do not re-enable the Next nightly scan as part of that merge.
+
 ## 2026-08-23 — A8 real-use accepted; A9 operational/UX hardening
 
 **Branch / PR / acceptance**
