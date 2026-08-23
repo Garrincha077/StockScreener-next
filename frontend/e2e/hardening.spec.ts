@@ -16,7 +16,7 @@ const asset=(path:string,sha256:string,coverage=205)=>({path,sha256,bytes:1,cove
 const manifest={
   manifestVersion:2,model:'test',generatedAt,universe:205,
   marketSession:{date:'2099-01-01',status:'closed',timezone:'America/New_York'},
-  provenance:{source:{kind:'canonical-audit',path:'latest.json',sha256:'source',bytes:1},publication:{kind:'frontend-projection',model:'test',sourceSha256:'source'}},
+  provenance:{source:{kind:'canonical-audit',path:'latest.json',sha256:'source',bytes:1},publication:{kind:'frontend-projection',model:'test',sourceSha256256:'source'}},
   assets:{
     core:asset('core.json','core'),legacyIndex:asset('legacy/index.json','index'),
     legacyDetails:{...asset('legacy/details','details'),shardCount:128},
@@ -41,6 +41,18 @@ test('shared data, filter validation, chart states, and paged LEGACY details are
 
   await page.goto('/')
   await expect(page.locator('.dv-app')).toBeVisible()
+
+  const screenMeta=page.locator('.dv-screenmeta')
+  await expect(screenMeta).toBeVisible()
+  await expect(screenMeta).toContainText('Custom')
+  await expect(screenMeta).toContainText('2 sort levels')
+  await expect(screenMeta).toContainText('205 matches')
+
+  if(testInfo.project.name==='mobile-pixel-5'){
+    await expect(screenMeta).toHaveCSS('display','flex')
+    await expect(page.locator('.dv-detailhead')).toContainText('T001')
+    await expect(page.locator('.dv-chartcontrols')).toHaveCSS('justify-content','flex-start')
+  }
 
   if(testInfo.project.name==='desktop-chrome'){
     await expect(page.locator('.p4-review-main')).toHaveAttribute('data-resize-mode','vertical')
@@ -72,11 +84,15 @@ test('shared data, filter validation, chart states, and paged LEGACY details are
   const ruleInput=page.locator('.dv-rule input')
   await expect(invalidRule).toContainText('Enter a value')
   await expect(page.locator('.dv-screenpick button').filter({hasText:'Save as'})).toBeDisabled()
-  await expect(page.locator('.dv-screenmeta')).toContainText('invalid · ignored')
+  await expect(screenMeta).toContainText('invalid · ignored')
   await ruleInput.fill('not-a-number')
   await expect(invalidRule).toContainText('valid number')
   await ruleInput.fill('999')
   await expect(page.locator('.dv-tablewrap tbody tr')).toHaveCount(0)
+  await expect(screenMeta).toContainText('0 matches')
+  const emptyBody=page.locator('.dv-tablewrap tbody')
+  await expect.poll(async()=>Math.round((await emptyBody.boundingBox())?.height||0)).toBeGreaterThan(80)
+  expect(await emptyBody.evaluate(element=>getComputedStyle(element,'::after').content)).toContain('No matches')
   await ruleInput.fill('80')
 
   await page.locator('.dv-groups-launch').click()
