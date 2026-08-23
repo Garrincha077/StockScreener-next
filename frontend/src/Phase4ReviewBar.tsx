@@ -100,7 +100,6 @@ export default function Phase4ReviewBar({onOpenChart,onOpenTickerAlerts}:ReviewB
     openTicker(next.ticker,scope)
   }
   const startLabel=scopeUnseen===0?'Review again':scopeReviewed>0?'Resume review':'Start review'
-  const queuePaused=!whyOpen&&Boolean(queueMode)&&queueIndex>=0
 
   return <section className={`p4-review${whyOpen?' why-open':''}`} aria-label="Phase 4 review workflow">
     <div className="p4-review-main">
@@ -118,7 +117,7 @@ export default function Phase4ReviewBar({onOpenChart,onOpenTickerAlerts}:ReviewB
         </div>
         <div className="p4-scope-actions"><button className="primary" disabled={!scopeRows.length} onClick={()=>startReview(reviewScope)}>{startLabel}</button><button onClick={()=>setInboxMode(reviewScope)}>List</button><button className="clear" aria-label="Clear review scope" onClick={clearScope}>×</button></div>
       </div>}
-      {queuePaused&&<div className="p4-queue-continuation" role="status">
+      {!whyOpen&&queueMode&&queueIndex>=0&&<div className="p4-queue-continuation" role="status">
         <div><b>Review queue · {reviewScopeLabel(queueMode)}</b><span>{selectedTicker} · {queueIndex+1} / {queueRows.length}</span></div>
         <div><button onClick={()=>setWhyOpen(true)}>Continue review</button><button className="primary" aria-label="Next review candidate from review bar" disabled={queueIndex===queueRows.length-1} onClick={()=>moveQueue(1)}>Next →</button></div>
       </div>}
