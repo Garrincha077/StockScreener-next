@@ -130,7 +130,7 @@ def download_chunk(
             timeout=30,
         )
     except Exception as exc:
-        print(f"Chart batch failed ({len(chunk)} symbols): {exc}")
+        print(f"Chart batch failed ({len(chunk)} symbols): {exc}", flush=True)
         return {}
     out: dict[str, list[list]] = {}
     for ticker in chunk:
@@ -157,6 +157,8 @@ def main() -> None:
         if shard != expected:
             raise SystemExit(f"Canonical chart mapping mismatch for {ticker}: {shard} != {expected}")
 
+    print(f"Chart hydration snapshot {cutoff.date()}: {len(tickers):,} symbols", flush=True)
+    print("Chart hydration benchmark: SPY", flush=True)
     spy = yf.download(
         "SPY",
         start=start_date,
@@ -184,8 +186,11 @@ def main() -> None:
     shards: dict[str, dict[str, list[list]]] = {f"{i:03d}.json": {} for i in range(SHARD_COUNT)}
     missing: list[str] = []
 
-    for start in range(0, len(tickers), 100):
-        chunk = tickers[start:start + 100]
+    batch_size = 100
+    total_batches = math.ceil(len(tickers) / batch_size)
+    for batch_index, start in enumerate(range(0, len(tickers), batch_size), start=1):
+        chunk = tickers[start:start + batch_size]
+        print(f"Chart hydration batch {batch_index}/{total_batches}: {len(chunk)} symbols", flush=True)
         batch = download_chunk(chunk, spy_close, cutoff, start_date, end_date, threads=True)
         for ticker in chunk:
             bars = batch.get(ticker)
@@ -193,11 +198,16 @@ def main() -> None:
                 shards[shard_for(ticker)][ticker] = bars
             else:
                 missing.append(ticker)
+        print(f"Chart hydration batch {batch_index}/{total_batches} complete: {len(batch)}/{len(chunk)} covered", flush=True)
 
     if missing:
         still_missing: list[str] = []
-        for start in range(0, len(missing), 20):
-            chunk = missing[start:start + 20]
+        retry_size = 20
+        retry_batches = math.ceil(len(missing) / retry_size)
+        print(f"Chart hydration retry lane: {len(missing)} symbols in {retry_batches} batches", flush=True)
+        for batch_index, start in enumerate(range(0, len(missing), retry_size), start=1):
+            chunk = missing[start:start + retry_size]
+            print(f"Chart hydration retry {batch_index}/{retry_batches}: {len(chunk)} symbols", flush=True)
             batch = download_chunk(chunk, spy_close, cutoff, start_date, end_date, threads=False)
             for ticker in chunk:
                 bars = batch.get(ticker)
@@ -205,6 +215,7 @@ def main() -> None:
                     shards[shard_for(ticker)][ticker] = bars
                 else:
                     still_missing.append(ticker)
+            print(f"Chart hydration retry {batch_index}/{retry_batches} complete: {len(batch)}/{len(chunk)} covered", flush=True)
             time.sleep(0.20)
         missing = still_missing
 
@@ -226,10 +237,11 @@ def main() -> None:
     size_mb = sum(p.stat().st_size for p in CHART_DIR.glob("*.json")) / 1024 / 1024
     print(
         f"Read-only adjusted chart hydration at {cutoff.date()}: "
-        f"{covered:,}/{len(tickers):,}, {written} shards, {size_mb:.1f} MB"
+        f"{covered:,}/{len(tickers):,}, {written} shards, {size_mb:.1f} MB",
+        flush=True,
     )
     if missing:
-        print(f"Charts unavailable after retry: {len(missing):,}")
+        print(f"Charts unavailable after retry: {len(missing):,}", flush=True)
 
 
 if __name__ == "__main__":
