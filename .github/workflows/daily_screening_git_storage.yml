@@ -1,8 +1,11 @@
 name: Daily Stock Screening (Post-Market)
 
-# StockScout Next development mode: full scans are manual/reusable only.
-# The stable production repository remains responsible for the scheduled nightly scan.
+# StockScout Next production-candidate mode: one guarded post-market nightly scan
+# plus explicit manual/reusable execution. Stable remains the fallback repository.
 on:
+  schedule:
+    # 21:45 UTC is safely after the 16:00 ET regular close in both US DST regimes.
+    - cron: '45 21 * * 1-5'
   workflow_dispatch:
     inputs:
       force_full_refresh:
@@ -32,8 +35,11 @@ on:
         default: true
 
 concurrency:
-  group: daily-stock-screening
-  cancel-in-progress: false
+  # Persistent/manual/scheduled scans serialize without cancellation. Reusable
+  # non-persistent validation scans use a separate newest-wins queue so they do
+  # not block production-candidate nightly operation.
+  group: ${{ github.event_name == 'workflow_call' && inputs.persist_outputs == false && 'stockscout-validation-scan' || 'daily-stock-screening' }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_call' && inputs.persist_outputs == false }}
 
 jobs:
   screen-stocks:
@@ -83,13 +89,13 @@ jobs:
 
       - name: Validate rich-pipeline Python syntax
         run: |
-          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py audit_lateral_base.py audit_emerging_leader.py audit_frontend_dataset.py audit_pipeline_models.py compute_opportunity_v2.py finalize_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py validate_frontend_charts.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py
+          python -m py_compile verify_legacy_baseline.py enrich_original_engine.py complete_legacy_capture.py hydrate_rich_fundamentals.py enrich_scan_layers.py fundamental_evidence.py apply_fundamental_evidence.py audit_fundamental_evidence.py compute_group_leadership.py audit_group_leadership.py audit_lateral_base.py audit_emerging_leader.py audit_frontend_dataset.py audit_pipeline_models.py compute_opportunity_v2.py finalize_opportunity_v2.py compute_daily_changes.py validate_scan_session.py validate_canonical_dataset.py validate_frontend_charts.py export_frontend_data_fast.py hydrate_frontend_charts_readonly.py calibrate_frontend_setups.py prepare_frontend_payloads.py stamp_frontend_manifest.py
 
       - name: Verify frozen LEGACY source baseline
         run: python verify_legacy_baseline.py
 
       - name: Fast-engine regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_emerging_leader.py tests/test_lateral_base.py tests/test_opportunity_v2.py tests/test_opportunity_v2_integration.py tests/test_prepare_frontend_payloads.py -q
+        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_emerging_leader.py tests/test_lateral_base.py tests/test_opportunity_v2.py tests/test_opportunity_v2_integration.py tests/test_prepare_frontend_payloads.py tests/test_stamp_frontend_manifest.py tests/test_validate_frontend_charts.py -q
 
       - name: Preserve previous terminal snapshot
         shell: bash
@@ -203,9 +209,9 @@ jobs:
       - name: Validate chart coverage before publish
         shell: bash
         run: |
-          python validate_frontend_charts.py frontend/public
+          python validate_frontend_charts.py frontend/public --strict --minimum-coverage 0.95
 
-      - name: Write run metadata
+      - name: Write run metadata from the canonical snapshot
         env:
           RUN_ID: ${{ github.run_id }}
           RUN_ATTEMPT: ${{ github.run_attempt }}
@@ -213,10 +219,13 @@ jobs:
         run: |
           python - <<'PY'
           import json, os
-          from datetime import datetime, timezone
           from pathlib import Path
+          canonical = json.loads(Path("frontend/public/data/latest.json").read_text(encoding="utf-8"))
+          generated_at = canonical.get("generatedAt")
+          if not generated_at:
+              raise SystemExit("Canonical dataset has no generatedAt for run metadata")
           payload = {
-              "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+              "generated_at_utc": generated_at,
               "workflow_run_id": os.environ["RUN_ID"],
               "workflow_run_attempt": os.environ["RUN_ATTEMPT"],
               "source_commit": os.environ["COMMIT_SHA"],
@@ -231,7 +240,7 @@ jobs:
               "group_model": "behavioral-proxy-v2-confidence",
               "scan_engine": "fast-batched-5y-v1",
               "data_model": "rich-scan-layers-v1",
-              "client_payload_model": "stockscout-client-core-v1",
+              "client_payload_model": "stockscout-client-core-v2",
               "fundamentals_policy": "full-analyzed-universe-max-7d",
               "fundamental_evidence_model": "stockscout-fundamental-evidence-v1",
               "opportunity_model": "stockscout-opportunity-v2-potential-timing",
@@ -241,6 +250,23 @@ jobs:
           }
           Path("data/daily_scans/latest_scan_meta.json").write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
           PY
+
+      - name: Stamp authoritative Next scan and publication identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          python stamp_frontend_manifest.py \
+            --source-meta data/daily_scans/latest_scan_meta.json \
+            --source-repository "$GITHUB_REPOSITORY" \
+            --source-ref "$GITHUB_REF_NAME"
+          python stamp_frontend_manifest.py \
+            --source-meta data/daily_scans/latest_scan_meta.json \
+            --source-repository "$GITHUB_REPOSITORY" \
+            --source-ref "$GITHUB_REF_NAME" \
+            --verify-only
+          AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          test "$BEFORE" = "$AFTER"
 
       - name: Add scan summary
         shell: bash
@@ -257,6 +283,8 @@ jobs:
             echo "**Canonical dataset:** hard invariants passed before publish"
             echo ""
             echo "**Client payload:** lightweight core projection; full LEGACY/rich source payload loads on demand"
+            echo ""
+            echo "**Provenance:** canonical SHA + deterministic scanId + workflow run embedded in manifest"
             echo ""
             echo "**Layers:** LEGACY (frozen upstream) + STOCKSCOUT (custom discovery)"
             echo ""
@@ -276,7 +304,7 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
       - name: Commit cache and canonical outputs
-        if: ${{ inputs.persist_outputs }}
+        if: ${{ github.event_name == 'schedule' || inputs.persist_outputs }}
         id: commit
         shell: bash
         run: |
@@ -300,7 +328,7 @@ jobs:
           fi
 
       - name: Sync persistent outputs to source branch
-        if: ${{ inputs.persist_outputs && steps.commit.outputs.has_changes == 'true' }}
+        if: ${{ (github.event_name == 'schedule' || inputs.persist_outputs) && steps.commit.outputs.has_changes == 'true' }}
         shell: bash
         run: |
           pushed=false
@@ -352,10 +380,10 @@ jobs:
       - name: Verify built Pages artifact contains usable charts
         shell: bash
         run: |
-          python validate_frontend_charts.py frontend/dist
+          python validate_frontend_charts.py frontend/dist --strict --minimum-coverage 0.95
 
       - name: Upload Pages artifact
-        if: ${{ inputs.deploy_pages }}
+        if: ${{ github.event_name == 'schedule' || inputs.deploy_pages }}
         uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist
@@ -384,7 +412,7 @@ jobs:
           fi
 
   deploy-pages:
-    if: ${{ inputs.deploy_pages }}
+    if: ${{ github.event_name == 'schedule' || inputs.deploy_pages }}
     needs: screen-stocks
     runs-on: ubuntu-latest
     concurrency:
