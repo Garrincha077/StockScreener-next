@@ -135,6 +135,14 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
   await expect(page.locator('.p4-why')).toContainText('WHY T004?')
   await page.getByRole('button',{name:'Close why panel'}).click()
 
+  // Laptop review: a plain Space advances one card in the rendered Grid order.
+  // Mobile keeps its touch-first behavior and does not need this keyboard gate.
+  if(testInfo.project.name!=='mobile-pixel-5'){
+    await page.keyboard.press('Space')
+    await expect(whyButton).toContainText('T005',{timeout:2_000})
+    await expect(cards.nth(4)).toHaveClass(/selected/)
+  }
+
   for(let attempt=0;attempt<5;attempt++){
     if((await summary.textContent())?.includes('50 of 50'))break
     await sentinel.scrollIntoViewIfNeeded()

@@ -2,6 +2,7 @@ import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './deepvue/legacyConfirmationUi'
 import './deepvue/phase5Cohorts'
+import {installSpaceTickerNavigation} from './deepvue/keyboardNavigation'
 import App from './App'
 import {StockScoutDataProvider} from './data/StockScoutDataProvider'
 import {ChartAlertsProvider} from './ChartAlertsProvider'
@@ -16,6 +17,8 @@ import './mobile-layer-fix.css'
 import './mobile-grid-scroll.css'
 import './alert-sync-settings.css'
 import './telegram-settings.css'
+
+installSpaceTickerNavigation()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
