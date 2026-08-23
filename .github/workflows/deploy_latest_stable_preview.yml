@@ -7,6 +7,8 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/deploy_latest_stable_preview.yml'
+      - 'stamp_frontend_manifest.py'
+      - 'validate_frontend_charts.py'
   schedule:
     # Stable normally completes after the US close. Two read-only refresh windows
     # give a delayed Stable run a second chance without scheduling a Next scan.
@@ -27,6 +29,7 @@ jobs:
       stable_sha: ${{ steps.stable.outputs.sha }}
       generated_at: ${{ steps.stable.outputs.generated_at }}
       workflow_run_id: ${{ steps.stable.outputs.workflow_run_id }}
+      scan_id: ${{ steps.identity.outputs.scan_id }}
     steps:
       - uses: actions/checkout@v4
 
@@ -54,11 +57,14 @@ jobs:
           payload=json.loads(Path('/tmp/stable-latest.json').read_text(encoding='utf-8'))
           meta=json.loads(Path('/tmp/stable-scan-meta.json').read_text(encoding='utf-8'))
           rows=payload.get('universe') or []
-          if not rows or not payload.get('generatedAt'):
+          generated=payload.get('generatedAt')
+          if not rows or not generated:
               raise SystemExit('Stable snapshot is incomplete')
-          if not meta.get('workflow_run_id') or not meta.get('generated_at_utc'):
+          if not meta.get('workflow_run_id') or not meta.get('generated_at_utc') or not meta.get('source_commit'):
               raise SystemExit('Stable scan metadata is incomplete')
-          print(payload['generatedAt'])
+          if meta.get('generated_at_utc') != generated:
+              raise SystemExit(f"Stable scan metadata mismatch: meta={meta.get('generated_at_utc')} canonical={generated}")
+          print(generated)
           print(meta['workflow_run_id'])
           print(len(rows))
           PY
@@ -77,24 +83,35 @@ jobs:
         run: python audit_legacy_confirmation_shadow.py frontend/public/data/latest.json
 
       - name: Build Next client payloads from Stable snapshot
+        id: identity
         shell: bash
         run: |
           set -euo pipefail
           BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           python prepare_frontend_payloads.py
+          python stamp_frontend_manifest.py --source-meta /tmp/stable-scan-meta.json
           AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           test "$BEFORE" = "$AFTER"
-          python - <<'PY'
+          test "$AFTER" = "${{ steps.stable.outputs.sha }}"
+          python - <<'PY' > /tmp/preview-identity.txt
           import json
           core=json.load(open('frontend/public/data/core.json'))
           manifest=json.load(open('frontend/public/data/manifest.json'))
           shadow=json.load(open('frontend/public/data/shadow/legacy-confirmation.json'))
+          source=(manifest.get('provenance') or {}).get('source') or {}
+          publication=(manifest.get('provenance') or {}).get('publication') or {}
           assert core.get('generatedAt') == manifest.get('generatedAt') == (shadow.get('source') or {}).get('generatedAt')
           assert len(core.get('universe') or []) == manifest.get('universe') == shadow.get('total')
           assert shadow.get('affectsStockScout') is False
-          print('Next projection generatedAt:', manifest.get('generatedAt'))
-          print('LEGACY shadow counts:', shadow.get('counts'))
+          assert source.get('workflowRunId') == '${{ steps.stable.outputs.workflow_run_id }}'
+          assert source.get('sha256') == '${{ steps.stable.outputs.sha }}'
+          assert publication.get('workflowRunId') == '${{ github.run_id }}'
+          assert manifest.get('scanId')
+          print(manifest['scanId'])
           PY
+          SCAN_ID=$(sed -n '1p' /tmp/preview-identity.txt)
+          echo "scan_id=$SCAN_ID" >> "$GITHUB_OUTPUT"
+          echo "Preview scan identity: $SCAN_ID"
 
       - name: Restore validated chart shards for this Stable snapshot
         id: chart-cache
@@ -131,11 +148,35 @@ jobs:
           done
           echo "hydrated=$HYDRATED" >> "$GITHUB_OUTPUT"
           if [ "$HYDRATED" != true ]; then
-            echo "::warning::Unable to rebuild full chart shards after 3 attempts; continuing with available/no charts."
+            echo "::warning::Unable to rebuild full chart shards after 3 attempts; strict publication coverage gate will decide whether preview may continue."
           fi
           mkdir -p frontend/public/data/charts
           AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           test "$BEFORE" = "$AFTER"
+
+      - name: Refresh chart descriptor and enforce preview data quality
+        shell: bash
+        run: |
+          set -euo pipefail
+          BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          python prepare_frontend_payloads.py
+          python stamp_frontend_manifest.py --source-meta /tmp/stable-scan-meta.json
+          python stamp_frontend_manifest.py --source-meta /tmp/stable-scan-meta.json --verify-only
+          FINAL=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          test "$BEFORE" = "$FINAL"
+          test "$FINAL" = "${{ steps.stable.outputs.sha }}"
+          python validate_frontend_charts.py frontend/public --strict --minimum-coverage 0.95
+          python - <<'PY'
+          import json
+          manifest=json.load(open('frontend/public/data/manifest.json'))
+          charts=(manifest.get('assets') or {}).get('charts') or {}
+          assert manifest.get('scanId') == '${{ steps.identity.outputs.scan_id }}'
+          if float(charts.get('coveragePct') or 0) < 95:
+              raise SystemExit(f"Manifest chart coverage below preview gate: {charts.get('coveragePct')}%")
+          print('Preview chart coverage:', charts.get('coveragePct'))
+          PY
+          echo "Stable canonical latest.json unchanged in preview workspace: $FINAL"
+          echo "Chart shards: $(find frontend/public/data/charts -name '*.json' 2>/dev/null | wc -l)"
 
       - name: Save validated chart shards for this Stable snapshot
         if: steps.chart-cache.outputs.cache-hit != 'true' && steps.chart-hydrate.outputs.hydrated == 'true'
@@ -143,17 +184,6 @@ jobs:
         with:
           path: frontend/public/data/charts
           key: stockscout-next-charts-v2-${{ runner.os }}-${{ steps.stable.outputs.sha }}-${{ hashFiles('hydrate_frontend_charts_readonly.py') }}
-
-      - name: Refresh chart descriptor and verify read-only preview state
-        shell: bash
-        run: |
-          BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
-          python prepare_frontend_payloads.py
-          FINAL=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
-          test "$BEFORE" = "$FINAL"
-          python validate_frontend_charts.py frontend/public
-          echo "Stable canonical latest.json unchanged in preview workspace: $FINAL"
-          echo "Chart shards: $(find frontend/public/data/charts -name '*.json' 2>/dev/null | wc -l)"
 
       - name: Refuse a Stable snapshot that advanced during build
         shell: bash
@@ -175,11 +205,24 @@ jobs:
       - name: Install, test, typecheck and build
         working-directory: frontend
         run: |
-          npm install
+          npm ci
           npm run check
 
-      - name: Report Pages artifact chart coverage
-        run: python validate_frontend_charts.py frontend/dist
+      - name: Enforce Pages artifact chart coverage and identity
+        shell: bash
+        run: |
+          python validate_frontend_charts.py frontend/dist --strict --minimum-coverage 0.95
+          python - <<'PY'
+          import json
+          manifest=json.load(open('frontend/dist/data/manifest.json'))
+          source=(manifest.get('provenance') or {}).get('source') or {}
+          publication=(manifest.get('provenance') or {}).get('publication') or {}
+          assert manifest.get('scanId') == '${{ steps.identity.outputs.scan_id }}'
+          assert source.get('sha256') == '${{ steps.stable.outputs.sha }}'
+          assert source.get('workflowRunId') == '${{ steps.stable.outputs.workflow_run_id }}'
+          assert publication.get('workflowRunId') == '${{ github.run_id }}'
+          print('Preview artifact identity verified:', manifest.get('scanId'))
+          PY
 
       - uses: actions/upload-pages-artifact@v3
         with:
@@ -210,7 +253,7 @@ jobs:
             --output /tmp/stable-latest-deploy-check.json
           CURRENT_STABLE_SHA=$(sha256sum /tmp/stable-latest-deploy-check.json | cut -d' ' -f1)
           test "$CURRENT_STABLE_SHA" = "$BUILT_STABLE_SHA"
-          echo "Deploying Stable workflow ${{ needs.build.outputs.workflow_run_id }} snapshot ${{ needs.build.outputs.generated_at }}"
+          echo "Deploying scan ${{ needs.build.outputs.scan_id }} from Stable workflow ${{ needs.build.outputs.workflow_run_id }} snapshot ${{ needs.build.outputs.generated_at }}"
 
       - name: Deploy Next preview to GitHub Pages
         id: deployment
