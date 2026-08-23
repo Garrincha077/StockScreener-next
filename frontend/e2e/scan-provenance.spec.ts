@@ -19,11 +19,11 @@ const manifest={
   provenance:{
     source:{
       kind:'canonical-audit',path:'latest.json',sha256:sourceSha,bytes:1,
-      repository:'Garrincha077/stock-screener2',ref:'main',workflowRunId:'32530930150',workflowRunAttempt:'1',sourceCommit:'8c7d3cefc2029b448ce4e6ec49c735090832dff6',generatedAt,
+      repository:'Garrincha077/StockScreener-next',ref:'main',workflowRunId:'777',workflowRunAttempt:'1',sourceCommit:'8c7d3cefc2029b448ce4e6ec49c735090832dff6',generatedAt,
     },
     publication:{
       kind:'frontend-projection',model:'stockscout-client-core-v2',sourceSha256:sourceSha,
-      repository:'Garrincha077/StockScreener-next',ref:'main',workflowRunId:'999',commitSha:'abcdef1234567890',publicationId:'Garrincha077/StockScreener-next#999',
+      repository:'Garrincha077/StockScreener-next',ref:'main',workflowRunId:'777',commitSha:'abcdef1234567890',publicationId:'Garrincha077/StockScreener-next#777',
     },
   },
   assets:{
@@ -31,7 +31,7 @@ const manifest={
   },
 }
 
-test('Scan/Data Health exposes authoritative Stable and Next publication identity',async({page})=>{
+test('Scan/Data Health exposes authoritative source and publication identity',async({page})=>{
   await page.route('**/data/manifest.json*',route=>route.fulfill({json:manifest}))
   await page.route('**/data/core.json*',route=>route.fulfill({json:core}))
   await page.route('**/data/validation-status.json*',route=>route.fulfill({json:{conclusion:'success',run_id:369,head_sha:'validatedsha'}}))
@@ -41,18 +41,17 @@ test('Scan/Data Health exposes authoritative Stable and Next publication identit
   const trigger=page.locator('.sdh-trigger')
   await expect(trigger).toBeVisible()
   await expect(trigger).toContainText('Scan 2026-08-21')
-  await expect(trigger).toContainText('Stable #32530930150')
+  await expect(trigger).toContainText('Source #777')
   await trigger.click()
 
   const panel=page.locator('.sdh-panel')
   await expect(panel).toBeVisible()
   await expect(panel).toContainText('scan-authoritative-test')
-  await expect(panel).toContainText('Stable source workflow')
-  await expect(panel).toContainText('#32530930150')
-  await expect(panel).toContainText('Garrincha077/stock-screener2@main')
-  await expect(panel).toContainText('8c7d3cefc202')
-  await expect(panel).toContainText('Next publication workflow')
-  await expect(panel).toContainText('#999')
+  await expect(panel).toContainText('Source workflow')
+  await expect(panel).toContainText('#777')
   await expect(panel).toContainText('Garrincha077/StockScreener-next@main')
+  await expect(panel).toContainText('8c7d3cefc202')
+  await expect(panel).toContainText('Publication workflow')
+  await expect(panel).toContainText('abcdef123456')
   await expect(panel).not.toContainText('run id is not carried in this manifest')
 })
