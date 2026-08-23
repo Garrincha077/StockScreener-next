@@ -4,12 +4,46 @@ This file is the current durable handoff for `Garrincha077/StockScreener-next`. 
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — A8 real-use accepted; A9 operational/UX hardening
+
+**Branch / PR / acceptance**
+- Branch: `next-dev`; draft PR #13 (`next-dev` -> `main`) remains open and unmerged.
+- User confirmed the two-device A8 Pages gate with `Sync radi`. Treat A8 cross-device identity/sync as accepted for real use.
+- Live verification after the user test independently confirmed `1` sync profile and `2` linked devices sharing one owner-scoped alert sidecar. The shared state contained `6` drawings, `3` rules and `1` Telegram connection. No recovery key or Telegram credential was exposed or recorded in chat/logs.
+
+**A9 evaluator health / explanations**
+- A9 evaluator-health migration repo commit: `4b1cc3d458239b3d1f1c1860537030d903c9bbde`; live Supabase migration version `20260823090711`, name `stockscout_next_alerts_v2_a9_evaluator_health`.
+- Client/provider/UI commits: `9ff9b65e960371578b27bd1a9cfaddcadf5bb5ed`, `8faae221a952b5c99fa14483ec64531cb949bc79`, `67c8f05347c8cebe8ea54ff39b7067f2c38b0fd9`; tests `dd90b1b43539a57ec5aafb07541afed8193b85f7`, `60c79c1f5d4b4fba5bfe7d474e2f44b2e0c4f36c`.
+- `evaluatorHealth` is derived from actual enabled-rule `evaluated_at` state, not a synthetic score. It exposes `idle`, `waiting`, `stale`, `attention` or `healthy`, active/evaluated/needs-review/stale counts and last-evaluated timestamp. Missing health fails safe to `waiting` rather than claiming green.
+- Alerts Center now translates known `needs_review` codes into explicit explanations for missing chart history, missing anchor, malformed source/rule geometry, unavailable published chart snapshot and legacy interval review. Corporate-action review labels are supported, but no new heuristic corporate-action detector was introduced.
+- Live hourly evaluator at `2026-08-23T09:15:03Z` evaluated `3/3` active rules with `0` stale. Health correctly returned `attention` because `1` rule is fail-safe `needs_review`; the live reason is `missing_anchor`. That rule remains non-firing until its geometry is reviewable.
+- Verified health code head `60c79c1f5d4b4fba5bfe7d474e2f44b2e0c4f36c`: Frontend Compile Smoke #193 / run `32630101080` SUCCESS and StockScout Validation #323 / run `32630101076` SUCCESS.
+
+**A9 Pages / chart hydration hardening**
+- Hydration progress commit `c368042997df85d263851157334058c143e626ff` now reports bounded main and retry batch progress (`N/M`) while retaining the existing `>=95%` coverage gate and byte-for-byte canonical `latest.json` invariance check.
+- Main Pages workflow cache commit `bc84768ede225b8392098e7c91fba62cd9d6cd68` restores/saves validated `frontend/public/data/charts` by exact Stable canonical SHA plus hydrator code hash. Hydration runs only on cache miss; cache is saved only after the hydrator succeeds. A new Stable snapshot or hydrator change therefore forces a fresh hydration.
+- Scheduled read-only Stable preview workflow commit `070de1118ccfae9d81e3685b0b4a6470bd174d93` now uses the same exact-snapshot cache and, importantly, reruns `prepare_frontend_payloads.py` after cache/hydration so its versioned chart descriptor matches the actual shards before build/deploy.
+- Workflow guardrail test `f4db7cffae1c4c620e34ecb3b97fb0cf5a9867b4` locks both workflows to the exact-snapshot cache contract, cache-save-after-success rule, canonical hash checks and Full Validation gating.
+- Main Pages push deployment remains `branches: [main]`; `next-dev` automatic Pages deploy was not enabled. Scheduled preview remains read-only and does not schedule a Next scan.
+- Final A9 code/test head `f4db7cffae1c4c620e34ecb3b97fb0cf5a9867b4`: **Frontend Compile Smoke #198 / run `32630590998` SUCCESS** and **StockScout Validation #330 / run `32630590980` SUCCESS**, including mobile Playwright, frozen LEGACY invariance and frontend runtime/build.
+- Because A9 changes Pages/publish workflow plumbing, `stockscout_full_validation.yml` is intentionally triggered by both modified Pages workflow paths. Full Validation is still pending at this checkpoint; do not call that gate green until the status recorder or direct run confirms the new workflow-change run succeeded.
+
+**Scoring / guardrails / risk**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default ranking or other StockScout Core behavior changed.
+- Frozen LEGACY remains unchanged and shadow-only. Stable `Garrincha077/stock-screener2` was not modified. Next scheduled nightly scan remains disabled.
+- Chart cache reuse is intentionally conservative: exact Stable snapshot SHA + hydrator code hash, and save only after successful hydration. It does not reuse a failed/partial hydration as validated.
+- A9 intentionally does not add new context-menu/delete shortcuts. Existing Escape behavior is retained; operational observability and deterministic publish behavior were prioritized over extra interaction complexity.
+
+**Next logical step**
+- Wait only for the already-triggered A9 Full Validation workflow-level gate to finish and record its result. If green, record the run id/SHA here and treat A9 core hardening as closed.
+- Then stage the validated A9 frontend to the reversible Next Pages test surface only when a controlled preview is needed; keep `main` controlled, Stable untouched and Next nightly disabled.
+
 ## 2026-08-23 — A8 Pages staging checkpoint
 
 - A8 one-shot Pages trigger commit: `448549238be66a198e39c718ce6a26f1309565da` temporarily allowed `next-dev` in `.github/workflows/frontend_pages.yml` solely to stage the already-green A8 frontend on the StockScreener-next Pages test surface.
 - Immediate safety restore: `ed906d5ee1340de2dccad4765a9e01fd5a43346b` restored the Pages workflow byte-for-byte to `main`-only. Future experimental `next-dev` pushes therefore do not auto-deploy Pages.
 - Final workflow restore head `ed906d5ee1340de2dccad4765a9e01fd5a43346b`: **Frontend Compile Smoke #186 / run `32626436528` SUCCESS** and **StockScout Validation #311 / run `32626436517` SUCCESS**.
-- This staging change did not alter scan generation, canonical data, StockScout Core, frozen LEGACY, Stable, or the disabled Next nightly schedule. A8 now waits only for the real two-device Pages gate described below.
+- This staging change did not alter scan generation, canonical data, StockScout Core, frozen LEGACY, Stable, or the disabled Next nightly schedule. The newer A8 acceptance/A9 section above supersedes the historical note that A8 was still waiting for its real-use gate.
 
 ## 2026-08-23 — Chart Alerts v2 A8 cross-device recovery-key sync
 
@@ -22,7 +56,7 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - Recovery-key rotation RPC: `9f84243ff9903378155118af3913bded7914c439`.
 - Frontend client/UI integration: `0734ad2ff8f5fc1957fddfb3adf7bd8f315444a4`, `4aaefec5221ca08a0f9473ec9b322c18a241502a`, `d953e59d0aae8dd4ebc3d23ab7436c5929b56204`, `4a25ed7ed861b4d94bca7d83359f003279352828`, `edce85f84a10339a4ff0de9b27af23fcb379a22d`.
 - A8 security/browser tests: `227298e62a0eec1d496fc6a5b2d2c2ae2238e293`, `f842bdc26d3f8c1faa8bf4bd27f27911171aeba9`.
-- Test-only false-positive repair: `414b50423a7db3ece870ac8fcc77ca46e01d0aae`; the original assertion rejected the explanatory words `localStorage/sessionStorage`, not actual storage API use. It now rejects real `setItem/getItem` calls instead.
+- Test-only false-positive repair: `414b50423a7db3ece870ac8fcc77ca46e01d0aae`; the original assertion rejected the explanatory UI words `localStorage/sessionStorage`, not actual storage API use. It now rejects real `setItem/getItem` calls instead.
 
 **Architecture / behavior**
 - A8 uses a user-managed Alerts Recovery/Sync Key rather than adding account/email auth. This keeps the personal app incremental and preserves the existing capability-key identity abstraction.
@@ -77,12 +111,10 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - Stable `Garrincha077/stock-screener2` was not modified.
 - Next scheduled nightly scan remains disabled.
 
-**Next logical step / A8 real-use gate**
-- A8 has been staged once to the reversible StockScreener-next Pages test surface and the workflow trigger is back to `main`-only.
-- On the device that should keep the current Telegram connection/canonical alert set, enable sync and save the one-time recovery key privately.
-- On the second device, enter that key and link. Existing drawings on the second browser should merge rather than disappear. Because live state currently has only one Telegram connection, the expected join path has no credential conflict.
-- Verify both devices show the same drawings/rules/Telegram connection metadata; create one new drawing on either device and refresh the other to prove cross-device propagation.
-- Do not paste the recovery key into chat. If the real-use gate passes, close A8 and continue A9 operational/UX hardening. Keep PR13 draft until the remaining promotion gates are explicitly accepted.
+**Next logical step / A8 historical gate**
+- The A8 gate described below has now passed; the newer A8 acceptance/A9 section above is authoritative.
+- A8 was staged once to the reversible StockScreener-next Pages test surface and the workflow trigger was restored to `main`-only.
+- The real-use gate required both devices to show the same drawings/rules/Telegram metadata and a new drawing to propagate after refresh. The user confirmed this with `Sync radi`.
 
 ## 2026-08-23 — Chart Alerts v2 A7 secure Telegram Settings
 
