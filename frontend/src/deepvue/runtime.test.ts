@@ -1,7 +1,15 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import {fieldDefs,matchesRule} from './filterEngine.ts'
-import {RetryJsonCache,fetchJsonWithRetry,mergeLegacyConfirmationSidecar,nextGridCount} from './runtime.ts'
+import {RetryJsonCache,chartIntervalForRange,fetchJsonWithRetry,mergeLegacyConfirmationSidecar,nextGridCount} from './runtime.ts'
+
+test('chart ranges select daily for short views and weekly for long views',()=>{
+  assert.equal(chartIntervalForRange('3M'),'D')
+  assert.equal(chartIntervalForRange('6M'),'D')
+  assert.equal(chartIntervalForRange('1Y'),'D')
+  assert.equal(chartIntervalForRange('2Y'),'W')
+  assert.equal(chartIntervalForRange('5Y'),'W')
+})
 
 test('nextGridCount advances in bounded batches',()=>{
   assert.equal(nextGridCount(16,123),32)
