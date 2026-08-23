@@ -1,0 +1,108 @@
+/* P1 UX closeout: preserve the existing terminal/state model while making
+   active context, selected-stock detail and empty-result states deliberate. */
+
+/* An empty filter/screen should never look like a broken blank table. The
+   screen metadata remains the semantic source of the exact 0-match count;
+   this generated message is a visual affordance only. */
+.dv-tablewrap tbody:empty{
+  display:block;
+  min-height:128px;
+}
+.dv-tablewrap tbody:empty::after{
+  content:'No matches in the active screen / review scope.';
+  display:grid;
+  place-items:center;
+  min-height:128px;
+  box-sizing:border-box;
+  padding:24px;
+  color:#71869c;
+  background:linear-gradient(180deg,rgba(9,24,39,.62),rgba(7,17,29,.35));
+  border-top:1px solid #14263a;
+  font-size:10px;
+  letter-spacing:.01em;
+  text-align:center;
+}
+
+/* DeepVue used to hide .dv-screenmeta at <=1050px, which removed the only
+   compact view of screen/review scope, rule health, sort depth and match
+   count. Keep it visible and horizontally compact instead. */
+@media(max-width:1050px){
+  .dv-screenbar{
+    flex-wrap:wrap;
+  }
+  .dv-screenmeta{
+    display:flex!important;
+    flex:1 1 100%;
+    width:100%;
+    min-width:0;
+    align-items:center;
+    gap:10px;
+    overflow-x:auto;
+    overscroll-behavior-x:contain;
+    white-space:nowrap;
+    scrollbar-width:none;
+  }
+  .dv-screenmeta::-webkit-scrollbar{display:none}
+  .dv-screenmeta>b,
+  .dv-screenmeta>span{flex:0 0 auto}
+}
+
+@media(max-width:760px){
+  /* mobile-tradingview.css already defines the compact lane; force display
+     because the earlier DeepVue tablet rule otherwise still wins. */
+  .dv-screenmeta{
+    display:flex!important;
+    min-height:20px;
+    padding-top:5px!important;
+  }
+  .dv-screenmeta>b{
+    position:sticky;
+    left:0;
+    z-index:1;
+    padding-right:7px;
+    color:#72eaa4!important;
+    background:#08121e;
+  }
+
+  /* Keep selected ticker, Opportunity and price readable on narrow phones
+     instead of letting the header squeeze into overlapping fragments. */
+  .dv-detailhead{
+    flex-wrap:wrap!important;
+    align-content:center;
+    padding:5px 0!important;
+    row-gap:3px!important;
+  }
+  .dv-detailhead>div:not(.dv-opp):not(.dv-price){
+    flex:1 1 92px;
+    min-width:82px;
+  }
+  .dv-opp{
+    flex:0 0 auto;
+  }
+  .dv-price{
+    flex:0 0 auto;
+    margin-left:auto!important;
+  }
+
+  /* Price/RS/Volume, interval and range are three distinct control groups.
+     Keep them in one scrollable lane with visible group boundaries. */
+  .dv-chartcontrols{
+    justify-content:flex-start!important;
+    gap:8px!important;
+    overscroll-behavior-x:contain;
+  }
+  .dv-chartcontrols>div+div{
+    padding-left:7px;
+    border-left:1px solid #1b3046;
+  }
+
+  .dv-tablewrap tbody:empty{
+    min-height:108px;
+  }
+  .dv-tablewrap tbody:empty::after{
+    content:'No matches · check screen, review scope or filters.';
+    min-height:108px;
+    padding:20px 12px;
+    font-size:9px;
+  }
+}
