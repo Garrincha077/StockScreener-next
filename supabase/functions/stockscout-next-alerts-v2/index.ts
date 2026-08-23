@@ -43,7 +43,10 @@ Deno.serve(async(req:Request)=>{
   try{
     const deviceKey=req.headers.get('x-stockscout-device-key')??''
     if(deviceKey.length<32||deviceKey.length>256)return json({error:'Missing device key'},401)
-    const ownerKey=await sha256(deviceKey)
+    const deviceOwnerKey=await sha256(deviceKey)
+    const{data:resolvedOwner,error:resolveError}=await api.rpc('next_chart_alert_owner_resolve',{p_device_owner_key:deviceOwnerKey})
+    if(resolveError||typeof resolvedOwner!=='string')return json({error:'Unable to resolve alert owner'},500)
+    const ownerKey=resolvedOwner
     const body=await req.json().catch(()=>({}))
     const action=String(body?.action??'')
 
