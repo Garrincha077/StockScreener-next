@@ -12,6 +12,9 @@ const TABLE_MIN=320
 const SPLITTER_WIDTH=16
 
 const specs:Spec[]=[
+  {selector:'.p4-review-main',prefix:'review-workflow',mode:'vertical'},
+  {selector:'.p4-inbox-drawer',prefix:'review-inbox',mode:'both'},
+  {selector:'.p4-why',prefix:'why-panel',mode:'vertical'},
   {selector:'.dv-builder',prefix:'filter-builder',mode:'vertical'},
   {selector:'.dv-colpicker',prefix:'column-picker',mode:'vertical'},
   {selector:'.dv-tablebox',prefix:'stock-table',mode:'vertical'},
@@ -19,6 +22,16 @@ const specs:Spec[]=[
   {selector:'.dv-chartbox',prefix:'stock-chart',mode:'vertical'},
   {selector:'.dv-gridview',prefix:'rapid-review',mode:'both'},
   {selector:'.dv-market > section',prefix:'market-card',mode:'both',label:true},
+  {selector:'.cad-dock',prefix:'ticker-alert-manager',mode:'vertical'},
+  {selector:'.cad-center',prefix:'global-alert-center',mode:'both'},
+  {selector:'.lg-tablebox',prefix:'legacy-table',mode:'vertical'},
+  {selector:'.lg-detail',prefix:'legacy-detail',mode:'both'},
+  {selector:'.fr-hero',prefix:'factor-hero',mode:'vertical'},
+  {selector:'.fr-summary',prefix:'factor-summary',mode:'both'},
+  {selector:'.fr-chart-card',prefix:'factor-chart',mode:'both'},
+  {selector:'.fr-factor-grid',prefix:'factor-grid',mode:'both'},
+  {selector:'.fr-factor-card',prefix:'factor-card',mode:'vertical',label:true},
+  {selector:'.fr-method',prefix:'factor-method',mode:'both'},
   {selector:'.grp-hero > div',prefix:'group-summary',mode:'both',label:true},
   {selector:'.grp-note',prefix:'group-note',mode:'vertical'},
   {selector:'.grp-board',prefix:'group-board',mode:'vertical'},
