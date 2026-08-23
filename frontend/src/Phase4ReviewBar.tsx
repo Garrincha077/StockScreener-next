@@ -98,7 +98,7 @@ export default function Phase4ReviewBar({onOpenChart,onOpenTickerAlerts}:ReviewB
   }
   const startLabel=scopeUnseen===0?'Review again':scopeReviewed>0?'Resume review':'Start review'
 
-  return <section className="p4-review" aria-label="Phase 4 review workflow">
+  return <section className={`p4-review${whyOpen?' why-open':''}`} aria-label="Phase 4 review workflow">
     <div className="p4-review-main">
       <ScanDataHealthPanel core={core} manifest={selectedManifest} validation={validation}/>
       <div className="p4-inbox-actions">
