@@ -16,19 +16,30 @@ const assertSnapshotCache=(source:string)=>{
   assert.match(source,/steps\.chart-hydrate\.outputs\.hydrated == 'true'/)
 }
 
+const assertPublicationContract=(source:string)=>{
+  assert.match(source,/meta\.get\('generated_at_utc'\) != generated/)
+  assert.match(source,/python stamp_frontend_manifest\.py/)
+  assert.match(source,/--verify-only/)
+  assert.match(source,/validate_frontend_charts\.py frontend\/public --strict --minimum-coverage 0\.95/)
+  assert.match(source,/workflowRunId/)
+  assert.match(source,/scanId/)
+  assert.match(source,/test "\$BEFORE" = "\$FINAL"/)
+}
+
 test('A9 Pages keeps main-only deployment while caching charts by exact Stable snapshot and hydrator version',()=>{
   assert.match(workflow,/branches:\s*\[main\]/)
   assert.doesNotMatch(workflow,/branches:\s*\[[^\]]*next-dev/)
   assertSnapshotCache(workflow)
+  assertPublicationContract(workflow)
 })
 
 test('A9 scheduled Stable preview uses the same validated chart cache and remains a read-only preview',()=>{
   assert.match(preview,/branches:\s*\[main\]/)
   assert.match(preview,/without enabling a Next scan schedule/)
   assertSnapshotCache(preview)
-  assert.match(preview,/Refresh chart descriptor and verify read-only preview state/)
+  assert.match(preview,/Refresh chart descriptor and enforce preview data quality/)
   assert.match(preview,/python prepare_frontend_payloads\.py/)
-  assert.match(preview,/test "\$BEFORE" = "\$FINAL"/)
+  assertPublicationContract(preview)
   assert.match(preview,/Refuse a Stable snapshot that advanced during build/)
 })
 
@@ -45,9 +56,14 @@ test('A9 hydration logs bounded batch progress without changing coverage gate',(
   assert.match(hydrator,/Invariant violation: read-only chart hydration modified latest\.json/)
 })
 
-test('both Pages workflow changes remain Full Validation gated',()=>{
+test('both Pages workflow changes remain Full Validation gated on push and PR',()=>{
+  assert.match(fullValidation,/push:/)
+  assert.match(fullValidation,/pull_request:/)
+  assert.match(fullValidation,/branches:\s*\[main\]/)
   assert.match(fullValidation,/\.github\/workflows\/frontend_pages\.yml/)
   assert.match(fullValidation,/\.github\/workflows\/deploy_latest_stable_preview\.yml/)
+  assert.match(fullValidation,/stamp_frontend_manifest\.py/)
+  assert.match(fullValidation,/validate_frontend_charts\.py/)
   assert.match(fullValidation,/full-scan:/)
   assert.match(fullValidation,/persist_outputs:\s*false/)
   assert.match(fullValidation,/deploy_pages:\s*false/)
