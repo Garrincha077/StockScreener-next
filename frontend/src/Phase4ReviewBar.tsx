@@ -1,5 +1,5 @@
 import {useEffect,useMemo,useState} from 'react'
-import {buildReviewInbox,explainStock,reviewScopeLabel,type ReviewManifest,type ReviewPayload,type ReviewScope,type ValidationStatus} from './phase4Review'
+import {buildReviewInbox,explainStock,reviewScopeLabel,type ReviewPayload,type ReviewScope,type ValidationStatus} from './phase4Review'
 import {useStockScoutData} from './data/StockScoutDataProvider'
 import ScanDataHealthPanel from './ScanDataHealthPanel'
 
@@ -8,7 +8,6 @@ type InboxMode=Exclude<ReviewScope,null>
 export default function Phase4ReviewBar(){
   const{core,manifest:selectedManifest,selectedTicker,selectTicker,reviewScope,setReviewScope,loadOptional}=useStockScoutData()
   const payload=core as ReviewPayload|null
-  const manifest=selectedManifest as ReviewManifest|null
   const[validation,setValidation]=useState<ValidationStatus|null>(null)
   const[inboxMode,setInboxMode]=useState<InboxMode|null>(null)
   const[queueMode,setQueueMode]=useState<InboxMode|null>(null)
