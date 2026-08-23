@@ -9,9 +9,11 @@ const a6Migration=readFileSync(new URL('../../../supabase/migrations/20260823003
 const a7Migration=readFileSync(new URL('../../../supabase/migrations/20260823011500_stockscout_next_alerts_v2_a7_telegram_vault.sql',import.meta.url),'utf8')
 const a8Migration=readFileSync(new URL('../../../supabase/migrations/20260823073000_stockscout_next_alerts_v2_a8_cross_device_sync.sql',import.meta.url),'utf8')
 const a8RotateMigration=readFileSync(new URL('../../../supabase/migrations/20260823073500_stockscout_next_alerts_v2_a8_recovery_rotate.sql',import.meta.url),'utf8')
+const a9HealthMigration=readFileSync(new URL('../../../supabase/migrations/20260823090500_stockscout_next_alerts_v2_a9_evaluator_health.sql',import.meta.url),'utf8')
 const client=readFileSync(new URL('./chartAlerts.ts',import.meta.url),'utf8')
 const settingsPanel=readFileSync(new URL('../TelegramSettingsPanel.tsx',import.meta.url),'utf8')
 const syncPanel=readFileSync(new URL('../AlertSyncSettingsPanel.tsx',import.meta.url),'utf8')
+const center=readFileSync(new URL('../ChartAlertsCenter.tsx',import.meta.url),'utf8')
 
 test('edge evaluator uses v2 drawing/rule model and shared trading-bar geometry',()=>{
   assert.match(source,/next_chart_alert_v2_enabled/)
@@ -126,4 +128,26 @@ test('A8 recovery key is one-time UI state, never browser storage, and can be ro
   assert.doesNotMatch(syncPanel,/(?:localStorage|sessionStorage)\.(?:setItem|getItem)/)
   assert.match(syncPanel,/Save this recovery key now/)
   assert.match(syncPanel,/Existing local drawings were merged into the shared alert set/)
+})
+
+test('A9 evaluator health is derived from actual enabled-rule evaluation timestamps and fails stale',()=>{
+  assert.match(a9HealthMigration,/count\(\*\) filter \(where r\.enabled\)/)
+  assert.match(a9HealthMigration,/s\.evaluated_at < now\(\) - interval '150 minutes'/)
+  assert.match(a9HealthMigration,/when v_evaluated < v_active then 'waiting'/)
+  assert.match(a9HealthMigration,/when v_stale > 0 then 'stale'/)
+  assert.match(a9HealthMigration,/when v_needs_review > 0 then 'attention'/)
+  assert.match(a9HealthMigration,/'evaluatorHealth', v_health/)
+  assert.match(a9HealthMigration,/grant execute on function stockscout_api\.next_chart_alert_v2_snapshot\(text\) to service_role/)
+  assert.match(client,/evaluatorHealthFromRaw/)
+  assert.match(center,/Evaluator \{HEALTH\[health\.state\]/)
+  assert.match(center,/last evaluated/)
+})
+
+test('A9 presents fail-safe review reasons as explanations, not a new score',()=>{
+  assert.match(center,/Chart history missing/)
+  assert.match(center,/Anchor is outside available chart history/)
+  assert.match(center,/Malformed rule\/source combination/)
+  assert.match(center,/Corporate-action adjustment needs review/)
+  assert.match(center,/Published chart snapshot unavailable/)
+  assert.match(center,/never changes StockScout or LEGACY scoring/)
 })
