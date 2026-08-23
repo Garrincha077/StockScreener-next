@@ -4,8 +4,8 @@ name: Daily Stock Screening (Post-Market)
 # plus explicit manual/reusable execution. Stable remains the fallback repository.
 on:
   schedule:
-    # 21:45 UTC is safely after the 16:00 ET regular close in both US DST regimes.
-    - cron: '45 21 * * 1-5'
+    # 22:45 UTC stays safely post-close and staggers Next one hour behind Stable.
+    - cron: '45 22 * * 1-5'
   workflow_dispatch:
     inputs:
       force_full_refresh:
