@@ -21,6 +21,7 @@ PRICE_CACHE = Path("data/batch_results/price_history_5y.pkl")
 MIN_COHERENT_COVERAGE = 0.90
 MAX_STALE_CALENDAR_DAYS = 4
 EARLIEST_PUBLISH_MINUTES_ET = 16 * 60 + 30
+FULL_VALIDATION_EVENTS = {"push", "pull_request", "workflow_dispatch"}
 
 
 def last_date(frame: pd.DataFrame | None):
@@ -36,13 +37,22 @@ def last_date(frame: pd.DataFrame | None):
 
 
 def manual_backfill_allowed() -> bool:
+    """Allow prior-session replay only when the caller is Full Validation.
+
+    Reusable workflows inherit the caller's event name. Full Validation may run
+    as a PR gate during development, a controlled main push, or an explicit
+    workflow_dispatch. A direct Daily Stock Screening dispatch does not match
+    the Full Validation workflow identity and therefore remains subject to the
+    normal post-close publish guard.
+    """
     event = os.getenv("GITHUB_EVENT_NAME", "").lower()
     workflow = os.getenv("GITHUB_WORKFLOW", "").lower()
     workflow_ref = os.getenv("GITHUB_WORKFLOW_REF", "").lower()
-    return event == "push" and (
+    is_full_validation = (
         workflow == "stockscout full validation"
         or "stockscout_full_validation.yml" in workflow_ref
     )
+    return event in FULL_VALIDATION_EVENTS and is_full_validation
 
 
 def main() -> None:
