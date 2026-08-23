@@ -117,6 +117,10 @@ export default function Phase4ReviewBar({onOpenChart,onOpenTickerAlerts}:ReviewB
         </div>
         <div className="p4-scope-actions"><button className="primary" disabled={!scopeRows.length} onClick={()=>startReview(reviewScope)}>{startLabel}</button><button onClick={()=>setInboxMode(reviewScope)}>List</button><button className="clear" aria-label="Clear review scope" onClick={clearScope}>×</button></div>
       </div>}
+      {!whyOpen&&queueMode&&queueIndex>=0&&<div className="p4-queue-continuation" role="status">
+        <div><b>Review queue · {reviewScopeLabel(queueMode)}</b><span>{selectedTicker} · {queueIndex+1} / {queueRows.length}</span></div>
+        <div><button onClick={()=>setWhyOpen(true)}>Continue review</button><button className="primary" aria-label="Next review candidate from review bar" disabled={queueIndex===queueRows.length-1} onClick={()=>moveQueue(1)}>Next →</button></div>
+      </div>}
     </div>
 
     {inboxMode&&<div className="p4-inbox-drawer"><header><div><b>{reviewScopeLabel(inboxMode)}</b><span>{rows.length} candidates · {unseenLabel(inboxMode==='today'?todayUnseen:newUnseen)} · click to start a review queue</span></div><button aria-label="Close review inbox" onClick={()=>setInboxMode(null)}>×</button></header><div className="p4-inbox-list">{rows.slice(0,24).map(stock=><button className={reviewedSet.has(stock.ticker)?'reviewed':''} key={stock.ticker} onClick={()=>openTicker(stock.ticker,inboxMode)}><b>{stock.ticker}</b><span>{stock.primarySetup||stock.setup||stock.stageName||'Setup'}</span><em>{reviewedSet.has(stock.ticker)?'✓ reviewed · ':''}{stock.changeLabels?.[0]||stock.opportunityTier||''}</em><strong>{Math.round(stock.opportunityScore??0)}</strong></button>)}{!rows.length&&<p>No candidates in this snapshot.</p>}</div>{rows.length>24&&<footer>Showing the first 24 of {rows.length}; queue navigation can continue through the full inbox.</footer>}</div>}
