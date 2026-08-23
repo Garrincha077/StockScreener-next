@@ -6,6 +6,20 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — PR #20 P1 review-to-chart/alerts shortcuts in progress
+
+- Development resumed from the clean post-PR #19 baseline where `main` and `next-dev` were identical at `3c59130bbf724164c9b14f8105dc7961d3af96f1`. Current implementation head before this log commit: `6f8b1bf3a6359dc20c6db1617b4a55b9bb79dd04` on `next-dev`.
+- Added two selected-ticker shortcuts directly inside the existing `Why this stock?` review panel: **Chart** and **Ticker alerts**. Both reuse the existing Root/DeepVue/Chart Alerts controllers rather than introducing a second chart, alert store or review workflow.
+- Chart routes the selected ticker into the existing Screener detail workspace and Price chart. Ticker alerts opens the existing current-ticker drawing/alert manager. The Why overlay closes for the action, but the active review queue context is deliberately preserved so reopening Why returns to the same ticker and queue position.
+- Watchlist was deliberately not duplicated into this slice because its state is still local to `DeepVueTerminal`. A later small refactor can centralize that state before exposing another review shortcut; this avoids two competing watchlist stores.
+- Affected files/components: `frontend/src/Root.tsx`, `frontend/src/Phase4ReviewBar.tsx`, `frontend/src/phase4-review.css`, `frontend/e2e/mobile-rapid-review.spec.ts`, `docs/PROJECT_LOG.md`.
+- Behavior/model impact: intentional navigation/UX wiring only. Existing selected ticker, review scope, chart controls and Chart Alerts state are reused. No scan/data/provenance workflow, canonical payload, saved-screen/sort semantics, alert evaluation semantics, chart data/mapping, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage or frozen LEGACY logic changed. Stable `Garrincha077/stock-screener2` remains untouched.
+- Browser coverage now exercises review -> Chart -> reopen Why and review -> Ticker Alerts -> close -> reopen Why, asserting the same `T001 · Review 1 / 3` context survives both actions. CI has not yet been verified for this head; no green claim is made here. Full Validation is not required unless the slice expands into scan/data/workflow paths.
+- Regression risk/decision: this slice reuses the existing DOM navigation helper already used for alert-drawing focus. It intentionally switches from Grid review to Screener/Price when Chart or Ticker Alerts is requested, while leaving the active Today/New review scope and queue intact. No implicit ranking or membership change is introduced.
+
+**Next logical step**
+- Open PR #20, verify Frontend Compile Smoke and StockScout Validation on the exact final head, including the expanded Playwright review-path acceptance. If green, merge as a small P1 slice and align `next-dev`; then consider a separate watchlist-state centralization rather than extending this PR.
+
 ## 2026-08-23 — PR #19 P1 daily review start/resume UX merged
 
 - PR #19 (`next-dev` -> `main`) was squash-merged as `7ef491efa26d772195418907689735a2e9713de3`. Development started from the controlled post-PR #18 baseline `daf5696051f34f054d11996580bf50d608b210b5`; final validated PR head was `5487f1fca91b1c0174c8271a44c78b0d4a2c8b74`.
