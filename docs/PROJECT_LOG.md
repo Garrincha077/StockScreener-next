@@ -6,6 +6,21 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — PR #23 P1 route Space through active review queue merged
+
+- PR #23 (`next-dev` -> `main`) was squash-merged as `4201763b3af5ae443f19d2843c8bf41ab0149e1c`. Development started from the clean post-PR #22 documented baseline `a5da61728bc2e11db84ae4d023ebd084d374a7b5`; final validated PR head was `b36956126af3ce7a1906efeb70a90c476fb18b9f`.
+- Fixed a laptop review correctness edge case in the existing global Space shortcut. During an active Today/New review queue, plain Space now activates the existing review-next control first instead of advancing the visible Grid/table selection directly. This keeps selected ticker, reviewed/unseen progress and queue position in one coherent state transition.
+- While Why is open, Space uses the existing Why-panel next candidate control. After Chart/Alerts closes Why but preserves the queue, Space uses the persistent Review queue `Next →` control. Only when no review-next control is actionable does Space fall back to the prior Grid/table navigation.
+- Native/editable/control Space behavior remains unchanged. The existing fallback behavior is preserved outside review mode, including the prior Grid navigation path.
+- Browser acceptance verifies desktop Space from the persistent review strip moves `T001 -> T002` and updates reviewed progress `1 / 3 -> 2 / 3`; mobile continues to use the visible `Next →` action; the later non-review Space assertion still verifies Grid fallback `T004 -> T005`.
+- Final accepted gates on `b3695612...`: **Frontend Compile Smoke #255 / run `32651901661` SUCCESS** and **StockScout Validation #443 / run `32651901646` SUCCESS**. The PR was mergeable and review threads were empty before merge. Full Validation was not required because the slice remained frontend-only and did not touch scan/data/workflow paths.
+- Affected files/components: `frontend/src/deepvue/keyboardNavigation.ts`, `frontend/e2e/mobile-rapid-review.spec.ts`, plus this durable log update.
+- Behavior/model impact: intentional keyboard/review-navigation correctness change only. No review membership or ordering rules, watchlist/storage semantics, chart mapping, alert evaluation/drawing, saved-screen/filter/sort/ranking logic, scan/data/provenance workflow, canonical payload, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage or frozen LEGACY behavior changed. Stable `Garrincha077/stock-screener2` remained untouched.
+- Regression risk/decision: future keyboard shortcuts must prefer active review controls before generic ticker-selection controls so that reviewed-state accounting cannot diverge from the selected ticker. The Playwright queue-progress assertion is the acceptance contract for this behavior.
+
+**Next logical step**
+- Align `next-dev` to this documented baseline. P1 daily review now supports Start/Resume, Why, shared Watchlist, Chart/Alerts continuation and keyboard-safe queue advancement. Continue only with another small measurable UX friction point; keep the first self-authored production-candidate Next nightly as a separate operational acceptance checkpoint.
+
 ## 2026-08-23 — PR #22 P1 persistent review queue continuation merged
 
 - PR #22 (`next-dev` -> `main`) was squash-merged as `45862637f4f81c0e9427f89969fecd72f7f49005`. Development started from the clean post-PR #21 documented baseline `35574c936b740f745e1435d34c4ca82b1908ea46`; final validated PR head was `8bb13c13d429e3e9f6db57f77f6e09c27a967e43`.
