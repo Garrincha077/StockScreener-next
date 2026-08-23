@@ -6,6 +6,23 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — PR #17 scan provenance/data health + resizable desktop workspace merged
+
+- PR #17 (`next-dev` -> `main`) validated final implementation head `6bdc7ca8c8a60db5a03a01b9cfbc784a7e18c9d0` and was squash-merged as `27e68bc5f8c42a655123aedb6c7385fd1bf04976`.
+- Added an authoritative **Scan / Data Health** surface using the existing manifest contract. It exposes market session, exact `generatedAt`, canonical source SHA, validation/publication identity and Core / Charts / LEGACY coverage. Health is explicit rather than implied: `HEALTHY`, `PARTIAL`, `STALE`, `MISMATCH`, `ERROR`; low chart coverage or incomplete required coverage cannot look healthy.
+- The current artifact does not yet embed the Stable source workflow run ID, so the UI deliberately shows `not embedded` instead of inferring or fabricating provenance. A deterministic scan identity is derived from the published session plus canonical source SHA.
+- Extended the existing persistent resize system across the principal desktop workspaces rather than introducing a parallel layout engine: StockScout table/detail splitter and chart, Rapid Review, Review/Why/Inbox surfaces, filter/column panels, ticker/global Alerts, LEGACY table/detail, Factor sections and Groups panels. Resized dimensions persist in local storage and remain covered by the existing Reset Layout path.
+- Resize behavior is now a true desktop-only lifecycle at `>1050px`. Mobile does not receive resize classes/splitters and gets a dedicated Review/Scan Health lane below the fixed STOCKSCOUT / LEGACY / FACTORS switch, preventing the overlay regressions discovered during browser validation.
+- Affected files/components: `docs/PR17_SCOPE.md`, `frontend/src/ScanDataHealthPanel.tsx`, `frontend/src/scanDataHealth.ts`, `frontend/src/scan-data-health.css`, `frontend/src/Phase4ReviewBar.tsx`, `frontend/src/phase4-review.css`, `frontend/src/useResizablePanels.ts`, `frontend/src/resizable-panels.css`, `frontend/src/Root.tsx`, `frontend/src/deepvue/scanDataHealth.test.ts`, `frontend/e2e/hardening.spec.ts`, `frontend/e2e/mobile-rapid-review.spec.ts`.
+- Behavior/model impact: intentional UX/data-transparency change only. No canonical scan generation, scan publication workflow, StockScout scoring/model, filter semantics, saved-screen semantics, chart data, alert semantics or frozen LEGACY shadow behavior changed. Stable `Garrincha077/stock-screener2` remained untouched. Next nightly scheduling remains disabled.
+- Final accepted gates for `6bdc7ca...`: **Frontend Compile Smoke #214 / run `32641310863` SUCCESS** and **StockScout Validation #369 / run `32641310870` SUCCESS**. Runtime/unit suite, TypeScript/Vite build, Playwright mobile+desktop coverage, model compatibility, MA Cluster/Scout Tier and exact LEGACY/Core invariance all passed. PR review threads were empty before merge.
+- Earlier browser runs correctly caught mobile regressions while broadening desktop resize: fixed Alerts/Chart overlays were pushed out of the viewport and the new provenance trigger overlapped the fixed layer switch. These were resolved by moving to a desktop-only resize lifecycle plus a dedicated mobile Review lane; the final #214 run is the accepted browser result.
+- Full Validation was not required because this PR does not change scan/data/workflow behavior. Standard StockScout Validation was nevertheless green and verified exact core/LEGACY invariance.
+- Regression risks/decisions: layout persistence is client-local and must remain isolated from mobile; coverage thresholds are transparent UI health gates, not scoring inputs. The next workflow/data slice should embed source workflow identity into the publication contract rather than add another inferred client heuristic.
+
+**Next logical step**
+- Verify the post-merge GitHub Pages deployment and live manifest/UI provenance against the actual published Stable snapshot. Then start the next P0 operating-quality slice: embed first-class scan/workflow identity in the artifact and harden publication/data-quality gates before broader UX polish or resuming Phase 6 empirical work.
+
 ## 2026-08-23 — PR #16 workflow/data/UX priority reset + laptop Space navigation merged
 
 - Development started from controlled `main` SHA `da2c7415bca0231ef3d358bdab46628310d300e2` on `next-dev`. Validated implementation head: `c146feb5cf550e76c69cb4c4f3926f038f094e14`; final documented PR head: `545ae13034121326a2348590c1809d6e14b7fd28`. PR #16 (`next-dev` -> `main`) was squash-merged as `bcbeca19b3445ad9d1765464b4f7f49b786d28fc`.
