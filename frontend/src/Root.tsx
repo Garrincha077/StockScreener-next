@@ -151,6 +151,6 @@ export default function Root(){
       <ChartAlertsDock open={alertsOpen} onOpenChange={setAlertsOpen}/>
       <ChartAlertsCenter open={alertsCenterOpen} onOpenChange={setAlertsCenterOpen} onOpenDrawing={openAlertDrawing}/>
     </>}
-    {layer==='stockscout'&&<button className="ss-layout-reset" onClick={()=>{resetPanelSizes();setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)}} title="Reset all resized panels to their default size">↺ Reset layout</button>}
+    <button className="ss-layout-reset" onClick={()=>{resetPanelSizes();setAndPersistEngineWidth(DEFAULT_ENGINE_WIDTH)}} title="Reset all resized desktop panels to their default size">↺ Reset layout</button>
   </>
 }
