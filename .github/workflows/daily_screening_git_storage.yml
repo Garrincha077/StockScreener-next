@@ -35,11 +35,12 @@ on:
         default: true
 
 concurrency:
-  # Persistent/manual/scheduled scans serialize without cancellation. Reusable
-  # non-persistent validation scans use a separate newest-wins queue so they do
-  # not block production-candidate nightly operation.
-  group: ${{ github.event_name == 'workflow_call' && inputs.persist_outputs == false && 'stockscout-validation-scan' || 'daily-stock-screening' }}
-  cancel-in-progress: ${{ github.event_name == 'workflow_call' && inputs.persist_outputs == false }}
+  # Persistent/manual/scheduled scans serialize without cancellation. Any
+  # explicit non-persistent/non-deploying invocation is validation-only and gets
+  # a separate newest-wins queue. Reusable workflows retain the caller event
+  # name, so classification must use the explicit inputs rather than workflow_call.
+  group: ${{ github.event_name != 'schedule' && inputs.persist_outputs == false && inputs.deploy_pages == false && 'stockscout-validation-scan' || 'daily-stock-screening' }}
+  cancel-in-progress: ${{ github.event_name != 'schedule' && inputs.persist_outputs == false && inputs.deploy_pages == false }}
 
 jobs:
   screen-stocks:
