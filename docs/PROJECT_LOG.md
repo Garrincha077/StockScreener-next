@@ -4,6 +4,19 @@ This file is the current durable handoff for `Garrincha077/StockScreener-next`. 
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — PR #15 chart timeframe candle mapping merged
+
+- Development started from the clean `main` / `next-dev` baseline `ff6805704a7f38cb6cb848a02f1b2c9bbabc7352`. Implementation commits on `next-dev`: `133142e4c2636bb11aa497c15cef3aa10effa1d4`, `13e7712a61d877ca410733362e497ea87d3f08b2`, `18d1b72ea077ab99c25c0c8b739d61125e6d9229`.
+- Isolated PR #15 (`fix/chart-timeframe-interval-sync` -> `main`) was squash-merged as `822f455599ddf3930a0de714bbb6897ec0f50fd3` after validation.
+- Added one shared timeframe-to-interval contract: `3M`, `6M`, `1Y` -> Daily (`D`); `2Y`, `5Y` -> Weekly (`W`). Rapid Review mini-charts now use the shared helper instead of an inline duplicate. Main/detail chart timeframe buttons also set the corresponding interval automatically; the existing Daily/Weekly buttons remain available as an explicit manual override afterward.
+- Affected files: `frontend/src/DeepVueTerminal.tsx`, `frontend/src/deepvue/runtime.ts`, `frontend/src/deepvue/runtime.test.ts`.
+- Behavior impact: this is an intentional chart-view mapping correction only. It does not change chart shard mapping/coverage, canonical chart data, scanner output, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, default ranking or frozen LEGACY behavior. Stable `Garrincha077/stock-screener2` remains untouched. Next nightly scheduling remains disabled.
+- Validation at PR head `18d1b72...`: **Frontend Compile Smoke #202 / run `32634062352` SUCCESS**, including client projection tests, runtime tests, TypeScript/Vite build and Mobile Rapid Review browser smoke. **StockScout Validation #338 / run `32634062351` SUCCESS**, including Stable snapshot restore, frozen LEGACY execution, regression/integration tests, model compatibility, MA Cluster/Scout Tier audits, exact LEGACY/Core invariance and frontend runtime/build.
+- Full Validation was not required because this change does not modify scan generation, canonical data, publish workflow or workflow plumbing.
+
+**Next logical step**
+- Verify the public Next Pages surface in real use: 6M/1Y should open as Daily candles and 2Y/5Y as Weekly, with manual D/W override still working. Then return to the Phase 6 empirical-validation roadmap.
+
 ## 2026-08-23 — Chart Alerts PR #13 merged and closed
 
 - PR #13 (`next-dev` -> `main`) was promoted out of draft and squash-merged after the validated Chart Alerts scope was frozen. Merge commit on Next `main`: `9ab658b24a775ccc5ab2a32391200c97d708dc11`.
