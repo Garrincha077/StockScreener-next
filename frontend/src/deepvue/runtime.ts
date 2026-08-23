@@ -1,6 +1,13 @@
 export const GRID_STEP=16
 export const CHART_SHARD_COUNT=128
 
+export type ChartInterval='D'|'W'
+export type ChartRange='3M'|'6M'|'1Y'|'2Y'|'5Y'
+
+export function chartIntervalForRange(range:ChartRange):ChartInterval{
+  return range==='2Y'||range==='5Y'?'W':'D'
+}
+
 export type LegacyConfirmationStatus='CONFIRMED'|'EARLY'|'NEUTRAL'|'CONFLICT'|'RISK'|'UNAVAILABLE'
 export type LegacyConfirmationSidecar={
   affectsStockScout:false
