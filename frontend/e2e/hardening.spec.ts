@@ -25,7 +25,7 @@ const manifest={
   },
 }
 
-test('shared data, filter validation, chart states, and paged LEGACY details are hardened',async({page})=>{
+test('shared data, filter validation, chart states, and paged LEGACY details are hardened',async({page},testInfo)=>{
   let coreRequests=0,detailRequests=0,chartRequests=0
   page.on('pageerror',error=>console.error('PAGE ERROR:',error.message))
   await page.route('**/data/manifest.json*',route=>route.fulfill({json:manifest}))
@@ -41,6 +41,26 @@ test('shared data, filter validation, chart states, and paged LEGACY details are
 
   await page.goto('/')
   await expect(page.locator('.dv-app')).toBeVisible()
+
+  if(testInfo.project.name==='desktop-chrome'){
+    await expect(page.locator('.p4-review-main')).toHaveAttribute('data-resize-mode','vertical')
+    await expect(page.locator('.dv-chartbox')).toHaveCSS('resize','vertical')
+    const detail=page.locator('.dv-detail')
+    const before=(await detail.boundingBox())?.width||0
+    const splitter=page.getByRole('separator',{name:'Resize table and chart panes'})
+    await expect(splitter).toBeVisible()
+    await splitter.focus()
+    await page.keyboard.press('ArrowLeft')
+    await expect.poll(async()=>((await detail.boundingBox())?.width||0)).toBeGreaterThan(before)
+    await page.keyboard.press('Home')
+
+    await page.locator('.ss-alert-center-launch').click()
+    const alertCenter=page.locator('.cad-center')
+    await expect(alertCenter).toHaveAttribute('data-resize-mode','both')
+    await expect(alertCenter).toHaveCSS('resize','both')
+    await page.getByRole('button',{name:'Close global alerts center'}).click()
+  }
+
   await expect(page.locator('.dv-chartmsg')).toContainText('failed')
   await page.locator('.dv-chartmsg button').click()
   await expect(page.locator('.dv-chart canvas').first()).toBeVisible()
@@ -71,6 +91,13 @@ test('shared data, filter validation, chart states, and paged LEGACY details are
   await expect(page.locator('.lg-tablewrap tbody tr')).toHaveCount(100)
   await expect(page.locator('.lg-detail')).toContainText('SOURCE SCORE ANATOMY')
   expect(detailRequests).toBe(1)
+
+  if(testInfo.project.name==='desktop-chrome'){
+    await expect(page.locator('.lg-work')).toHaveCSS('display','flex')
+    await expect(page.locator('.lg-detail')).toHaveAttribute('data-resize-mode','both')
+    await expect(page.locator('.lg-detail')).toHaveCSS('resize','both')
+    await expect(page.locator('.ss-layout-reset')).toBeVisible()
+  }
 
   await page.locator('.ss-layer-switch button').filter({hasText:'STOCKSCOUT'}).click()
   await page.locator('.oe-launch').click()
