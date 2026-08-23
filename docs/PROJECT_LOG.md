@@ -6,6 +6,21 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — PR #22 P1 persistent review queue continuation merged
+
+- PR #22 (`next-dev` -> `main`) was squash-merged as `45862637f4f81c0e9427f89969fecd72f7f49005`. Development started from the clean post-PR #21 documented baseline `35574c936b740f745e1435d34c4ca82b1908ea46`; final validated PR head was `8bb13c13d429e3e9f6db57f77f6e09c27a967e43`.
+- Removed an extra daily-review context switch after Chart or Ticker Alerts. When those existing ticker actions intentionally close `Why this stock?`, a compact persistent **Review queue** strip now remains visible with scope, current ticker and queue position.
+- `Continue review` reopens the same candidate in one click. `Next →` advances directly to the next candidate and reopens Why there in one click. Explicitly closing Why still clears the active queue, so the existing user-controlled stop behavior is preserved.
+- Browser acceptance verifies **Chart -> Review queue -> Continue review** and **Ticker Alerts -> Review queue -> Next candidate**, while retaining the shared watchlist state, reviewed/unseen progress and explicit-close semantics on desktop/mobile projects.
+- Initial **Frontend Compile Smoke #252 / run `32651498391` FAILED** after all 72 runtime tests passed because TypeScript could not narrow `queueMode: InboxMode | null` through a derived boolean. Commit `8bb13c13d429e3e9f6db57f77f6e09c27a967e43` moved the null check directly into the JSX short-circuit; behavior and acceptance criteria were unchanged.
+- Final accepted gates on `8bb13c13...`: **Frontend Compile Smoke #253 / run `32651609701` SUCCESS**, including runtime tests, TypeScript/Vite and Mobile Rapid Review Playwright, and **StockScout Validation #439 / run `32651609697` SUCCESS**, including regression/integration, model compatibility, MA Cluster, Scout Tier and exact LEGACY/Core invariance. Review threads were empty before merge.
+- Affected files/components: `frontend/src/Phase4ReviewBar.tsx`, `frontend/src/phase4-review.css`, `frontend/e2e/mobile-rapid-review.spec.ts`, plus this durable log update.
+- Behavior/model impact: intentional review-navigation UX only. No review membership, saved-screen/filter/sort/ranking semantics, watchlist persistence, chart mapping, alert evaluation/drawing, scan/data/provenance workflow, canonical payload, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage or frozen LEGACY behavior changed. Stable `Garrincha077/stock-screener2` remained untouched. Full Validation was not required because this slice remained frontend-only.
+- Regression risk/decision: the continuation strip appears only when a queue survives a ticker action (`whyOpen=false`, valid `queueMode`, selected ticker still in queue). Explicit Why close, scope change or scope clear continues to terminate the queue, preventing stale review context from becoming sticky.
+
+**Next logical step**
+- Align `next-dev` to this documented baseline. P1 now supports scope -> Start/Resume -> Why -> Watchlist/Chart/Alerts -> Continue/Next with minimal context switching. Choose the next small UX slice from the remaining table/detail/mobile friction rather than adding another review-state mechanism; keep nightly/data acceptance isolated.
+
 ## 2026-08-23 — PR #21 P1 shared watchlist integration merged
 
 - PR #21 (`next-dev` -> `main`) was squash-merged as `a711f2055bdd56be6f5001b8628bc8ca7e5f5046`. Development started from the clean post-PR #20 baseline `4a0d431d053675dada3c1bd11818830a52231828`; final validated PR head was `c0d85b431bf096f171243c6b8c922ad3c2512be1`.
