@@ -14,6 +14,7 @@ import './mobile-tradingview.css'
 import './fundamental-evidence.css'
 import './mobile-layer-fix.css'
 import './mobile-grid-scroll.css'
+import './alert-sync-settings.css'
 import './telegram-settings.css'
 
 createRoot(document.getElementById('root')!).render(
