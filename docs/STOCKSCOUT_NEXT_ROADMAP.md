@@ -16,6 +16,30 @@ StockScout Next was created as a standalone import of `Garrincha077/stock-screen
 
 Build a cleaner review-first StockScout without destabilizing the proven core. Reuse the best parts of the frozen original engine as independent confirmation evidence rather than blending them directly into Opportunity v2.
 
+## Current development priority — daily operating reliability (2026-08-23)
+
+The phase structure below remains valid, but Phase 6 empirical work is intentionally deprioritized until the daily StockScout Next operating workflow is trustworthy, transparent and polished in real use.
+
+Current priority order:
+
+1. **P0 — Workflow reliability**
+   - harden the end-to-end path from Stable scan -> canonical snapshot -> Next projection -> LEGACY shadow -> charts -> validation -> Pages artifact -> deploy;
+   - define explicit hard-failure vs warning behavior at each step;
+   - never allow an older or mismatched dataset to look healthy merely because the UI loaded successfully.
+2. **P0 — Scan provenance and data quality**
+   - make the exact source scan authoritative and visible in the product, not only in GitHub Actions;
+   - expose scan/session date, source `generatedAt`, Stable workflow run id, canonical source SHA and publication identity where available;
+   - surface core/chart/LEGACY and other relevant coverage with explicit `HEALTHY`, `PARTIAL`, `STALE`, `MISMATCH` or `ERROR` semantics;
+   - every major user-facing surface must be able to answer: **"Which scan are these data from?"** without guesswork.
+3. **P1 — Review UX/UI polish**
+   - optimize the daily desktop and mobile path: Screener -> Today/New -> Rapid Review -> chart -> watchlist/alert -> next ticker;
+   - minimize clicks, preserve clear active scope/filter/sort state, remove overlaps and dead ends, and make loading/error/empty states deliberate;
+   - support efficient keyboard review on laptop where it improves throughput without breaking native/editing controls.
+4. **P2 — Resume Phase 6 empirical validation**
+   - continue cohort measurement only after workflow, provenance/data-health and core review UX are sufficiently trustworthy for longitudinal observation.
+
+This reprioritization does not change StockScout scoring or the frozen LEGACY contract. It changes development sequencing only. The Next automatic nightly scan remains disabled until the existing production-candidate gate is explicitly satisfied.
+
 ## Non-negotiable architecture rule
 
 > LEGACY may observe StockScout candidates, but LEGACY must not mutate StockScout scoring unless separately validated and explicitly promoted.
@@ -150,6 +174,8 @@ Preferred path:
 - avoid back-merging experimental complexity into Stable unless needed.
 
 ## Development priority order
+
+The dated **Current development priority** section above takes precedence while the reliability/provenance/UX hardening cycle is active. The long-term architectural order remains:
 
 1. Baseline protection
 2. Shadow confirmation layer
