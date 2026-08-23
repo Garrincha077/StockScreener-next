@@ -16,29 +16,31 @@ StockScout Next was created as a standalone import of `Garrincha077/stock-screen
 
 Build a cleaner review-first StockScout without destabilizing the proven core. Reuse the best parts of the frozen original engine as independent confirmation evidence rather than blending them directly into Opportunity v2.
 
-## Current development priority — daily operating reliability (2026-08-23)
+## Current development priority — P1 closed, nightly acceptance next (2026-08-23)
 
-The phase structure below remains valid, but Phase 6 empirical work is intentionally deprioritized until the daily StockScout Next operating workflow is trustworthy, transparent and polished in real use.
+The daily operating-quality cycle has reached a controlled UX closeout. PRs #19-#24 completed the current P1 Review UX/UI polish without changing StockScout scoring or the frozen LEGACY contract.
 
 Current priority order:
 
-1. **P0 — Workflow reliability**
-   - harden the end-to-end path from Stable scan -> canonical snapshot -> Next projection -> LEGACY shadow -> charts -> validation -> Pages artifact -> deploy;
-   - define explicit hard-failure vs warning behavior at each step;
-   - never allow an older or mismatched dataset to look healthy merely because the UI loaded successfully.
-2. **P0 — Scan provenance and data quality**
-   - make the exact source scan authoritative and visible in the product, not only in GitHub Actions;
-   - expose scan/session date, source `generatedAt`, Stable workflow run id, canonical source SHA and publication identity where available;
-   - surface core/chart/LEGACY and other relevant coverage with explicit `HEALTHY`, `PARTIAL`, `STALE`, `MISMATCH` or `ERROR` semantics;
-   - every major user-facing surface must be able to answer: **"Which scan are these data from?"** without guesswork.
-3. **P1 — Review UX/UI polish**
-   - optimize the daily desktop and mobile path: Screener -> Today/New -> Rapid Review -> chart -> watchlist/alert -> next ticker;
-   - minimize clicks, preserve clear active scope/filter/sort state, remove overlaps and dead ends, and make loading/error/empty states deliberate;
-   - support efficient keyboard review on laptop where it improves throughput without breaking native/editing controls.
+1. **P0 — Production-candidate nightly operational acceptance**
+   - the Next production-candidate schedule is enabled at **22:45 UTC Monday-Friday**, staggered one hour behind Stable;
+   - the first successful self-authored scheduled Next run must be verified for completed market session, authoritative `scanId`, source repository/ref/workflow run/attempt/SHA, canonical SHA + `generatedAt`, chart coverage >=95%, persisted canonical outputs and successful Pages publication;
+   - do not treat the nightly promotion as operationally accepted until those fields are verified from the real scheduled run.
+2. **P0 — Publication transition cleanup, only after a successful self-authored nightly**
+   - reassess the code-change Pages fallback path so a later code-only `main` push cannot overwrite an authoritative Next nightly with a Stable fallback snapshot;
+   - keep Stable as explicit fail-safe, not an accidental publication winner;
+   - any scan/data/workflow change requires Full Validation before merge.
+3. **P1 — Review UX/UI polish — COMPLETE for this cycle**
+   - accepted daily path: Screener -> Today/New -> Start/Resume -> Rapid Review / Why -> Watchlist / Chart / Ticker Alerts -> Continue / Next;
+   - reviewed-state accounting remains coherent through laptop Space navigation;
+   - active screen/review/rule/sort/match context remains visible on desktop/tablet/mobile;
+   - mobile detail/chart controls and zero-result states have explicit browser acceptance coverage;
+   - do not add another review-state mechanism by default. New UX work should require a concrete observed regression or measurable friction point.
 4. **P2 — Resume Phase 6 empirical validation**
-   - continue cohort measurement only after workflow, provenance/data-health and core review UX are sufficiently trustworthy for longitudinal observation.
+   - once the production-candidate nightly is operationally accepted and any transition-publication risk is resolved, resume longitudinal cohort measurement;
+   - keep LEGACY shadow-only unless empirical evidence later justifies a separately reviewed promotion.
 
-This reprioritization does not change StockScout scoring or the frozen LEGACY contract. It changes development sequencing only. The Next automatic nightly scan remains disabled until the existing production-candidate gate is explicitly satisfied.
+This priority sequence changes development order only. It does not change Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping or the frozen LEGACY contract.
 
 ## Non-negotiable architecture rule
 
@@ -57,9 +59,10 @@ Gate: current Stable Full Validation remains green.
 ## Phase 1 — Next bootstrap
 
 - Keep the imported baseline behavior identical to Stable.
-- Disable the automatic nightly production schedule in Next while development is in shadow/manual mode.
 - Keep manual Full Validation available.
-- Establish a separate Pages deployment only after the Next baseline is validated.
+- Establish and validate a separate Next Pages/publication path.
+
+Historical note: the automatic Next nightly was disabled during shadow/manual development. It was explicitly promoted to a production-candidate schedule in PR #18 on 2026-08-23; this does not by itself constitute final production cutover.
 
 Gate: core outputs match Stable on the same canonical dataset.
 
@@ -107,6 +110,8 @@ Prioritize workflow utility over new scoring models:
 - concise `Why this stock?` decomposition;
 - one LEGACY confirmation badge with drill-down;
 - scan / validation health banner.
+
+**Status 2026-08-23: accepted/closed for the current P1 operating-quality cycle.** PRs #19-#24 added Start/Resume progress, review actions and continuation, shared watchlist behavior, queue-safe keyboard navigation, visible active context and final mobile/empty-state polish. Browser and StockScout invariance gates passed on each accepted slice.
 
 Gate: mobile + desktop review works without losing current functionality.
 
@@ -159,11 +164,11 @@ Default maximum proposed modifier: approximately +/-2 to +/-3 points until stron
 
 ## Phase 8 — Production candidate
 
-- Re-enable nightly schedule in Next only after shadow phases are stable.
-- Require 10 consecutive green Full Validation runs.
+- Production-candidate nightly schedule is now enabled in Next after explicit promotion approval; operational acceptance still requires successful real scheduled runs and continued invariance/data-quality evidence.
+- Maintain the intended requirement for a sustained green validation history before final cutover.
 - Compare Next against Stable on data coverage, charts, ranks and UI behavior.
 
-Gate: 10/10 green, no unexplained invariant drift, no data regression.
+Gate for final production candidacy: sustained green validation, no unexplained invariant drift, no data regression, and verified self-authored nightly publication behavior.
 
 ## Phase 9 — Cutover
 
@@ -175,7 +180,7 @@ Preferred path:
 
 ## Development priority order
 
-The dated **Current development priority** section above takes precedence while the reliability/provenance/UX hardening cycle is active. The long-term architectural order remains:
+The dated **Current development priority** section above takes precedence while the nightly operational-acceptance / publication-transition cycle is active. The long-term architectural order remains:
 
 1. Baseline protection
 2. Shadow confirmation layer
