@@ -92,7 +92,16 @@ export type ChartAlertV2Event={
   readAt?:string|null
   createdAt:string
 }
-export type ChartAlertsV2Snapshot={drawings:ChartDrawing[];rules:ChartAlertRule[];status:ChartAlertStatus[];events:ChartAlertV2Event[]}
+export type ChartAlertEvaluatorHealth={
+  state:'idle'|'waiting'|'stale'|'attention'|'healthy'
+  activeRules:number
+  evaluatedRules:number
+  needsReview:number
+  staleRules:number
+  lastEvaluatedAt?:string|null
+  staleAfterMinutes:number
+}
+export type ChartAlertsV2Snapshot={drawings:ChartDrawing[];rules:ChartAlertRule[];status:ChartAlertStatus[];events:ChartAlertV2Event[];evaluatorHealth:ChartAlertEvaluatorHealth}
 export type TelegramConnection={
   configured:boolean
   botId?:string|null
@@ -185,6 +194,18 @@ function eventFromRow(row:any):ChartAlertV2Event{
     message:String(row?.message||''),telegramStatus:['pending','sent','error'].includes(row?.telegram_status)?row.telegram_status:'not_configured',telegramSentAt:row?.telegram_sent_at??null,telegramError:row?.telegram_error??null,readAt:row?.read_at??null,createdAt:String(row?.created_at||''),
   }
 }
+function evaluatorHealthFromRaw(raw:any):ChartAlertEvaluatorHealth{
+  const state=['idle','waiting','stale','attention','healthy'].includes(raw?.state)?raw.state:'waiting'
+  return{
+    state,
+    activeRules:Number.isFinite(Number(raw?.activeRules))?Math.max(0,Number(raw.activeRules)):0,
+    evaluatedRules:Number.isFinite(Number(raw?.evaluatedRules))?Math.max(0,Number(raw.evaluatedRules)):0,
+    needsReview:Number.isFinite(Number(raw?.needsReview))?Math.max(0,Number(raw.needsReview)):0,
+    staleRules:Number.isFinite(Number(raw?.staleRules))?Math.max(0,Number(raw.staleRules)):0,
+    lastEvaluatedAt:raw?.lastEvaluatedAt==null?null:String(raw.lastEvaluatedAt),
+    staleAfterMinutes:Number.isFinite(Number(raw?.staleAfterMinutes))?Math.max(1,Number(raw.staleAfterMinutes)):150,
+  }
+}
 function telegramFromRaw(raw:any):TelegramConnection{
   return{
     configured:raw?.configured===true,
@@ -217,6 +238,7 @@ export function normalizeChartAlertsV2Snapshot(raw:any):ChartAlertsV2Snapshot{
     rules:(Array.isArray(raw?.rules)?raw.rules:[]).map(ruleFromRow),
     status:(Array.isArray(raw?.status)?raw.status:[]).map(statusFromRow),
     events:(Array.isArray(raw?.events)?raw.events:[]).map(eventFromRow),
+    evaluatorHealth:evaluatorHealthFromRaw(raw?.evaluatorHealth),
   }
 }
 
