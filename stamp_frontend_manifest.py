@@ -2,10 +2,10 @@
 """Stamp and verify authoritative scan/publication identity in manifest.json.
 
 The canonical ``latest.json`` remains immutable. This adapter enriches only the
-frontend manifest with provenance already known to the publication workflow:
-Stable scan metadata, canonical SHA, source repo/ref, and the Next publication
-workflow identity. Re-publishing the same source keeps ``scanId`` stable even if
-publication run metadata changes.
+frontend manifest with provenance already known to the source/publication
+workflow: scan metadata, canonical SHA, source repo/ref and publication identity.
+Re-publishing the same source keeps ``scanId`` stable even when publication run
+metadata changes.
 """
 from __future__ import annotations
 
@@ -49,19 +49,26 @@ def verify_identity(
     canonical_bytes: bytes,
     canonical: Mapping[str, Any],
     source_meta: Mapping[str, Any],
+    *,
+    source_repository: str = SOURCE_REPOSITORY,
+    source_ref: str = SOURCE_REF,
 ) -> None:
     generated_at = _clean(canonical.get("generatedAt"))
     source_sha = _sha256(canonical_bytes)
     meta_generated = _clean(source_meta.get("generated_at_utc"))
     workflow_run_id = _clean(source_meta.get("workflow_run_id"))
+    expected_repository = _clean(source_repository)
+    expected_ref = _clean(source_ref)
     if not generated_at:
         raise SystemExit("Canonical snapshot has no generatedAt")
+    if not expected_repository or not expected_ref:
+        raise SystemExit("Source repository/ref is required")
     if meta_generated != generated_at:
         raise SystemExit(
-            f"Stable metadata generated_at_utc mismatch: meta={meta_generated!r} canonical={generated_at!r}"
+            f"Source metadata generated_at_utc mismatch: meta={meta_generated!r} canonical={generated_at!r}"
         )
     if not workflow_run_id:
-        raise SystemExit("Stable metadata has no workflow_run_id")
+        raise SystemExit("Source metadata has no workflow_run_id")
     if _clean(manifest.get("generatedAt")) != generated_at:
         raise SystemExit("Manifest generatedAt does not match canonical snapshot")
 
@@ -77,11 +84,11 @@ def verify_identity(
     if _clean(manifest.get("scanId")) != expected_scan_id:
         raise SystemExit("Manifest scanId is not deterministic for this canonical snapshot")
     if _clean(source.get("workflowRunId")) != workflow_run_id:
-        raise SystemExit("Manifest Stable workflowRunId does not match Stable scan metadata")
+        raise SystemExit("Manifest source workflowRunId does not match scan metadata")
     if _clean(source.get("generatedAt")) != generated_at:
         raise SystemExit("Manifest source generatedAt does not match canonical snapshot")
-    if _clean(source.get("repository")) != SOURCE_REPOSITORY or _clean(source.get("ref")) != SOURCE_REF:
-        raise SystemExit("Manifest Stable source repository/ref is not authoritative")
+    if _clean(source.get("repository")) != expected_repository or _clean(source.get("ref")) != expected_ref:
+        raise SystemExit("Manifest source repository/ref is not authoritative")
 
 
 def stamp_manifest(
@@ -89,6 +96,8 @@ def stamp_manifest(
     canonical_path: Path,
     source_meta_path: Path,
     *,
+    source_repository: str = SOURCE_REPOSITORY,
+    source_ref: str = SOURCE_REF,
     publication_repository: str | None = None,
     publication_ref: str | None = None,
     publication_run_id: str | None = None,
@@ -102,10 +111,14 @@ def stamp_manifest(
     source_meta = _read_json(source_meta_path)
 
     generated_at = _clean(canonical.get("generatedAt"))
+    source_repository = _clean(source_repository)
+    source_ref = _clean(source_ref)
     if not generated_at:
         raise SystemExit("Canonical snapshot has no generatedAt")
+    if not source_repository or not source_ref:
+        raise SystemExit("Source repository/ref is required")
     if _clean(source_meta.get("generated_at_utc")) != generated_at:
-        raise SystemExit("Stable scan metadata does not belong to canonical latest.json")
+        raise SystemExit("Source scan metadata does not belong to canonical latest.json")
 
     source_sha = _sha256(canonical_bytes)
     provenance = manifest.setdefault("provenance", {})
@@ -114,8 +127,8 @@ def stamp_manifest(
 
     source.update(
         {
-            "repository": SOURCE_REPOSITORY,
-            "ref": SOURCE_REF,
+            "repository": source_repository,
+            "ref": source_ref,
             "workflowRunId": _clean(source_meta.get("workflow_run_id")),
             "workflowRunAttempt": _clean(source_meta.get("workflow_run_attempt")),
             "sourceCommit": _clean(source_meta.get("source_commit")),
@@ -139,7 +152,14 @@ def stamp_manifest(
     if publication_repository and publication_run_id:
         publication["publicationId"] = f"{publication_repository}#{publication_run_id}"
 
-    verify_identity(manifest, canonical_bytes, canonical, source_meta)
+    verify_identity(
+        manifest,
+        canonical_bytes,
+        canonical,
+        source_meta,
+        source_repository=source_repository,
+        source_ref=source_ref,
+    )
     encoded = json.dumps(manifest, separators=(",", ":"), ensure_ascii=False).encode("utf-8") + b"\n"
     temp = manifest_path.with_suffix(manifest_path.suffix + ".tmp")
     temp.write_bytes(encoded)
@@ -152,6 +172,8 @@ def main() -> None:
     parser.add_argument("--manifest", default="frontend/public/data/manifest.json")
     parser.add_argument("--canonical", default="frontend/public/data/latest.json")
     parser.add_argument("--source-meta", default="/tmp/stable-scan-meta.json")
+    parser.add_argument("--source-repository", default=SOURCE_REPOSITORY)
+    parser.add_argument("--source-ref", default=SOURCE_REF)
     parser.add_argument("--verify-only", action="store_true")
     args = parser.parse_args()
 
@@ -163,11 +185,24 @@ def main() -> None:
         canonical_bytes = canonical_path.read_bytes()
         canonical = json.loads(canonical_bytes)
         source_meta = _read_json(source_meta_path)
-        verify_identity(manifest, canonical_bytes, canonical, source_meta)
+        verify_identity(
+            manifest,
+            canonical_bytes,
+            canonical,
+            source_meta,
+            source_repository=args.source_repository,
+            source_ref=args.source_ref,
+        )
         print(f"Verified scan identity {manifest.get('scanId')} source run {(manifest.get('provenance') or {}).get('source', {}).get('workflowRunId')}")
         return
 
-    manifest = stamp_manifest(manifest_path, canonical_path, source_meta_path)
+    manifest = stamp_manifest(
+        manifest_path,
+        canonical_path,
+        source_meta_path,
+        source_repository=args.source_repository,
+        source_ref=args.source_ref,
+    )
     print(
         "Stamped scan identity "
         f"{manifest.get('scanId')} source run "
