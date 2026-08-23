@@ -23,7 +23,7 @@ type ChartAlertsContextValue={
   markEventRead:(id:string,read?:boolean)=>Promise<void>
 }
 
-const EMPTY:ChartAlertsV2Snapshot={drawings:[],rules:[],status:[],events:[]}
+const EMPTY:ChartAlertsV2Snapshot={drawings:[],rules:[],status:[],events:[],evaluatorHealth:{state:'idle',activeRules:0,evaluatedRules:0,needsReview:0,staleRules:0,lastEvaluatedAt:null,staleAfterMinutes:150}}
 const Context=createContext<ChartAlertsContextValue|null>(null)
 
 export function ChartAlertsProvider({children}:{children:ReactNode}){
@@ -68,10 +68,10 @@ export function ChartAlertsProvider({children}:{children:ReactNode}){
     try{
       await deleteChartDrawing(id)
       setSnapshot(current=>({
+        ...current,
         drawings:current.drawings.filter(item=>item.id!==id),
         rules:current.rules.filter(item=>item.drawingId!==id),
         status:current.status.filter(item=>item.drawingId!==id),
-        events:current.events,
       }))
       setSelectedDrawingId(current=>current===id?null:current);setError('')
     }catch(nextError){setError(String(nextError));throw nextError}
