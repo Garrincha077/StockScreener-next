@@ -1,5 +1,5 @@
 import type {StockScoutCore,StockScoutManifest,AssetDescriptor} from './data/StockScoutDataProvider'
-import {dataHealth,type ReviewManifest,type ReviewPayload,type ValidationStatus} from './phase4Review'
+import {dataHealth,type ReviewManifest,type ReviewPayload,type ValidationStatus} from './phase4Review.ts'
 
 export type ScanHealthStatus='HEALTHY'|'PARTIAL'|'STALE'|'MISMATCH'|'ERROR'
 export type CoverageRow={key:string;label:string;coverage:number;coveragePct:number;minimumPct:number;healthy:boolean}
@@ -18,7 +18,7 @@ const labels:Record<string,string>={
 export function scanCoverageRows(manifest:StockScoutManifest|null):CoverageRow[]{
   if(!manifest?.assets)return[]
   return Object.entries(minimumByAsset).map(([key,minimumPct])=>{
-    const asset=(manifest.assets as Record<string,AssetDescriptor>)[key]
+    const asset=(manifest.assets as unknown as Record<string,AssetDescriptor>)[key]
     const coverage=Number(asset?.coverage??0)
     const coveragePct=Number(asset?.coveragePct??0)
     return{key,label:labels[key]||key,coverage,coveragePct,minimumPct,healthy:Number.isFinite(coveragePct)&&coveragePct>=minimumPct}
