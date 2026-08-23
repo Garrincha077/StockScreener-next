@@ -19,6 +19,7 @@ const NATIVE_SPACE_SELECTOR=[
   '[role="tab"]',
 ].join(',')
 
+const REVIEW_NEXT_SELECTOR='.p4-why .p4-next, .p4-queue-continuation [aria-label="Next review candidate from review bar"]'
 const GRID_CARD_SELECTOR='.dv-chartgrid .dv-minicard'
 const GRID_SENTINEL_SELECTOR='.dv-grid-sentinel'
 const TABLE_ROW_SELECTOR='.dv-tablebox tbody tr'
@@ -74,6 +75,16 @@ function selectedIndex(items:HTMLElement[]){
   return items.findIndex(item=>item.classList.contains('selected')||item.getAttribute('aria-selected')==='true')
 }
 
+function advanceReviewQueue():boolean{
+  const next=elements(REVIEW_NEXT_SELECTOR).find(element=>{
+    const button=element as HTMLButtonElement
+    return !button.disabled&&button.getAttribute('aria-disabled')!=='true'
+  })
+  if(!next)return false
+  activate(next)
+  return true
+}
+
 function advanceGrid(retry=0):boolean{
   const cards=elements(GRID_CARD_SELECTOR)
   if(!cards.length)return false
@@ -113,7 +124,7 @@ export function installSpaceTickerNavigation(){
 
   const onKeyDown=(event:KeyboardEvent)=>{
     if(event.defaultPrevented||!isSpaceAdvanceKey(event)||targetOwnsSpace(event.target))return
-    const handled=advanceGrid()||advanceTable()
+    const handled=advanceReviewQueue()||advanceGrid()||advanceTable()
     if(handled)event.preventDefault()
   }
   window.addEventListener('keydown',onKeyDown)
