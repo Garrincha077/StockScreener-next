@@ -4,6 +4,79 @@ This file is the current durable handoff for `Garrincha077/StockScreener-next`. 
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — Chart Alerts v2 A8 cross-device recovery-key sync
+
+**Branch / PR / key commits**
+- Branch: `next-dev`; draft PR #13 (`next-dev` -> `main`) remains open and unmerged.
+- User confirmed the A7 real-use gate works on Pages before A8 work began: Telegram save/reload/connected state/test-message flow was accepted by the user. No credential was shared in chat.
+- A8 sync profile/device-link migration: `8b1ea1ef9fa8a30aa59537a30104289f9a5b37bc`.
+- Canonical-owner resolution in the existing V2 alert gateway: `8fe43453806afcb864b07898a3e5a79d222b0e8d`.
+- Isolated recovery-key sync Edge gateway: `89ff3f729fad64336ed5f0c2e618313899f5f06d`, then rotate support `a978066075db2f2cd5a35e9ec0515619980c1f09`.
+- Recovery-key rotation RPC: `9f84243ff9903378155118af3913bded7914c439`.
+- Frontend client/UI integration: `0734ad2ff8f5fc1957fddfb3adf7bd8f315444a4`, `4aaefec5221ca08a0f9473ec9b322c18a241502a`, `d953e59d0aae8dd4ebc3d23ab7436c5929b56204`, `4a25ed7ed861b4d94bca7d83359f003279352828`, `edce85f84a10339a4ff0de9b27af23fcb379a22d`.
+- A8 security/browser tests: `227298e62a0eec1d496fc6a5b2d2c2ae2238e293`, `f842bdc26d3f8c1faa8bf4bd27f27911171aeba9`.
+- Test-only false-positive repair: `414b50423a7db3ece870ac8fcc77ca46e01d0aae`; the original assertion rejected the explanatory words `localStorage/sessionStorage`, not actual storage API use. It now rejects real `setItem/getItem` calls instead.
+
+**Architecture / behavior**
+- A8 uses a user-managed Alerts Recovery/Sync Key rather than adding account/email auth. This keeps the personal app incremental and preserves the existing capability-key identity abstraction.
+- The first device that enables sync becomes the canonical alert owner. Additional devices authenticate with their existing browser device capability, present the recovery key once, and are mapped server-side to that canonical owner.
+- Recovery keys are 128-bit client-generated values formatted `SSN2-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX-XXXX`. The raw key is sent only to the isolated sync Edge Function, hashed with SHA-256 there, and only the hash is persisted. The raw key is never stored in Postgres, localStorage or sessionStorage.
+- The primary device may rotate the recovery key. Rotation changes only the stored hash: already-linked devices remain connected while old keys can no longer add devices.
+- Existing secondary-browser state is preserved. Joining transactionally re-owners the current alert sidecar rows to the canonical owner while UUID relationships remain unchanged: compatibility chart alerts, drawings, alert rules, alert status and trigger events are all moved together.
+- Existing Telegram Vault credentials are preserved. If only the joining owner has Telegram configured, its connection row and Vault secret names are moved to the canonical owner without decrypting/exposing credentials. If both owners independently have Telegram configured, the join fails closed and requires one configuration to be disconnected first; no credential is overwritten.
+- The normal V2 alert gateway now resolves each browser-device owner to its canonical owner before snapshot/drawing/rule/event/Telegram operations. Unlinked browsers resolve to themselves, so A8 is backward-compatible until sync is explicitly enabled.
+- Sync operations live in a separate `stockscout-next-alert-sync` Edge Function rather than expanding the Telegram/alert gateway with recovery-key operations.
+
+**Affected components**
+- `supabase/migrations/20260823073000_stockscout_next_alerts_v2_a8_cross_device_sync.sql`.
+- `supabase/migrations/20260823073500_stockscout_next_alerts_v2_a8_recovery_rotate.sql`.
+- `supabase/functions/stockscout-next-alerts-v2/index.ts`.
+- `supabase/functions/stockscout-next-alert-sync/index.ts`.
+- `frontend/src/deepvue/chartAlerts.ts`.
+- `frontend/src/AlertSyncSettingsPanel.tsx`.
+- `frontend/src/alert-sync-settings.css`.
+- `frontend/src/ChartAlertsCenter.tsx` and `frontend/src/main.tsx`.
+- `frontend/src/deepvue/chartAlertEvaluatorCutover.test.ts`.
+- `frontend/e2e/chart-alerts-center.spec.ts`.
+
+**Live sidecar state / migrations**
+- Supabase project: `jekidjsifihbbuzxrbse`.
+- Applied live migration `20260823073834`, name `stockscout_next_alerts_v2_a8_cross_device_sync`.
+- Applied live migration `20260823073844`, name `stockscout_next_alerts_v2_a8_recovery_rotate`.
+- `stockscout-next-alerts-v2` is **v4 ACTIVE**, with existing explicit device-key capability authentication (`verify_jwt=false`) plus canonical-owner resolution.
+- New isolated `stockscout-next-alert-sync` is **v1 ACTIVE**, `verify_jwt=false` because it implements the same explicit device-key capability authentication before any sync RPC.
+- Before any user A8 activation, live state remained exactly `5` drawings, `2` rules, `0` trigger events and `1` Telegram connection; there were `0` sync profiles and `0` device links. Therefore deployment itself did not merge or mutate either existing browser owner.
+- Permission smoke: `anon` and `authenticated` cannot execute the sync-status/owner-resolver RPCs; `service_role` can. Direct sync tables are revoked from `public`, `anon` and `authenticated`.
+- Supabase security advisor reported no new A8-specific warning; existing project notices remain the previously known private-table RLS-without-policy informational notices plus unrelated `pg_net`/Auth advisories.
+
+**Live transactional validation**
+- Dummy primary owner created a sync profile; dummy secondary owner created an actual drawing + rule through existing RPCs, then joined the primary profile.
+- After join, secondary owner resolved to the primary owner, the drawing/rule existed under the primary owner, and no secondary-owned drawing remained.
+- Both primary and secondary sync status reported enabled/linked with `deviceCount=2`; primary-device flags were correct.
+- Recovery-hash rotation succeeded while both device links stayed intact.
+- Separate transaction created two dummy Telegram connection rows; sync join failed with the intended `both device profiles have Telegram configured` conflict instead of overwriting either connection.
+- All dummy tests were rolled back. Follow-up verification showed `0` dummy sync profiles, `0` dummy device links and `0` dummy drawings.
+
+**Tests / CI**
+- Initial A8 head `f842bdc26d3f8c1faa8bf4bd27f27911171aeba9` failed Frontend #182 / StockScout #306 only because one source-level assertion matched the explanatory UI words `localStorage/sessionStorage`; 51/52 runtime tests passed and the failure occurred before build/browser execution.
+- Corrected A8 code head `414b50423a7db3ece870ac8fcc77ca46e01d0aae`: **Frontend Compile Smoke #183 / run `32626289513` SUCCESS**, including runtime tests, TypeScript/Vite build and mobile Playwright.
+- Same corrected head: **StockScout Validation #308 / run `32626289565` SUCCESS**, including frozen LEGACY execution graph, regression/integration tests, current model application, compatibility audit, MA Cluster audit, Scout Tier audit, exact LEGACY invariance/client artifact checks and frontend runtime/build.
+- Browser E2E verifies the one-time recovery key format, confirms the raw key is absent from localStorage/sessionStorage, hides it after `I saved it`, rotates to a different key, and preserves the existing A7 Telegram and Alerts Center flows.
+- Full Validation was not run because A8 changes only the private alert sidecar identity/API/UI. Scan generation, canonical scan data and publish workflow are unchanged.
+
+**Scoring / guardrails**
+- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default ranking or other StockScout Core behavior changed.
+- Frozen LEGACY remains unchanged and shadow-only.
+- Stable `Garrincha077/stock-screener2` was not modified.
+- Next scheduled nightly scan remains disabled.
+
+**Next logical step / A8 real-use gate**
+- Publish this A8 frontend once to the reversible StockScreener-next Pages test surface, immediately restoring the workflow trigger to `main`-only.
+- On the device that should keep the current Telegram connection/canonical alert set, enable sync and save the one-time recovery key privately.
+- On the second device, enter that key and link. Existing drawings on the second browser should merge rather than disappear. Because live state currently has only one Telegram connection, the expected join path has no credential conflict.
+- Verify both devices show the same drawings/rules/Telegram connection metadata; create one new drawing on either device and refresh the other to prove cross-device propagation.
+- Do not paste the recovery key into chat. If the real-use gate passes, close A8 and continue A9 operational/UX hardening. Keep PR13 draft until the remaining promotion gates are explicitly accepted.
+
 ## 2026-08-23 — Chart Alerts v2 A7 secure Telegram Settings
 
 **Branch / PR / key commits**
@@ -27,44 +100,14 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - `Disconnect Telegram` removes the owner's connection row and Vault secrets/references. No global Telegram credential fallback remains in the evaluator.
 - For the real-use A7 gate, Pages was staged exactly once by temporarily allowing `next-dev` in `frontend_pages.yml`; the very next commit restored the workflow byte-for-byte to `main`-only. Future experimental pushes therefore do not auto-deploy Pages.
 
-**Affected components**
-- `supabase/migrations/20260823011500_stockscout_next_alerts_v2_a7_telegram_vault.sql`.
-- `supabase/functions/stockscout-next-alerts-v2/index.ts`.
-- `supabase/functions/stockscout-next-alerts/index.ts`.
-- `frontend/src/deepvue/chartAlerts.ts`.
-- `frontend/src/TelegramSettingsPanel.tsx`.
-- `frontend/src/ChartAlertsCenter.tsx`.
-- `frontend/src/telegram-settings.css` and `frontend/src/main.tsx`.
-- `frontend/e2e/chart-alerts-center.spec.ts`.
-- `frontend/src/deepvue/chartAlertEvaluatorCutover.test.ts`.
-- `.github/workflows/frontend_pages.yml` was only temporarily broadened for the one-shot A7 test deploy and then restored to its original main-only content.
+**Live / real-use acceptance**
+- User confirmed on 2026-08-23 that the A7 Pages flow works. Treat A7 as accepted for real use: the secure settings flow and controlled Telegram test were reported successful by the user.
+- The user did not share any Telegram token/chat credential in the conversation.
 
-**Live sidecar state**
-- Supabase project: `jekidjsifihbbuzxrbse`.
-- Applied live migration version `20260822230618`, name `stockscout_next_alerts_v2_a7_telegram_vault`.
-- `stockscout-next-alerts-v2` deployed as **v3 ACTIVE**, `verify_jwt=false` because it retains the existing explicit `x-stockscout-device-key` capability authentication.
-- `stockscout-next-alerts` evaluator deployed as **v5 ACTIVE**, `verify_jwt=false` because it retains the existing evaluator-key/device-key custom authentication paths.
-- Transactional fake-data smoke completed and rolled back. Follow-up verification showed `0` dummy connection rows and `0` dummy Vault secrets; dummy owner status returned `configured:false`.
-- Permission smoke: `anon` and `authenticated` have no execute privilege on Telegram status or decrypted-credentials RPCs; `service_role` does.
-- No real Telegram credential or real test message was used by the agent. A7 real-use gate still requires the user to save their own bot/chat and receive the controlled test message.
-
-**Tests / CI**
-- Verified code head `f30e79afb5732ecde8b2ca01420843a841fe2ae8`: **Frontend Compile Smoke #166 / run `32604480681` SUCCESS** and **StockScout Validation #284 / run `32604480678` SUCCESS**.
-- Verified final workflow head `520831a1a8d3aebba644a1c18cfda5364e2bcdcf`: **Frontend Compile Smoke #169 / run `32604647149` SUCCESS** and **StockScout Validation #287 / run `32604647163` SUCCESS**. The frontend run included runtime tests, TypeScript/Vite build and mobile Playwright; StockScout Validation included frozen LEGACY graph/invariance, regression/integration, model compatibility, MA Cluster, Scout Tier and frontend checks.
-- Browser E2E mocks full Telegram flow and asserts saved token/chat are absent from rendered UI after connection.
-- Source-level security tests assert owner-scoped Vault functions, service-role-only credential path, no global Telegram evaluator secret path and no browser Telegram local/session storage.
-- Full Validation was not run: this slice changes only the isolated alert sidecar/API/UI/evaluator notification routing plus the reversible Pages branch-filter trigger; it does not change scan generation, canonical scan data or the production-style scan/publish workflow behavior.
-
-**Scoring / guardrails**
-- No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default rank or other StockScout Core behavior changed.
-- Frozen LEGACY remains unchanged and shadow-only.
-- Stable `Garrincha077/stock-screener2` was not modified.
-- Next scheduled nightly scan remains disabled.
-
-**Risk / next step**
-- User reported the prior Pages A5/A6 drawing/alert test appeared to work, but the agent still does not claim an independently observed real trigger replay/dedupe event.
-- A7 code/backend/security gates are green. Perform the A7 real-use test on the Pages surface: Save -> reload -> connected status without secret reveal -> controlled test message arrives -> Disconnect -> status becomes not configured.
-- If that passes, close A7 and continue to roadmap A8 cross-device alert identity/sync. Keep PR13 draft until the remaining real-use gates are accepted.
+**Tests / CI / guardrails**
+- Verified code head `f30e79afb5732ecde8b2ca01420843a841fe2ae8`: Frontend Compile Smoke #166 / `32604480681` SUCCESS and StockScout Validation #284 / `32604480678` SUCCESS.
+- Verified workflow head `520831a1a8d3aebba644a1c18cfda5364e2bcdcf`: Frontend Compile Smoke #169 / `32604647149` SUCCESS and StockScout Validation #287 / `32604647163` SUCCESS.
+- A7 did not change StockScout Core, frozen LEGACY, Stable, canonical scan data or the disabled Next nightly schedule.
 
 ## 2026-08-23 — Earlier one-shot GitHub Pages test deployment preparation
 
