@@ -16,7 +16,7 @@ const asset=(path:string,sha256:string,coverage=205)=>({path,sha256,bytes:1,cove
 const manifest={
   manifestVersion:2,model:'test',generatedAt,universe:205,
   marketSession:{date:'2099-01-01',status:'closed',timezone:'America/New_York'},
-  provenance:{source:{kind:'canonical-audit',path:'latest.json',sha256:'source',bytes:1},publication:{kind:'frontend-projection',model:'test',sourceSha256256:'source'}},
+  provenance:{source:{kind:'canonical-audit',path:'latest.json',sha256:'source',bytes:1},publication:{kind:'frontend-projection',model:'test',sourceSha256:'source'}},
   assets:{
     core:asset('core.json','core'),legacyIndex:asset('legacy/index.json','index'),
     legacyDetails:{...asset('legacy/details','details'),shardCount:128},
