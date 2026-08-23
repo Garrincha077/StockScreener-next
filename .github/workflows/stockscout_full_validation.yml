@@ -16,8 +16,10 @@ on:
       - '.github/workflows/frontend_pages.yml'
       - 'stamp_frontend_manifest.py'
       - 'validate_frontend_charts.py'
+      - 'validate_scan_session.py'
       - 'tests/test_stamp_frontend_manifest.py'
       - 'tests/test_validate_frontend_charts.py'
+      - 'tests/test_validate_scan_session.py'
   pull_request:
     branches: [main]
     paths:
@@ -28,8 +30,10 @@ on:
       - '.github/workflows/frontend_pages.yml'
       - 'stamp_frontend_manifest.py'
       - 'validate_frontend_charts.py'
+      - 'validate_scan_session.py'
       - 'tests/test_stamp_frontend_manifest.py'
       - 'tests/test_validate_frontend_charts.py'
+      - 'tests/test_validate_scan_session.py'
   workflow_dispatch:
 
 permissions:
@@ -47,13 +51,14 @@ jobs:
           python-version: '3.11'
       - name: LEGACY shadow, client projection and publication contract tests
         run: |
-          python -m pip install --upgrade pip pytest
+          python -m pip install --upgrade pip pytest pandas
           python -m pytest \
             tests/test_compute_legacy_confirmation.py \
             tests/test_build_legacy_confirmation_sidecar.py \
             tests/test_prepare_frontend_payloads.py \
             tests/test_stamp_frontend_manifest.py \
-            tests/test_validate_frontend_charts.py -q
+            tests/test_validate_frontend_charts.py \
+            tests/test_validate_scan_session.py -q
 
   full-scan:
     needs: legacy-shadow-unit
