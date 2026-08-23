@@ -71,7 +71,7 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
   await expect(healthPanel).toContainText('AUTHORITATIVE DATA IDENTITY')
   await expect(healthPanel).toContainText('Charts')
   await expect(healthPanel).toContainText('0.0%')
-  await expect(healthPanel).toContainText('Stable source workflow')
+  await expect(healthPanel).toContainText('Source workflow')
   await expect(healthPanel).toContainText('not embedded')
   await healthTrigger.click()
   await expect(healthPanel).toHaveCount(0)
@@ -140,8 +140,6 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
   await expect(summary).toContainText(`${initialCount} of 50`)
   if(testInfo.project.name==='mobile-pixel-5')expect(initialCount).toBe(16)
 
-  // A normal Grid selection uses history.replaceState, not hashchange. The
-  // Phase 4 review bar must still follow the active StockScout ticker.
   await cards.nth(3).click()
   const whyButton=page.locator('.p4-inbox-actions button').filter({hasText:/Why this stock\?/})
   await expect(whyButton).toContainText('T004',{timeout:2_000})
@@ -150,8 +148,6 @@ test('Phase 4 review scope, queue, ticker sync and Rapid Review work across view
   await expect(page.locator('.p4-why')).toContainText('WHY T004?')
   await page.getByRole('button',{name:'Close why panel'}).click()
 
-  // Laptop review: a plain Space advances one card in the rendered Grid order.
-  // Mobile keeps its touch-first behavior and does not need this keyboard gate.
   if(testInfo.project.name!=='mobile-pixel-5'){
     await page.keyboard.press('Space')
     await expect(whyButton).toContainText('T005',{timeout:2_000})
