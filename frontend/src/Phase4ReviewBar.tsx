@@ -1,6 +1,7 @@
 import {useEffect,useMemo,useState} from 'react'
 import {buildReviewInbox,explainStock,reviewScopeLabel,type ReviewPayload,type ReviewScope,type ValidationStatus} from './phase4Review'
 import {useStockScoutData} from './data/StockScoutDataProvider'
+import {useStockScoutWatchlist} from './watchlistStore'
 import ScanDataHealthPanel from './ScanDataHealthPanel'
 
 type InboxMode=Exclude<ReviewScope,null>
@@ -8,6 +9,7 @@ type ReviewBarProps={onOpenChart?:()=>void;onOpenTickerAlerts?:()=>void}
 
 export default function Phase4ReviewBar({onOpenChart,onOpenTickerAlerts}:ReviewBarProps){
   const{core,manifest:selectedManifest,selectedTicker,selectTicker,reviewScope,setReviewScope,loadOptional}=useStockScoutData()
+  const{isWatched,toggleWatch}=useStockScoutWatchlist()
   const payload=core as ReviewPayload|null
   const[validation,setValidation]=useState<ValidationStatus|null>(null)
   const[inboxMode,setInboxMode]=useState<InboxMode|null>(null)
@@ -33,6 +35,7 @@ export default function Phase4ReviewBar({onOpenChart,onOpenTickerAlerts}:ReviewB
   const inbox=useMemo(()=>buildReviewInbox(payload?.universe||[]),[payload])
   const selected=useMemo(()=>payload?.universe.find(stock=>stock.ticker===selectedTicker)||null,[payload,selectedTicker])
   const why=useMemo(()=>selected?explainStock(selected):[],[selected])
+  const selectedWatched=selected?isWatched(selected.ticker):false
   const reviewedSet=useMemo(()=>new Set(reviewed),[reviewed])
   const rows=inboxMode==='today'?inbox.today:inboxMode==='new'?inbox.newSinceLastScan:[]
   const queueRows=queueMode==='today'?inbox.today:queueMode==='new'?inbox.newSinceLastScan:[]
@@ -118,6 +121,6 @@ export default function Phase4ReviewBar({onOpenChart,onOpenTickerAlerts}:ReviewB
 
     {inboxMode&&<div className="p4-inbox-drawer"><header><div><b>{reviewScopeLabel(inboxMode)}</b><span>{rows.length} candidates · {unseenLabel(inboxMode==='today'?todayUnseen:newUnseen)} · click to start a review queue</span></div><button aria-label="Close review inbox" onClick={()=>setInboxMode(null)}>×</button></header><div className="p4-inbox-list">{rows.slice(0,24).map(stock=><button className={reviewedSet.has(stock.ticker)?'reviewed':''} key={stock.ticker} onClick={()=>openTicker(stock.ticker,inboxMode)}><b>{stock.ticker}</b><span>{stock.primarySetup||stock.setup||stock.stageName||'Setup'}</span><em>{reviewedSet.has(stock.ticker)?'✓ reviewed · ':''}{stock.changeLabels?.[0]||stock.opportunityTier||''}</em><strong>{Math.round(stock.opportunityScore??0)}</strong></button>)}{!rows.length&&<p>No candidates in this snapshot.</p>}</div>{rows.length>24&&<footer>Showing the first 24 of {rows.length}; queue navigation can continue through the full inbox.</footer>}</div>}
 
-    {whyOpen&&selected&&<aside className="p4-why"><header><div><b>WHY {selected.ticker}?</b><span>transparent decomposition · no new score{queueMode&&queueIndex>=0?` · Review ${queueIndex+1} / ${queueRows.length}`:''}</span></div><div className="p4-why-actions">{queueMode&&queueIndex>=0&&<><button className="p4-prev" aria-label="Previous review candidate" disabled={queueIndex===0} onClick={()=>moveQueue(-1)}>←</button><button className="p4-next" aria-label="Next review candidate" disabled={queueIndex===queueRows.length-1} onClick={()=>moveQueue(1)}>→</button></>}<button aria-label="Close why panel" onClick={closeWhy}>×</button></div></header><div className="p4-why-shortcuts"><button aria-label={`Open ${selected.ticker} chart`} disabled={!onOpenChart} onClick={()=>runTickerAction(onOpenChart)}>▣ Chart</button><button aria-label={`Open ${selected.ticker} ticker alerts`} disabled={!onOpenTickerAlerts} onClick={()=>runTickerAction(onOpenTickerAlerts)}>✏ Ticker alerts</button><span>Review queue stays active</span></div><ol>{why.map((line,index)=><li key={`${line}-${index}`}>{line}</li>)}</ol></aside>}
+    {whyOpen&&selected&&<aside className="p4-why"><header><div><b>WHY {selected.ticker}?</b><span>transparent decomposition · no new score{queueMode&&queueIndex>=0?` · Review ${queueIndex+1} / ${queueRows.length}`:''}</span></div><div className="p4-why-actions">{queueMode&&queueIndex>=0&&<><button className="p4-prev" aria-label="Previous review candidate" disabled={queueIndex===0} onClick={()=>moveQueue(-1)}>←</button><button className="p4-next" aria-label="Next review candidate" disabled={queueIndex===queueRows.length-1} onClick={()=>moveQueue(1)}>→</button></>}<button aria-label="Close why panel" onClick={closeWhy}>×</button></div></header><div className="p4-why-shortcuts"><button className={selectedWatched?'active':''} aria-pressed={selectedWatched} aria-label={selectedWatched?`Remove ${selected.ticker} from watchlist`:`Add ${selected.ticker} to watchlist`} onClick={()=>toggleWatch(selected.ticker)}>{selectedWatched?'★ Watched':'☆ Watchlist'}</button><button aria-label={`Open ${selected.ticker} chart`} disabled={!onOpenChart} onClick={()=>runTickerAction(onOpenChart)}>▣ Chart</button><button aria-label={`Open ${selected.ticker} ticker alerts`} disabled={!onOpenTickerAlerts} onClick={()=>runTickerAction(onOpenTickerAlerts)}>✏ Ticker alerts</button><span>Review queue stays active</span></div><ol>{why.map((line,index)=><li key={`${line}-${index}`}>{line}</li>)}</ol></aside>}
   </section>
 }

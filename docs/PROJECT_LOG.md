@@ -6,6 +6,21 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — PR #21 P1 shared watchlist integration in progress
+
+- Development resumed from the clean post-PR #20 baseline `4a0d431d053675dada3c1bd11818830a52231828` where `main` and `next-dev` were identical. Current functional head before this log commit: `dcdd8c7cbbaf1a7dc6969c30458e8c7108e9f9d2` on `next-dev`.
+- Centralized the existing client-local watchlist behind one small `useSyncExternalStore` store while preserving the established `stockscout-watchlist` localStorage key. Existing Grid hearts, Screener/detail stars, Watchlist filtering and the new Review/Why shortcut now consume the same in-memory state instead of maintaining competing React stores.
+- Added a selected-ticker **Watchlist** action to `Why this stock?`. The action is immediate and does not close the review overlay or alter queue position; its visible `Watched` state is synchronized with DeepVue. Existing Chart and Ticker Alerts shortcuts remain unchanged.
+- Watchlist loading now normalizes ticker case/whitespace and removes invalid duplicates, preserving existing stored lists while making the shared contract deterministic. Cross-tab `storage` updates continue to refresh the same store.
+- Browser acceptance now checks both directions of same-tab synchronization: Why -> existing DeepVue star and existing DeepVue star -> Why, plus persistence to the exact existing localStorage key. A small Node test locks the storage key and normalization/deduplication contract.
+- Affected files/components: `frontend/src/watchlistStore.ts`, `frontend/src/deepvue/watchlistStore.test.ts`, `frontend/src/DeepVueTerminal.tsx`, `frontend/src/Phase4ReviewBar.tsx`, `frontend/src/phase4-review.css`, `frontend/e2e/mobile-rapid-review.spec.ts`, `docs/PROJECT_LOG.md`.
+- Behavior/model impact: intentional client-side watchlist UX/state refactor only. Watchlist membership semantics and persistence key are preserved. No scan/data/provenance workflow, canonical payload, saved-screen/sort/ranking logic, chart mapping, alert evaluation, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage or frozen LEGACY behavior changed. Stable `Garrincha077/stock-screener2` remains untouched.
+- Validation status: not yet verified for this head; no green claim is made. Because the scope remains frontend-only and does not touch scan/data/workflow paths, Full Validation is not required unless the scope changes.
+- Regression risk/decision: the key risk is same-tab consistency between existing DeepVue entry points and the new Review shortcut. The implementation deliberately replaces the old DeepVue-local watchlist state rather than layering a second store, and browser acceptance is the merge gate for that synchronization.
+
+**Next logical step**
+- Open PR #21 as a small P1 UI-only slice. Require Frontend Compile Smoke (including Mobile Rapid Review browser acceptance) and StockScout Validation exact-invariance green on the exact final head before merge. If accepted, merge and align `next-dev`, then choose the next P1 friction point without mixing in nightly/data changes.
+
 ## 2026-08-23 — PR #20 P1 review-to-chart/alerts shortcuts merged
 
 - PR #20 (`next-dev` -> `main`) was squash-merged as `e93dea23946907f1ce1bf28a9ae939f6919d8e85`. Development started from the clean post-PR #19 baseline `3c59130bbf724164c9b14f8105dc7961d3af96f1`; final validated PR head was `4c8f1693b5d6f36e7591028022d8f365bb7233a8`.
