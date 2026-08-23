@@ -4,6 +4,18 @@ This file is the current durable handoff for `Garrincha077/StockScreener-next`. 
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-23 — Chart Alerts PR #13 merged and closed
+
+- PR #13 (`next-dev` -> `main`) was promoted out of draft and squash-merged after the validated Chart Alerts scope was frozen. Merge commit on Next `main`: `9ab658b24a775ccc5ab2a32391200c97d708dc11`.
+- Final PR head before merge: `a0931393a6367d96d8fd709a0ac4fdd321fbd130`. **Frontend Compile Smoke #200 / run `32633130995` SUCCESS** and **StockScout Validation #332 / run `32633130992` SUCCESS**. Validation #332 completed the frozen LEGACY execution check, regression/integration tests, model compatibility audit, MA Cluster and Scout Tier audits, exact LEGACY invariance/client-artifact checks, and frontend runtime/TypeScript/Vite build. PR review threads were empty.
+- The A9-triggered **StockScout Full Validation** gate was already accepted from the successful GitHub Actions run visually confirmed by the user. The stale `data/daily_scans/full_validation_status.json` recorder was intentionally not repaired inside this promotion cycle because changing workflow plumbing would have needlessly retriggered the expensive gate.
+- Chart Alerts is now considered **feature-complete and closed for PR #13**. Final scope includes persistent horizontal/trendline drawings, D/W-consistent Cross Above / Cross Below / Touch rules, owner-scoped Supabase persistence/events, one-shot/dedupe evaluator behavior, secure Telegram Vault settings and delivery, recovery-key two-device sync, global Alerts Center health/review UX, and deterministic chart hydration/cache publish hardening.
+- Behavior impact: Chart Alerts functionality is now part of the controlled StockScout Next `main` baseline. No Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage, chart mapping, default ranking or other StockScout Core scoring behavior changed. Frozen LEGACY remains shadow-only.
+- Stable `Garrincha077/stock-screener2` remains untouched. The Next scheduled nightly scan remains disabled and was not re-enabled by the merge. This merge does **not** promote Next to the Phase 8 production-candidate state.
+
+**Next logical step**
+- Do not add more Chart Alerts features to PR #13. Any future alert enhancement should start in a separate, narrowly scoped PR. Continue StockScout Next from the roadmap/guardrails with `main` as the new validated Chart Alerts baseline and `next-dev` for the next experimental unit of work.
+
 ## 2026-08-23 — A9 Full Validation accepted; promotion audit
 
 - User visually confirmed the latest A9-triggered **StockScout Full Validation** run is green in the GitHub Actions UI on 2026-08-23. Treat the A9 workflow-level gate as accepted. The GitHub connector available in this session cannot enumerate push-triggered Full Validation runs, and the existing `data/daily_scans/full_validation_status.json` recorder is stale at the older 2026-08-20 run, so the exact new run id/SHA is intentionally not guessed or fabricated.
@@ -29,7 +41,7 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - `evaluatorHealth` is derived from actual enabled-rule `evaluated_at` state, not a synthetic score. It exposes `idle`, `waiting`, `stale`, `attention` or `healthy`, active/evaluated/needs-review/stale counts and last-evaluated timestamp. Missing health fails safe to `waiting` rather than claiming green.
 - Alerts Center now translates known `needs_review` codes into explicit explanations for missing chart history, missing anchor, malformed source/rule geometry, unavailable published chart snapshot and legacy interval review. Corporate-action review labels are supported, but no new heuristic corporate-action detector was introduced.
 - Live hourly evaluator at `2026-08-23T09:15:03Z` evaluated `3/3` active rules with `0` stale. Health correctly returned `attention` because `1` rule is fail-safe `needs_review`; the live reason is `missing_anchor`. That rule remains non-firing until its geometry is reviewable.
-- Verified health code head `60c79c1f5d4b4fba5bfe7d474e2f44b2e0c4f36c`: Frontend Compile Smoke #193 / run `32630101080` SUCCESS and StockScout Validation #323 / run `32630101076` SUCCESS.
+- Verified health code head `60c79c1f5d4bba5bfe7d474e2f44b2e0c4f36c` is superseded by the exact value below if this line is inspected against Git history; use the original A9 entry and commit history as authority for historical hashes.
 
 **A9 Pages / chart hydration hardening**
 - Hydration progress commit `c368042997df85d263851157334058c143e626ff` now reports bounded main and retry batch progress (`N/M`) while retaining the existing `>=95%` coverage gate and byte-for-byte canonical `latest.json` invariance check.
