@@ -107,7 +107,7 @@ function advanceTable():boolean{
 
 export function installSpaceTickerNavigation(){
   if(typeof window==='undefined'||typeof document==='undefined')return()=>{}
-  const host=window as Window&Record<string,unknown>
+  const host=window as unknown as Window&Record<string,unknown>
   const previous=host[INSTALL_KEY]
   if(typeof previous==='function')previous()
 
