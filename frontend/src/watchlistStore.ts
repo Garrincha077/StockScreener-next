@@ -1,14 +1,26 @@
 import {useSyncExternalStore} from 'react'
 
-const WATCHLIST_KEY='stockscout-watchlist'
+export const WATCHLIST_KEY='stockscout-watchlist'
 const EMPTY_WATCHLIST:string[]=[]
+
+export function normalizeWatchlist(value:unknown):string[]{
+  if(!Array.isArray(value))return EMPTY_WATCHLIST
+  const seen=new Set<string>()
+  const normalized:string[]=[]
+  for(const item of value){
+    if(typeof item!=='string')continue
+    const ticker=item.trim().toUpperCase()
+    if(!ticker||seen.has(ticker))continue
+    seen.add(ticker)
+    normalized.push(ticker)
+  }
+  return normalized
+}
 
 function readWatchlist():string[]{
   if(typeof localStorage==='undefined')return EMPTY_WATCHLIST
-  try{
-    const value=JSON.parse(localStorage.getItem(WATCHLIST_KEY)||'[]')
-    return Array.isArray(value)?value.filter((ticker):ticker is string=>typeof ticker==='string'):EMPTY_WATCHLIST
-  }catch{return EMPTY_WATCHLIST}
+  try{return normalizeWatchlist(JSON.parse(localStorage.getItem(WATCHLIST_KEY)||'[]'))}
+  catch{return EMPTY_WATCHLIST}
 }
 
 let current=readWatchlist()
@@ -19,8 +31,8 @@ function subscribe(listener:()=>void){listeners.add(listener);return()=>listener
 function getSnapshot(){return current}
 function getServerSnapshot(){return EMPTY_WATCHLIST}
 function replaceWatchlist(next:string[]){
-  current=next
-  try{localStorage.setItem(WATCHLIST_KEY,JSON.stringify(next))}catch{}
+  current=normalizeWatchlist(next)
+  try{localStorage.setItem(WATCHLIST_KEY,JSON.stringify(current))}catch{}
   emit()
 }
 
