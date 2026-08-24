@@ -96,7 +96,9 @@ jobs:
         run: python verify_legacy_baseline.py
 
       - name: Fast-engine regression tests
-        run: python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_emerging_leader.py tests/test_lateral_base.py tests/test_opportunity_v2.py tests/test_opportunity_v2_integration.py tests/test_prepare_frontend_payloads.py tests/test_stamp_frontend_manifest.py tests/test_validate_frontend_charts.py -q
+        run: |
+          python -m pytest tests/test_fast_batch_processor_regression.py tests/test_vcp_mapping.py tests/test_fundamental_evidence.py tests/test_group_leadership.py tests/test_emerging_leader.py tests/test_lateral_base.py tests/test_opportunity_v2.py tests/test_opportunity_v2_integration.py tests/test_prepare_frontend_payloads.py tests/test_stamp_frontend_manifest.py tests/test_validate_frontend_charts.py -q
+          bash tests/test_sync_persistent_outputs.sh
 
       - name: Preserve previous terminal snapshot
         shell: bash
@@ -331,22 +333,7 @@ jobs:
       - name: Sync persistent outputs to source branch
         if: ${{ (github.event_name == 'schedule' || inputs.persist_outputs) && steps.commit.outputs.has_changes == 'true' }}
         shell: bash
-        run: |
-          pushed=false
-          for attempt in 1 2 3; do
-            echo "Sync attempt $attempt/3"
-            git fetch origin "${GITHUB_REF_NAME}"
-            if git rebase "origin/${GITHUB_REF_NAME}" && git push origin HEAD:"${GITHUB_REF_NAME}"; then
-              pushed=true
-              break
-            fi
-            git rebase --abort || true
-            sleep $((attempt * 3))
-          done
-          if [ "$pushed" != true ]; then
-            echo "::error::Canonical push failed after retries; Pages deployment is blocked to prevent publishing data that is not persisted in Git."
-            exit 1
-          fi
+        run: bash scripts/sync_persistent_outputs.sh origin "${GITHUB_REF_NAME}" 3
 
       - name: Upload recovery artifact
         if: always()
@@ -362,6 +349,8 @@ jobs:
             frontend/public/data/core.json
             frontend/public/data/manifest.json
             frontend/public/data/shadow/legacy-confirmation.json
+            frontend/public/data/charts/
+            frontend/public/data/legacy/
           if-no-files-found: warn
           retention-days: 14
 
