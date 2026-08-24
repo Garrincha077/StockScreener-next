@@ -1,0 +1,266 @@
+name: Recover Validated Nightly Snapshot
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_id:
+        description: 'Failed Daily Stock Screening run ID with a valid scan-state artifact'
+        required: true
+        type: string
+  push:
+    branches: [main]
+    paths:
+      - '.github/recovery/scan_run_id.txt'
+
+concurrency:
+  group: stockscout-nightly-recovery
+  cancel-in-progress: false
+
+permissions: {}
+
+jobs:
+  recover:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      actions: read
+      contents: write
+    steps:
+      - name: Checkout controlled main baseline
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve source run
+        id: source
+        shell: bash
+        env:
+          DISPATCH_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          set -euo pipefail
+          RUN_ID="${DISPATCH_RUN_ID:-}"
+          if [ -z "$RUN_ID" ]; then
+            test -s .github/recovery/scan_run_id.txt
+            RUN_ID=$(tr -dc '0-9' < .github/recovery/scan_run_id.txt)
+          fi
+          if ! [[ "$RUN_ID" =~ ^[0-9]+$ ]]; then
+            echo "::error::Invalid recovery run ID: $RUN_ID"
+            exit 1
+          fi
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "Recovering validated scan artifact from run $RUN_ID"
+
+      - name: Verify source workflow run is the failed scheduled main nightly
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ steps.source.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          curl --fail --silent --show-error --location \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GITHUB_REPOSITORY}/actions/runs/${RUN_ID}" \
+            --output /tmp/source-run.json
+          python - <<'PY'
+          import json, os
+          run=json.load(open('/tmp/source-run.json'))
+          expected_id=str(os.environ['RUN_ID'])
+          checks={
+              'id': str(run.get('id')) == expected_id,
+              'name': run.get('name') == 'Daily Stock Screening (Post-Market)',
+              'event': run.get('event') == 'schedule',
+              'branch': run.get('head_branch') == 'main',
+              'status': run.get('status') == 'completed',
+              'conclusion': run.get('conclusion') == 'failure',
+          }
+          failed=[name for name, ok in checks.items() if not ok]
+          if failed:
+              raise SystemExit(f'Unsafe recovery source run; failed checks: {failed}; run={run}')
+          print(f"Verified scheduled failed nightly run {expected_id} at {run.get('head_sha')}")
+          PY
+
+      - name: Download exact recovery artifact
+        uses: actions/download-artifact@v4
+        with:
+          github-token: ${{ github.token }}
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.run_id }}
+          pattern: scan-state-*-${{ steps.source.outputs.run_id }}
+          path: recovery
+          merge-multiple: true
+
+      - name: Restore validated canonical snapshot only
+        id: restored
+        shell: bash
+        env:
+          RUN_ID: ${{ steps.source.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          test -s recovery/data/daily_scans/latest_optimized_scan.txt
+          test -s recovery/data/daily_scans/latest_scan_meta.json
+          test -s recovery/frontend/public/data/latest.json
+          test -s recovery/frontend/public/data/core.json
+          test -s recovery/frontend/public/data/manifest.json
+          test -s recovery/frontend/public/data/shadow/legacy-confirmation.json
+
+          mkdir -p data/daily_scans frontend/public/data/shadow
+          cp recovery/data/daily_scans/latest_optimized_scan.txt data/daily_scans/latest_optimized_scan.txt
+          cp recovery/data/daily_scans/latest_scan_meta.json data/daily_scans/latest_scan_meta.json
+          cp recovery/frontend/public/data/latest.json frontend/public/data/latest.json
+          cp recovery/frontend/public/data/core.json frontend/public/data/core.json
+          cp recovery/frontend/public/data/manifest.json frontend/public/data/manifest.json
+          cp recovery/frontend/public/data/shadow/legacy-confirmation.json frontend/public/data/shadow/legacy-confirmation.json
+
+          python - <<'PY'
+          import hashlib, json, os
+          from pathlib import Path
+          run_id=os.environ['RUN_ID']
+          meta=json.loads(Path('data/daily_scans/latest_scan_meta.json').read_text(encoding='utf-8'))
+          manifest=json.loads(Path('frontend/public/data/manifest.json').read_text(encoding='utf-8'))
+          canonical=Path('frontend/public/data/latest.json').read_bytes()
+          canonical_sha=hashlib.sha256(canonical).hexdigest()
+          if str(meta.get('workflow_run_id')) != run_id:
+              raise SystemExit(f"Artifact run mismatch: meta={meta.get('workflow_run_id')} expected={run_id}")
+          source=(manifest.get('provenance') or {}).get('source') or {}
+          if str(source.get('workflowRunId')) != run_id:
+              raise SystemExit(f"Manifest source run mismatch: {source.get('workflowRunId')} != {run_id}")
+          if source.get('sha256') != canonical_sha:
+              raise SystemExit('Recovered manifest canonical SHA mismatch')
+          generated=json.loads(canonical).get('generatedAt')
+          if meta.get('generated_at_utc') != generated:
+              raise SystemExit('Recovered scan metadata generatedAt mismatch')
+          print(f"Recovered canonical SHA {canonical_sha} generatedAt {generated}")
+          Path('/tmp/recovered-canonical.sha').write_text(canonical_sha + '\n', encoding='utf-8')
+          PY
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Re-verify recovered canonical/model/LEGACY invariants
+        run: |
+          python validate_canonical_dataset.py
+          python audit_pipeline_models.py
+          python audit_fundamental_evidence.py
+          python verify_legacy_baseline.py
+
+      - name: Rehydrate charts read-only at the recovered snapshot date
+        run: python hydrate_frontend_charts_readonly.py
+
+      - name: Rebuild deterministic client projections
+        run: |
+          python prepare_frontend_payloads.py
+          python stamp_frontend_manifest.py \
+            --source-meta data/daily_scans/latest_scan_meta.json \
+            --source-repository "$GITHUB_REPOSITORY" \
+            --source-ref main
+          python stamp_frontend_manifest.py \
+            --source-meta data/daily_scans/latest_scan_meta.json \
+            --source-repository "$GITHUB_REPOSITORY" \
+            --source-ref main \
+            --verify-only
+          test "$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)" = "$(cat /tmp/recovered-canonical.sha)"
+          python validate_frontend_charts.py frontend/public --strict --minimum-coverage 0.95
+
+      - name: Persist recovered canonical outputs without losing local chart shards
+        shell: bash
+        env:
+          RUN_ID: ${{ steps.source.outputs.run_id }}
+        run: |
+          set -euo pipefail
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add -f data/daily_scans/latest_optimized_scan.txt
+          git add -f data/daily_scans/latest_scan_meta.json
+          git add -f frontend/public/data/latest.json
+          git add -f frontend/public/data/core.json
+          git add -f frontend/public/data/manifest.json
+          git add -f frontend/public/data/shadow/legacy-confirmation.json
+
+          if ! git diff --staged --quiet; then
+            SCAN_DATE=$(python - <<'PY'
+          import json
+          print((json.load(open('frontend/public/data/manifest.json')).get('marketSession') or {}).get('date') or 'unknown')
+          PY
+            )
+            git commit -m "data: recover validated scan ${SCAN_DATE} (run ${RUN_ID})"
+          fi
+
+          STASHED=false
+          if [ -n "$(git status --porcelain --untracked-files=normal)" ]; then
+            echo "Preserving generated chart/projection files across main sync"
+            git status --short
+            git stash push --include-untracked -m "stockscout-recovery-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+            STASHED=true
+          fi
+
+          pushed=false
+          for attempt in 1 2 3; do
+            echo "Recovery sync attempt $attempt/3"
+            git fetch origin main
+            if git rebase origin/main && git push origin HEAD:main; then
+              pushed=true
+              break
+            fi
+            git rebase --abort || true
+            sleep $((attempt * 3))
+          done
+          if [ "$pushed" != true ]; then
+            echo "::error::Recovered canonical snapshot could not be persisted to main."
+            exit 1
+          fi
+
+          if [ "$STASHED" = true ]; then
+            if ! git stash pop --quiet; then
+              git status --short
+              echo "::error::Could not restore recovered chart/projection working tree after sync."
+              exit 1
+            fi
+          fi
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install terminal dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Test and build terminal from recovered scan
+        working-directory: frontend
+        run: npm run check
+
+      - name: Verify recovered Pages artifact
+        run: python validate_frontend_charts.py frontend/dist --strict --minimum-coverage 0.95
+
+      - name: Upload recovered Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: frontend/dist
+          retention-days: 14
+
+  deploy-pages:
+    needs: recover
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stockscout-pages-deploy
+      cancel-in-progress: false
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy recovered validated terminal to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
