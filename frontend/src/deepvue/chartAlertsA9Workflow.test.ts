@@ -46,15 +46,15 @@ test('Stable fallback remains validated but cannot periodically overwrite promot
   assert.match(preview,/Refuse a Stable snapshot that advanced during build/)
 })
 
-test('production-candidate Next nightly is staggered post-close, persistent, strict and validation-isolated',()=>{
+test('production-candidate Next nightly is post-close, persistent, strict and validation-isolated',()=>{
   assert.match(nightly,/schedule:/)
-  assert.match(nightly,/cron: '45 22 \* \* 1-5'/)
-  assert.match(nightly,/staggers Next one hour behind Stable/)
+  assert.match(nightly,/cron: '30 21 \* \* 1-5'/)
   assert.match(nightly,/github\.event_name == 'schedule' \|\| inputs\.persist_outputs/)
   assert.match(nightly,/github\.event_name == 'schedule' \|\| inputs\.deploy_pages/)
   assert.match(nightly,/stockscout-validation-scan/)
   assert.match(nightly,/inputs\.persist_outputs == false/)
   assert.match(nightly,/inputs\.deploy_pages == false/)
+  assert.match(nightly,/validate_scan_session\.py/)
   assert.match(nightly,/stamp_frontend_manifest\.py/)
   assert.match(nightly,/--source-repository "\$GITHUB_REPOSITORY"/)
   assert.match(nightly,/--source-ref "\$GITHUB_REF_NAME"/)
