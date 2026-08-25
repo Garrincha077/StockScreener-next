@@ -1,0 +1,173 @@
+{
+  "consumerContract": {
+    "canonicalMethodologyRepository": "Garrincha077/NUEVO",
+    "lastGoodFallbackAllowed": true,
+    "mode": "READ_ONLY_SIDECAR",
+    "mutatesStockScoutScoring": false,
+    "reconstructsGmli": false
+  },
+  "dataHealth": {
+    "status": "HEALTHY"
+  },
+  "generatedAt": "2026-08-25T11:19:47.092Z",
+  "history": {
+    "fiscal": [
+      {
+        "available_date": "2026-07-31",
+        "deficit_pct_gdp": 5.5566,
+        "fiscal_impulse_pp": -0.6669,
+        "observation_month": "2026-06",
+        "regime": "NEUTRAL",
+        "score": 45.9084
+      }
+    ],
+    "funding": [
+      {
+        "available_date": "2026-07-31",
+        "observation_month": "2026-06",
+        "observed_conditions_score": 37.9684,
+        "regime": "RESTRICTIVE",
+        "score": 37.9684,
+        "structural_support_score": 48.0
+      }
+    ],
+    "market": [
+      {
+        "assets_positive": {
+          "DBC": false,
+          "GLD": true,
+          "QQQ": true,
+          "SPY": true
+        },
+        "month": "2026-07",
+        "positive": 3,
+        "score_0_2": 2,
+        "total": 4
+      }
+    ],
+    "windowMonths": 120
+  },
+  "moneyExtremes": {
+    "construction": {
+      "lookahead": false,
+      "minimum_months": 36,
+      "rolling_window_months": 120
+    },
+    "evidenceTier": "RESEARCH_DIAGNOSTIC",
+    "latest": {
+      "available_date": "2026-07-31",
+      "fx_neutral_accel3": {
+        "band": "NORMAL",
+        "percentile": 52.9166666667,
+        "value_pp": -0.0068098923,
+        "z": 0.0311947046
+      },
+      "fx_neutral_level": {
+        "band": "NORMAL",
+        "percentile": 46.25,
+        "value_pct": 5.9462772362,
+        "z": -0.33072067
+      },
+      "month": "2026-06",
+      "usd_accel3": {
+        "band": "NORMAL",
+        "percentile": 32.0833333333,
+        "value_pp": -1.6856176248,
+        "z": -0.5362491399
+      },
+      "usd_level": {
+        "band": "NORMAL",
+        "percentile": 70.4166666667,
+        "value_pct": 7.956974993,
+        "z": 0.3067288789
+      }
+    },
+    "rows": [],
+    "scoringEffect": "NONE",
+    "version": "GMLI_MONEY_HISTORICAL_EXTREMES_V1"
+  },
+  "regime": {
+    "fiscal": {
+      "automaticGlobalConvictionWeight": 0,
+      "availableDate": "2026-07-31",
+      "deficitPctGdp": 5.5566,
+      "fiscalImpulsePp": -0.6669,
+      "observationMonth": "2026-06",
+      "regime": "NEUTRAL",
+      "role": "MIXED",
+      "score": 45.9084,
+      "version": "GMLI_FISCAL_V2_DEFICIT_IMPULSE"
+    },
+    "funding": {
+      "availableDate": "2026-07-31",
+      "observationMonth": "2026-06",
+      "observedConditionsScore": 37.9684,
+      "regime": "RESTRICTIVE",
+      "role": "REACTIVE_CONFIRMATION",
+      "score": 37.9684,
+      "structuralSupportScore": 48.0,
+      "version": "GMLI_FUNDING_V2_EFFECTIVE_CONDITIONS"
+    },
+    "label": "NEUTRAL",
+    "market": {
+      "assetsPositive": {
+        "DBC": false,
+        "GLD": true,
+        "QQQ": true,
+        "SPY": true
+      },
+      "month": "2026-07",
+      "positive": 3,
+      "role": "REACTIVE_CONFIRMATION",
+      "score0To2": 2,
+      "total": 4
+    },
+    "money": {
+      "agreement": "AGREE",
+      "availableDate": "2026-07-31",
+      "freshness": "FRESH",
+      "fxNeutralRegime": "NEUTRAL",
+      "fxNeutralScore": 44.5,
+      "fxNeutralYoYPct": 5.946277,
+      "observationMonth": "2026-06",
+      "usdRegime": "NEUTRAL",
+      "usdScore": 55.1,
+      "usdYoYPct": 7.956975,
+      "version": "GMLI_GLOBAL_MONEY_V2_PBOC_OFFICIAL"
+    },
+    "provisional": false,
+    "tilt": "MILD_POSITIVE"
+  },
+  "schemaVersion": 1,
+  "signalRoles": {
+    "fiscal": {
+      "interpretation": "Fiscal/policy context with positive fixed SPY 12M usefulness but weak, regime-dependent temporal precedence; not a clean leading factor.",
+      "role": "MIXED"
+    },
+    "funding": {
+      "interpretation": "Financial-conditions/friction overlay used primarily as current-state confirmation and conviction context.",
+      "role": "REACTIVE_CONFIRMATION"
+    },
+    "market": {
+      "interpretation": "Completed-month cross-asset price-turn confirmation.",
+      "role": "REACTIVE_CONFIRMATION"
+    },
+    "money": {
+      "interpretation": "Upstream 3-12M Money/liquidity regime signal.",
+      "role": "LEADING"
+    },
+    "scoringEffect": "NONE",
+    "version": "GMLI_SIGNAL_ROLE_TAXONOMY_V1"
+  },
+  "source": {
+    "baseUrl": "https://raw.githubusercontent.com/Garrincha077/NUEVO/gh-pages/api",
+    "hashes": {},
+    "ref": "gh-pages",
+    "reportSchema": "gmli-report-v1.6",
+    "repository": "Garrincha077/NUEVO",
+    "upstreamRefreshPolicy": "FETCH_FIRST_WITH_PER_LAYER_LAST_GOOD_FALLBACK",
+    "upstreamRefreshStatus": "PASS_FETCH_FIRST"
+  },
+  "status": "BOOTSTRAP_LAST_GOOD",
+  "stockScoutImpact": "none; read-only independent macro context"
+}
