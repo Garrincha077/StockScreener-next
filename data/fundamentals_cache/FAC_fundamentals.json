@@ -13,7 +13,47 @@
     },
     "eps_qoq_change": 33.37186289021571,
     "operating_margin": 0,
-    "inventory_breakdown_available": false
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_operating_cash_flow": {
+      "2025-03-31 00:00:00": -6103000.0,
+      "2026-03-31 00:00:00": -6120000.0
+    },
+    "operating_cash_flow_qoq_change": -0.2785515320334262,
+    "operating_cash_flow_yoy_change": null,
+    "quarterly_capex": {
+      "2025-03-31 00:00:00": -172000.0,
+      "2026-03-31 00:00:00": -487000.0
+    },
+    "quarterly_free_cash_flow": {
+      "2025-03-31 00:00:00": -6275000.0,
+      "2026-03-31 00:00:00": -6607000.0
+    },
+    "free_cash_flow_qoq_change": -5.290836653386454,
+    "free_cash_flow_yoy_change": null,
+    "free_cash_flow_margin": null,
+    "quarterly_cash": {
+      "2026-03-31 00:00:00": 25449000.0
+    },
+    "cash_latest": 25449000.0,
+    "quarterly_total_debt": {
+      "2026-03-31 00:00:00": 33114000.0
+    },
+    "total_debt_latest": 33114000.0,
+    "total_debt_qoq_change": null,
+    "total_debt_yoy_change": null,
+    "net_debt_latest": 7665000.0,
+    "quarterly_shares_outstanding": {
+      "2026-03-31 00:00:00": 107023245.0
+    },
+    "shares_outstanding_latest": 107023245.0,
+    "share_dilution_yoy_change": null,
+    "fundamental_periods": [
+      "2025-03-31",
+      "2026-03-31"
+    ]
   },
-  "fetched_at": "2026-08-18T07:19:55.064577"
+  "fetched_at": "2026-08-18T07:19:55.064577",
+  "extended_fetched_at": "2026-08-25T22:08:43.390984"
 }

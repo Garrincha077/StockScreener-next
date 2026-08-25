@@ -1,28 +1,30 @@
 {
   "data": {
     "ticker": "ALG",
-    "fetch_date": "2026-08-14T13:24:03.162315",
+    "fetch_date": "2026-08-25T21:59:07.695906",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": 390950000.0,
       "2025-06-30 00:00:00": 419073000.0,
       "2025-09-30 00:00:00": 420042000.0,
       "2025-12-31 00:00:00": 373650000.0,
-      "2026-03-31 00:00:00": 417149000.0
+      "2026-03-31 00:00:00": 417149000.0,
+      "2026-06-30 00:00:00": NaN
     },
-    "revenue_qoq_change": 11.64164324902984,
-    "revenue_yoy_change": 6.701368461440081,
+    "revenue_qoq_change": null,
+    "revenue_yoy_change": null,
     "quarterly_eps": {
-      "2025-03-31 00:00:00": 2.64,
+      "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 2.57,
       "2025-09-30 00:00:00": 2.1,
       "2025-12-31 00:00:00": 1.28,
-      "2026-03-31 00:00:00": 2.41
+      "2026-03-31 00:00:00": 2.41,
+      "2026-06-30 00:00:00": 2.55
     },
-    "eps_qoq_change": 88.28125000000001,
-    "eps_yoy_change": -8.712121212121211,
-    "gross_margin": 25.12,
-    "margin_change": 2.38,
-    "operating_margin": 10.11,
+    "eps_qoq_change": 5.809128630705381,
+    "eps_yoy_change": -0.7782101167315182,
+    "gross_margin": NaN,
+    "margin_change": NaN,
+    "operating_margin": NaN,
     "quarterly_inventory": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": 356406000.0,
@@ -32,7 +34,7 @@
       "2026-03-31 00:00:00": 425538000.0
     },
     "inventory_qoq_change": 11.03,
-    "inventory_to_sales_ratio": 1.02,
+    "inventory_to_sales_ratio": NaN,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -106,6 +108,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-08-14T13:24:03.164889",
-  "extended_fetched_at": "2026-08-19T11:36:41.598235"
+  "fetched_at": "2026-08-25T21:59:07.797804",
+  "extended_fetched_at": "2026-08-25T21:59:07.797804"
 }
