@@ -1,0 +1,136 @@
+name: GMLI Context Update
+
+on:
+  workflow_dispatch:
+  schedule:
+    # GMLI Pages refreshes earlier in the UTC morning; consume its verified snapshot after that window.
+    - cron: '35 7 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'refresh_gmli_context.py'
+      - 'tests/test_refresh_gmli_context.py'
+      - 'frontend/src/GmliContextPage.tsx'
+      - 'frontend/src/gmli-context.css'
+      - 'frontend/src/Root.tsx'
+      - 'frontend/public/data/gmli/gmli-context.json'
+      - '.github/workflows/gmli_context_update.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'refresh_gmli_context.py'
+      - 'tests/test_refresh_gmli_context.py'
+      - 'frontend/src/GmliContextPage.tsx'
+      - 'frontend/src/gmli-context.css'
+      - 'frontend/src/Root.tsx'
+      - 'frontend/public/data/gmli/gmli-context.json'
+      - '.github/workflows/gmli_context_update.yml'
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: gmli-context-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Preserve last-good sidecar for substantive-change comparison
+        shell: bash
+        run: |
+          mkdir -p /tmp/gmli-before
+          if [ -s frontend/public/data/gmli/gmli-context.json ]; then
+            cp frontend/public/data/gmli/gmli-context.json /tmp/gmli-before/gmli-context.json
+          fi
+
+      - name: Run GMLI sidecar contract tests
+        run: python -m unittest tests.test_refresh_gmli_context -v
+
+      - name: Fetch and validate canonical GMLI outputs
+        id: refresh
+        shell: bash
+        run: |
+          set -euo pipefail
+          python refresh_gmli_context.py --allow-last-good | tee /tmp/gmli-refresh.json
+          grep -Eq '"status": "REFRESH_OK"|"status": "LAST_GOOD_FALLBACK"' /tmp/gmli-refresh.json
+          python refresh_gmli_context.py --validate-existing
+          STATUS=$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/gmli-refresh.json'))['status'])
+          PY
+          )
+          echo "status=$STATUS" >> "$GITHUB_OUTPUT"
+          echo "GMLI sidecar refresh status: $STATUS"
+
+      - name: Validate read-only GMLI publication contract
+        shell: bash
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path('frontend/public/data/gmli/gmli-context.json')
+          payload=json.loads(path.read_text(encoding='utf-8'))
+          assert payload['schemaVersion'] == 1
+          assert payload['stockScoutImpact'] == 'none; read-only independent macro context'
+          contract=payload['consumerContract']
+          assert contract['mode'] == 'READ_ONLY_SIDECAR'
+          assert contract['reconstructsGmli'] is False
+          assert contract['mutatesStockScoutScoring'] is False
+          assert contract['canonicalMethodologyRepository'] == 'Garrincha077/NUEVO'
+          regime=payload['regime']
+          assert regime['money']['version']
+          assert regime['money']['availableDate']
+          assert regime['funding']['availableDate']
+          assert regime['fiscal']['availableDate']
+          assert regime['market']['month']
+          assert payload['moneyExtremes']['scoringEffect'] == 'NONE'
+          assert payload['source']['repository'] == 'Garrincha077/NUEVO'
+          print('GMLI source generatedAt:', payload.get('generatedAt'))
+          print('Regime:', regime.get('label'), regime.get('tilt'))
+          print('Money:', regime['money']['usdScore'], regime['money']['fxNeutralScore'])
+          print('Funding:', regime['funding']['score'], regime['funding']['regime'])
+          print('Fiscal:', regime['fiscal']['score'], regime['fiscal']['regime'], 'weight', regime['fiscal'].get('automaticGlobalConvictionWeight'))
+          print('Market:', regime['market']['positive'], '/', regime['market']['total'])
+          print('StockScout impact:', payload['stockScoutImpact'])
+          PY
+
+      - name: Detect substantive GMLI context change
+        id: change
+        shell: bash
+        run: |
+          changed=true
+          if [ -s /tmp/gmli-before/gmli-context.json ] && cmp -s /tmp/gmli-before/gmli-context.json frontend/public/data/gmli/gmli-context.json; then
+            changed=false
+          fi
+          echo "changed=$changed" >> "$GITHUB_OUTPUT"
+          echo "Substantive GMLI context change: $changed"
+
+      - name: Commit changed GMLI sidecar
+        if: github.event_name != 'pull_request' && steps.change.outputs.changed == 'true' && steps.refresh.outputs.status == 'REFRESH_OK'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add frontend/public/data/gmli/gmli-context.json
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "data: refresh GMLI context"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
+
+      - name: Refresh Pages after main GMLI data update
+        if: github.event_name != 'pull_request' && github.ref_name == 'main' && steps.change.outputs.changed == 'true' && steps.refresh.outputs.status == 'REFRESH_OK'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run frontend_pages.yml --ref main
