@@ -1,7 +1,9 @@
 name: StockScout Full Validation
 
 # Final gate for StockScout Next scan/data/workflow changes.
-# Pages source/publish and nightly workflow changes are validation-gated as data-path changes.
+# Pages source/publish, nightly workflow and external sidecar contract changes are
+# validation-gated as data-path changes. Data-only GMLI refresh commits remain
+# isolated and do not trigger an expensive stock rescan.
 # Experimental development is gated by pull_request; push validation is reserved
 # for controlled main promotion so next-dev commits do not duplicate the same
 # expensive full scan. Reusable validation scans run non-persistent/non-deploying.
@@ -15,8 +17,11 @@ on:
       - '.github/workflows/validate_stable_snapshot_sync.yml'
       - '.github/workflows/deploy_latest_stable_preview.yml'
       - '.github/workflows/frontend_pages.yml'
+      - '.github/workflows/gmli_context_update.yml'
       - 'scripts/sync_persistent_outputs.sh'
       - 'tests/test_sync_persistent_outputs.sh'
+      - 'refresh_gmli_context.py'
+      - 'tests/test_refresh_gmli_context.py'
       - 'stamp_frontend_manifest.py'
       - 'validate_frontend_charts.py'
       - 'validate_scan_session.py'
@@ -32,8 +37,11 @@ on:
       - '.github/workflows/validate_stable_snapshot_sync.yml'
       - '.github/workflows/deploy_latest_stable_preview.yml'
       - '.github/workflows/frontend_pages.yml'
+      - '.github/workflows/gmli_context_update.yml'
       - 'scripts/sync_persistent_outputs.sh'
       - 'tests/test_sync_persistent_outputs.sh'
+      - 'refresh_gmli_context.py'
+      - 'tests/test_refresh_gmli_context.py'
       - 'stamp_frontend_manifest.py'
       - 'validate_frontend_charts.py'
       - 'validate_scan_session.py'
@@ -55,16 +63,18 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: LEGACY shadow, client projection and publication contract tests
+      - name: LEGACY shadow, GMLI sidecar, client projection and publication contract tests
         run: |
           python -m pip install --upgrade pip pytest pandas
           python -m pytest \
             tests/test_compute_legacy_confirmation.py \
             tests/test_build_legacy_confirmation_sidecar.py \
+            tests/test_refresh_gmli_context.py \
             tests/test_prepare_frontend_payloads.py \
             tests/test_stamp_frontend_manifest.py \
             tests/test_validate_frontend_charts.py \
             tests/test_validate_scan_session.py -q
+          python refresh_gmli_context.py --validate-existing
           bash tests/test_sync_persistent_outputs.sh
 
   full-scan:
