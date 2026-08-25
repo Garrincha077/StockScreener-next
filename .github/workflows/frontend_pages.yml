@@ -1,5 +1,7 @@
 name: Deploy StockScout Terminal
 
+# Code/data-only publisher for the latest verified Next canonical snapshot.
+# Stable fallback is intentionally isolated in deploy_latest_stable_preview.yml.
 on:
   push:
     branches: [main]
@@ -14,7 +16,6 @@ on:
       - 'build_legacy_confirmation_sidecar.py'
       - 'prepare_frontend_payloads.py'
       - 'stamp_frontend_manifest.py'
-      - 'hydrate_frontend_charts_readonly.py'
       - 'validate_frontend_charts.py'
       - '.github/workflows/frontend_pages.yml'
   workflow_dispatch:
@@ -30,9 +31,9 @@ jobs:
   build:
     runs-on: ubuntu-latest
     outputs:
-      stable_sha: ${{ steps.stable.outputs.sha }}
-      generated_at: ${{ steps.stable.outputs.generated_at }}
-      workflow_run_id: ${{ steps.stable.outputs.workflow_run_id }}
+      source_sha: ${{ steps.source.outputs.sha }}
+      generated_at: ${{ steps.source.outputs.generated_at }}
+      workflow_run_id: ${{ steps.source.outputs.workflow_run_id }}
       scan_id: ${{ steps.identity.outputs.scan_id }}
     steps:
       - uses: actions/checkout@v4
@@ -43,62 +44,58 @@ jobs:
           python-version: '3.11'
           cache: 'pip'
 
-      - name: Download latest Stable snapshot read-only
-        id: stable
+      - name: Validate checked-in authoritative Next snapshot
+        id: source
         shell: bash
         run: |
           set -euo pipefail
-          curl --fail --silent --show-error --location \
-            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/frontend/public/data/latest.json \
-            --output /tmp/stable-latest.json
-          curl --fail --silent --show-error --location \
-            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/data/daily_scans/latest_scan_meta.json \
-            --output /tmp/stable-scan-meta.json
-          STABLE_SHA=$(sha256sum /tmp/stable-latest.json | cut -d' ' -f1)
-          cp /tmp/stable-latest.json frontend/public/data/latest.json
-          python - <<'PY' > /tmp/stable-info.txt
+          test -s frontend/public/data/latest.json
+          test -s data/daily_scans/latest_scan_meta.json
+          SOURCE_SHA=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
+          python - <<'PY' > /tmp/next-source-info.txt
           import json
           from pathlib import Path
-          payload=json.loads(Path('/tmp/stable-latest.json').read_text(encoding='utf-8'))
-          meta=json.loads(Path('/tmp/stable-scan-meta.json').read_text(encoding='utf-8'))
+          payload=json.loads(Path('frontend/public/data/latest.json').read_text(encoding='utf-8'))
+          meta=json.loads(Path('data/daily_scans/latest_scan_meta.json').read_text(encoding='utf-8'))
           rows=payload.get('universe') or []
           generated=payload.get('generatedAt')
           if not rows or not generated:
-              raise SystemExit('Stable snapshot is incomplete')
+              raise SystemExit('Next canonical snapshot is incomplete')
           if not meta.get('workflow_run_id') or not meta.get('generated_at_utc') or not meta.get('source_commit'):
-              raise SystemExit('Stable scan metadata is incomplete')
+              raise SystemExit('Next scan metadata is incomplete')
           if meta.get('generated_at_utc') != generated:
-              raise SystemExit(f"Stable scan metadata mismatch: meta={meta.get('generated_at_utc')} canonical={generated}")
+              raise SystemExit(f"Next scan metadata mismatch: meta={meta.get('generated_at_utc')} canonical={generated}")
           print(generated)
           print(meta['workflow_run_id'])
           print(len(rows))
           PY
-          GENERATED_AT=$(sed -n '1p' /tmp/stable-info.txt)
-          WORKFLOW_RUN_ID=$(sed -n '2p' /tmp/stable-info.txt)
-          ROWS=$(sed -n '3p' /tmp/stable-info.txt)
-          echo "sha=$STABLE_SHA" >> "$GITHUB_OUTPUT"
+          GENERATED_AT=$(sed -n '1p' /tmp/next-source-info.txt)
+          WORKFLOW_RUN_ID=$(sed -n '2p' /tmp/next-source-info.txt)
+          ROWS=$(sed -n '3p' /tmp/next-source-info.txt)
+          echo "sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
           echo "generated_at=$GENERATED_AT" >> "$GITHUB_OUTPUT"
           echo "workflow_run_id=$WORKFLOW_RUN_ID" >> "$GITHUB_OUTPUT"
-          echo "Stable generatedAt: $GENERATED_AT"
-          echo "Stable workflow run: $WORKFLOW_RUN_ID"
-          echo "Stable universe: $ROWS"
-          echo "Stable sha256: $STABLE_SHA"
+          echo "Next generatedAt: $GENERATED_AT"
+          echo "Next source workflow run: $WORKFLOW_RUN_ID"
+          echo "Next universe: $ROWS"
+          echo "Next canonical sha256: $SOURCE_SHA"
 
       - name: Build lightweight client payload + LEGACY shadow
         id: identity
         shell: bash
         run: |
           set -euo pipefail
-          test -s frontend/public/data/latest.json
           BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           python prepare_frontend_payloads.py
           python stamp_frontend_manifest.py \
             --manifest frontend/public/data/manifest.json \
             --canonical frontend/public/data/latest.json \
-            --source-meta /tmp/stable-scan-meta.json
+            --source-meta data/daily_scans/latest_scan_meta.json \
+            --source-repository "${{ github.repository }}" \
+            --source-ref main
           AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           test "$BEFORE" = "$AFTER"
-          test "$AFTER" = "${{ steps.stable.outputs.sha }}"
+          test "$AFTER" = "${{ steps.source.outputs.sha }}"
           test -s frontend/public/data/core.json
           test -s frontend/public/data/manifest.json
           test -s frontend/public/data/shadow/legacy-confirmation.json
@@ -112,10 +109,10 @@ jobs:
           assert core.get('generatedAt') == manifest.get('generatedAt') == (shadow.get('source') or {}).get('generatedAt')
           assert len(core.get('universe') or []) == manifest.get('universe') == shadow.get('total')
           assert shadow.get('affectsStockScout') is False
-          assert source.get('repository') == 'Garrincha077/stock-screener2'
+          assert source.get('repository') == '${{ github.repository }}'
           assert source.get('ref') == 'main'
-          assert source.get('workflowRunId') == '${{ steps.stable.outputs.workflow_run_id }}'
-          assert source.get('sha256') == '${{ steps.stable.outputs.sha }}'
+          assert source.get('workflowRunId') == '${{ steps.source.outputs.workflow_run_id }}'
+          assert source.get('sha256') == '${{ steps.source.outputs.sha }}'
           assert publication.get('repository') == '${{ github.repository }}'
           assert publication.get('workflowRunId') == '${{ github.run_id }}'
           assert manifest.get('scanId')
@@ -127,50 +124,7 @@ jobs:
           echo "scan_id=$SCAN_ID" >> "$GITHUB_OUTPUT"
           cat /tmp/next-identity.txt
 
-      - name: Restore validated chart shards for this Stable snapshot
-        id: chart-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: frontend/public/data/charts
-          key: stockscout-next-charts-v2-${{ runner.os }}-${{ steps.stable.outputs.sha }}-${{ hashFiles('hydrate_frontend_charts_readonly.py') }}
-
-      - name: Report validated chart cache reuse
-        if: steps.chart-cache.outputs.cache-hit == 'true'
-        shell: bash
-        run: |
-          echo "Reusing validated 5Y chart shards for Stable sha256 ${{ steps.stable.outputs.sha }}"
-          echo "Cached chart shards: $(find frontend/public/data/charts -name '*.json' 2>/dev/null | wc -l)"
-          du -sh frontend/public/data/charts || true
-
-      - name: Build read-only adjusted 5Y chart shards on cache miss
-        id: chart-hydrate
-        if: steps.chart-cache.outputs.cache-hit != 'true'
-        shell: bash
-        run: |
-          python -m pip install --upgrade pip
-          pip install yfinance pandas
-          BEFORE=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
-          HYDRATED=false
-          for attempt in 1 2 3; do
-            echo "Chart hydration attempt $attempt/3"
-            rm -rf frontend/public/data/charts
-            if python hydrate_frontend_charts_readonly.py; then
-              HYDRATED=true
-              break
-            fi
-            if [ "$attempt" -lt 3 ]; then
-              sleep $((attempt * 5))
-            fi
-          done
-          echo "hydrated=$HYDRATED" >> "$GITHUB_OUTPUT"
-          if [ "$HYDRATED" != true ]; then
-            echo "::warning::Unable to rebuild full chart shards after 3 attempts; strict publication coverage gate will decide whether deploy may continue."
-          fi
-          mkdir -p frontend/public/data/charts
-          AFTER=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
-          test "$BEFORE" = "$AFTER"
-
-      - name: Refresh chart descriptor and enforce publication data quality
+      - name: Enforce authoritative Next chart/data quality
         shell: bash
         run: |
           set -euo pipefail
@@ -179,15 +133,19 @@ jobs:
           python stamp_frontend_manifest.py \
             --manifest frontend/public/data/manifest.json \
             --canonical frontend/public/data/latest.json \
-            --source-meta /tmp/stable-scan-meta.json
+            --source-meta data/daily_scans/latest_scan_meta.json \
+            --source-repository "${{ github.repository }}" \
+            --source-ref main
           python stamp_frontend_manifest.py \
             --manifest frontend/public/data/manifest.json \
             --canonical frontend/public/data/latest.json \
-            --source-meta /tmp/stable-scan-meta.json \
+            --source-meta data/daily_scans/latest_scan_meta.json \
+            --source-repository "${{ github.repository }}" \
+            --source-ref main \
             --verify-only
           FINAL=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           test "$BEFORE" = "$FINAL"
-          test "$FINAL" = "${{ steps.stable.outputs.sha }}"
+          test "$FINAL" = "${{ steps.source.outputs.sha }}"
           python validate_frontend_charts.py frontend/public --strict --minimum-coverage 0.95
           python - <<'PY'
           import json
@@ -200,29 +158,34 @@ jobs:
           print('Authoritative scanId:', manifest.get('scanId'))
           print('Chart coverage:', charts.get('coveragePct'))
           PY
-          echo "Stable canonical latest.json unchanged in workspace: $FINAL"
+          echo "Next canonical latest.json unchanged in workspace: $FINAL"
           echo "Chart shards: $(find frontend/public/data/charts -name '*.json' 2>/dev/null | wc -l)"
           du -sh frontend/public/data
 
-      - name: Save validated chart shards for this Stable snapshot
-        if: steps.chart-cache.outputs.cache-hit != 'true' && steps.chart-hydrate.outputs.hydrated == 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: frontend/public/data/charts
-          key: stockscout-next-charts-v2-${{ runner.os }}-${{ steps.stable.outputs.sha }}-${{ hashFiles('hydrate_frontend_charts_readonly.py') }}
-
-      - name: Refuse a Stable snapshot that advanced during build
+      - name: Refuse a Next canonical snapshot that advanced during build
         shell: bash
         env:
-          BUILT_STABLE_SHA: ${{ steps.stable.outputs.sha }}
+          BUILT_SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          BUILT_GENERATED_AT: ${{ steps.source.outputs.generated_at }}
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location \
-            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/frontend/public/data/latest.json \
-            --output /tmp/stable-latest-recheck.json
-          CURRENT_STABLE_SHA=$(sha256sum /tmp/stable-latest-recheck.json | cut -d' ' -f1)
-          test "$CURRENT_STABLE_SHA" = "$BUILT_STABLE_SHA"
-          echo "Stable snapshot still current: $CURRENT_STABLE_SHA"
+            https://raw.githubusercontent.com/${{ github.repository }}/main/frontend/public/data/latest.json \
+            --output /tmp/next-latest-recheck.json
+          curl --fail --silent --show-error --location \
+            https://raw.githubusercontent.com/${{ github.repository }}/main/data/daily_scans/latest_scan_meta.json \
+            --output /tmp/next-meta-recheck.json
+          CURRENT_SOURCE_SHA=$(sha256sum /tmp/next-latest-recheck.json | cut -d' ' -f1)
+          test "$CURRENT_SOURCE_SHA" = "$BUILT_SOURCE_SHA"
+          python - <<'PY'
+          import json, os
+          latest=json.load(open('/tmp/next-latest-recheck.json'))
+          meta=json.load(open('/tmp/next-meta-recheck.json'))
+          expected=os.environ['BUILT_GENERATED_AT']
+          assert latest.get('generatedAt') == expected
+          assert meta.get('generated_at_utc') == expected
+          print('Next snapshot still current:', expected)
+          PY
 
       - uses: actions/setup-node@v4
         with:
@@ -236,7 +199,7 @@ jobs:
         working-directory: frontend
         run: npm run check
 
-      - name: Enforce Pages artifact chart coverage
+      - name: Enforce Pages artifact chart coverage and identity
         shell: bash
         run: |
           test ! -e frontend/dist/data/latest.json
@@ -247,8 +210,10 @@ jobs:
           source=(manifest.get('provenance') or {}).get('source') or {}
           publication=(manifest.get('provenance') or {}).get('publication') or {}
           assert manifest.get('scanId') == '${{ steps.identity.outputs.scan_id }}'
-          assert source.get('sha256') == '${{ steps.stable.outputs.sha }}'
-          assert source.get('workflowRunId') == '${{ steps.stable.outputs.workflow_run_id }}'
+          assert source.get('repository') == '${{ github.repository }}'
+          assert source.get('ref') == 'main'
+          assert source.get('sha256') == '${{ steps.source.outputs.sha }}'
+          assert source.get('workflowRunId') == '${{ steps.source.outputs.workflow_run_id }}'
           assert publication.get('workflowRunId') == '${{ github.run_id }}'
           print('Pages artifact identity verified:', manifest.get('scanId'))
           PY
@@ -272,19 +237,25 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
-      - name: Verify Stable snapshot still matches built artifact
+      - name: Verify authoritative Next snapshot still matches built artifact
         shell: bash
         env:
-          BUILT_STABLE_SHA: ${{ needs.build.outputs.stable_sha }}
+          BUILT_SOURCE_SHA: ${{ needs.build.outputs.source_sha }}
+          BUILT_GENERATED_AT: ${{ needs.build.outputs.generated_at }}
         run: |
           set -euo pipefail
           curl --fail --silent --show-error --location \
-            https://raw.githubusercontent.com/Garrincha077/stock-screener2/main/frontend/public/data/latest.json \
-            --output /tmp/stable-latest-deploy-check.json
-          CURRENT_STABLE_SHA=$(sha256sum /tmp/stable-latest-deploy-check.json | cut -d' ' -f1)
-          test "$CURRENT_STABLE_SHA" = "$BUILT_STABLE_SHA"
-          echo "Deploying scan ${{ needs.build.outputs.scan_id }} from Stable workflow ${{ needs.build.outputs.workflow_run_id }} snapshot ${{ needs.build.outputs.generated_at }}"
+            https://raw.githubusercontent.com/${{ github.repository }}/main/frontend/public/data/latest.json \
+            --output /tmp/next-latest-deploy-check.json
+          CURRENT_SOURCE_SHA=$(sha256sum /tmp/next-latest-deploy-check.json | cut -d' ' -f1)
+          test "$CURRENT_SOURCE_SHA" = "$BUILT_SOURCE_SHA"
+          python - <<'PY'
+          import json, os
+          latest=json.load(open('/tmp/next-latest-deploy-check.json'))
+          assert latest.get('generatedAt') == os.environ['BUILT_GENERATED_AT']
+          PY
+          echo "Deploying scan ${{ needs.build.outputs.scan_id }} from Next workflow ${{ needs.build.outputs.workflow_run_id }} snapshot ${{ needs.build.outputs.generated_at }}"
 
-      - name: Deploy read-only terminal build to GitHub Pages
+      - name: Deploy authoritative Next terminal build to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
