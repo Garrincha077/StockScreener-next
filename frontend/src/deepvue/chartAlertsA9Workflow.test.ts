@@ -40,6 +40,22 @@ test('A9 Pages publishes the checked-in authoritative Next snapshot without Stab
   assertPublicationContract(workflow)
 })
 
+test('A9 Pages restores charts only from the exact prior Next publication for the same canonical scan',()=>{
+  assert.match(workflow,/actions:\s*read/)
+  assert.match(workflow,/publication\.get\('workflowRunId'\)/)
+  assert.match(workflow,/pages_run_id/)
+  assert.match(workflow,/actions\/download-artifact@v4/)
+  assert.match(workflow,/name:\s*github-pages/)
+  assert.match(workflow,/repository:\s*\$\{\{ github\.repository \}\}/)
+  assert.match(workflow,/run-id:\s*\$\{\{ steps\.source\.outputs\.pages_run_id \}\}/)
+  assert.match(workflow,/Restore chart shards only from the exact Next publication/)
+  assert.match(workflow,/Pages artifact source SHA does not match authoritative Next canonical/)
+  assert.match(workflow,/Pages artifact source workflow does not match authoritative Next metadata/)
+  assert.match(workflow,/Pages artifact generatedAt does not match authoritative Next canonical/)
+  assert.match(workflow,/Pages artifact scanId does not match authoritative Next canonical/)
+  assert.doesNotMatch(workflow,/hydrate_frontend_charts_readonly\.py/)
+})
+
 test('Stable fallback remains validated but cannot periodically overwrite promoted Next nightly Pages',()=>{
   assert.match(preview,/branches:\s*\[main\]/)
   assert.match(preview,/Read-only Stable fallback deploy/)
