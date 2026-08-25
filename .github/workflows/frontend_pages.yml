@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: frontend-pages-build
@@ -34,6 +35,7 @@ jobs:
       source_sha: ${{ steps.source.outputs.sha }}
       generated_at: ${{ steps.source.outputs.generated_at }}
       workflow_run_id: ${{ steps.source.outputs.workflow_run_id }}
+      pages_run_id: ${{ steps.source.outputs.pages_run_id }}
       scan_id: ${{ steps.identity.outputs.scan_id }}
     steps:
       - uses: actions/checkout@v4
@@ -50,35 +52,110 @@ jobs:
         run: |
           set -euo pipefail
           test -s frontend/public/data/latest.json
+          test -s frontend/public/data/manifest.json
           test -s data/daily_scans/latest_scan_meta.json
           SOURCE_SHA=$(sha256sum frontend/public/data/latest.json | cut -d' ' -f1)
           python - <<'PY' > /tmp/next-source-info.txt
           import json
           from pathlib import Path
           payload=json.loads(Path('frontend/public/data/latest.json').read_text(encoding='utf-8'))
+          manifest=json.loads(Path('frontend/public/data/manifest.json').read_text(encoding='utf-8'))
           meta=json.loads(Path('data/daily_scans/latest_scan_meta.json').read_text(encoding='utf-8'))
           rows=payload.get('universe') or []
           generated=payload.get('generatedAt')
+          source=(manifest.get('provenance') or {}).get('source') or {}
+          publication=(manifest.get('provenance') or {}).get('publication') or {}
           if not rows or not generated:
               raise SystemExit('Next canonical snapshot is incomplete')
           if not meta.get('workflow_run_id') or not meta.get('generated_at_utc') or not meta.get('source_commit'):
               raise SystemExit('Next scan metadata is incomplete')
           if meta.get('generated_at_utc') != generated:
               raise SystemExit(f"Next scan metadata mismatch: meta={meta.get('generated_at_utc')} canonical={generated}")
+          if manifest.get('generatedAt') != generated or not manifest.get('scanId'):
+              raise SystemExit('Checked-in Next manifest does not belong to canonical latest.json')
+          if source.get('workflowRunId') != str(meta.get('workflow_run_id')):
+              raise SystemExit('Checked-in Next manifest source workflow does not match scan metadata')
+          pages_run_id=str(publication.get('workflowRunId') or '').strip()
+          if not pages_run_id.isdigit():
+              raise SystemExit('Checked-in Next manifest has no exact Pages publication run id')
           print(generated)
           print(meta['workflow_run_id'])
           print(len(rows))
+          print(manifest['scanId'])
+          print(pages_run_id)
           PY
           GENERATED_AT=$(sed -n '1p' /tmp/next-source-info.txt)
           WORKFLOW_RUN_ID=$(sed -n '2p' /tmp/next-source-info.txt)
           ROWS=$(sed -n '3p' /tmp/next-source-info.txt)
+          SCAN_ID=$(sed -n '4p' /tmp/next-source-info.txt)
+          PAGES_RUN_ID=$(sed -n '5p' /tmp/next-source-info.txt)
+          python - <<'PY'
+          import hashlib, json
+          from pathlib import Path
+          source_sha=hashlib.sha256(Path('frontend/public/data/latest.json').read_bytes()).hexdigest()
+          manifest=json.loads(Path('frontend/public/data/manifest.json').read_text(encoding='utf-8'))
+          source=(manifest.get('provenance') or {}).get('source') or {}
+          if source.get('sha256') != source_sha:
+              raise SystemExit('Checked-in Next manifest source SHA does not match canonical latest.json')
+          PY
           echo "sha=$SOURCE_SHA" >> "$GITHUB_OUTPUT"
           echo "generated_at=$GENERATED_AT" >> "$GITHUB_OUTPUT"
           echo "workflow_run_id=$WORKFLOW_RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "scan_id=$SCAN_ID" >> "$GITHUB_OUTPUT"
+          echo "pages_run_id=$PAGES_RUN_ID" >> "$GITHUB_OUTPUT"
           echo "Next generatedAt: $GENERATED_AT"
           echo "Next source workflow run: $WORKFLOW_RUN_ID"
+          echo "Next exact Pages artifact run: $PAGES_RUN_ID"
           echo "Next universe: $ROWS"
           echo "Next canonical sha256: $SOURCE_SHA"
+
+      - name: Download exact-match Next Pages artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: /tmp/next-pages
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.source.outputs.pages_run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Restore chart shards only from the exact Next publication
+        shell: bash
+        env:
+          EXPECTED_SOURCE_SHA: ${{ steps.source.outputs.sha }}
+          EXPECTED_SOURCE_RUN: ${{ steps.source.outputs.workflow_run_id }}
+          EXPECTED_GENERATED_AT: ${{ steps.source.outputs.generated_at }}
+          EXPECTED_SCAN_ID: ${{ steps.source.outputs.scan_id }}
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/next-pages-site
+          mkdir -p /tmp/next-pages-site
+          if [ -f /tmp/next-pages/artifact.tar ]; then
+            tar -xf /tmp/next-pages/artifact.tar -C /tmp/next-pages-site
+          else
+            cp -a /tmp/next-pages/. /tmp/next-pages-site/
+          fi
+          test -s /tmp/next-pages-site/data/manifest.json
+          test -d /tmp/next-pages-site/data/charts
+          python - <<'PY'
+          import json, os
+          from pathlib import Path
+          manifest=json.loads(Path('/tmp/next-pages-site/data/manifest.json').read_text(encoding='utf-8'))
+          source=(manifest.get('provenance') or {}).get('source') or {}
+          if source.get('sha256') != os.environ['EXPECTED_SOURCE_SHA']:
+              raise SystemExit('Pages artifact source SHA does not match authoritative Next canonical')
+          if str(source.get('workflowRunId') or '') != os.environ['EXPECTED_SOURCE_RUN']:
+              raise SystemExit('Pages artifact source workflow does not match authoritative Next metadata')
+          if manifest.get('generatedAt') != os.environ['EXPECTED_GENERATED_AT']:
+              raise SystemExit('Pages artifact generatedAt does not match authoritative Next canonical')
+          if manifest.get('scanId') != os.environ['EXPECTED_SCAN_ID']:
+              raise SystemExit('Pages artifact scanId does not match authoritative Next canonical')
+          print('Exact Next Pages artifact verified:', manifest.get('scanId'))
+          PY
+          rm -rf frontend/public/data/charts
+          cp -a /tmp/next-pages-site/data/charts frontend/public/data/charts
+          CHART_SHARDS=$(find frontend/public/data/charts -name '*.json' -type f | wc -l | tr -d ' ')
+          test "$CHART_SHARDS" -gt 0
+          echo "Restored $CHART_SHARDS exact-match Next chart shards"
 
       - name: Build lightweight client payload + LEGACY shadow
         id: identity
@@ -115,7 +192,7 @@ jobs:
           assert source.get('sha256') == '${{ steps.source.outputs.sha }}'
           assert publication.get('repository') == '${{ github.repository }}'
           assert publication.get('workflowRunId') == '${{ github.run_id }}'
-          assert manifest.get('scanId')
+          assert manifest.get('scanId') == '${{ steps.source.outputs.scan_id }}'
           print(manifest['scanId'])
           print('Next projection generatedAt:', manifest.get('generatedAt'))
           print('LEGACY shadow counts:', shadow.get('counts'))
