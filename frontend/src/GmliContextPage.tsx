@@ -45,6 +45,7 @@ type GmliContext={
 type Point={label:string;value:number}
 type Series={label:string;points:Point[];className:string}
 const DATA_URL='./data/gmli/gmli-context.json'
+const FULL_GMLI_URL='https://garrincha077.github.io/NUEVO/'
 const fmt=(value:number|null|undefined,digits=1)=>value==null||!Number.isFinite(value)?'—':value.toFixed(digits)
 const signed=(value:number|null|undefined,digits=2)=>value==null||!Number.isFinite(value)?'—':`${value>=0?'+':''}${value.toFixed(digits)}`
 const pctile=(value:number|null|undefined)=>value==null||!Number.isFinite(value)?'—':`${Math.round(value)}th`
@@ -139,7 +140,7 @@ export default function GmliContextPage(){
   return <main className="gmli-app">
     <section className="gmli-hero">
       <div><small>GARRINCHA077/NUEVO · READ-ONLY MACRO CONTEXT</small><h1>GMLI Context</h1><p>Canonical GMLI results embedded as a StockScout sidecar. Selection stays in StockScout; this layer is regime, liquidity and sizing context only.</p></div>
-      <div className="gmli-meta"><span><small>GMLI built</small><b>{dateLabel(payload.generatedAt)}</b></span><span><small>Source refresh</small><b>{payload.source.upstreamRefreshStatus}</b></span><button onClick={()=>setNonce(value=>value+1)} disabled={loading}>{loading?'Loading…':'↻ Reload'}</button></div>
+      <div className="gmli-meta"><span><small>GMLI built</small><b>{dateLabel(payload.generatedAt)}</b></span><span><small>Source refresh</small><b>{payload.source.upstreamRefreshStatus}</b></span><a href={FULL_GMLI_URL} target="_blank" rel="noreferrer" style={{border:'1px solid #365a73',background:'#0d1c28',color:'#dceaf4',borderRadius:10,padding:'9px 12px',textDecoration:'none',fontSize:12,fontWeight:700,whiteSpace:'nowrap'}}>↗ Full GMLI</a><button onClick={()=>setNonce(value=>value+1)} disabled={loading}>{loading?'Loading…':'↻ Reload'}</button></div>
     </section>
 
     {fallback&&<div className="gmli-warning">Last-good GMLI context is being shown. StockScout scoring and nightly operation are not affected.</div>}
