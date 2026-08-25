@@ -27,10 +27,16 @@ const assertPublicationContract=(source:string)=>{
   assert.match(source,/test "\$BEFORE" = "\$FINAL"/)
 }
 
-test('A9 Pages keeps main-only deployment while caching charts by exact Stable snapshot and hydrator version',()=>{
+test('A9 Pages publishes the checked-in authoritative Next snapshot without Stable fallback coupling',()=>{
   assert.match(workflow,/branches:\s*\[main\]/)
   assert.doesNotMatch(workflow,/branches:\s*\[[^\]]*next-dev/)
-  assertSnapshotCache(workflow)
+  assert.doesNotMatch(workflow,/Garrincha077\/stock-screener2/)
+  assert.match(workflow,/frontend\/public\/data\/latest\.json/)
+  assert.match(workflow,/data\/daily_scans\/latest_scan_meta\.json/)
+  assert.match(workflow,/--source-repository "\$\{\{ github\.repository \}\}"/)
+  assert.match(workflow,/--source-ref main/)
+  assert.match(workflow,/Refuse a Next canonical snapshot that advanced during build/)
+  assert.match(workflow,/Deploy authoritative Next terminal build to GitHub Pages/)
   assertPublicationContract(workflow)
 })
 
@@ -64,10 +70,12 @@ test('production-candidate Next nightly is post-close, persistent, strict and va
   assert.match(nightly,/generated_at_utc": generated_at/)
 })
 
-test('A9 saves chart cache only after hydrator success and preserves canonical latest.json checks',()=>{
+test('A9 Next publisher preserves canonical latest.json checks and refuses an advancing Next snapshot',()=>{
   assert.match(workflow,/test "\$BEFORE" = "\$AFTER"/)
   assert.match(workflow,/test "\$BEFORE" = "\$FINAL"/)
-  assert.match(workflow,/Refuse a Stable snapshot that advanced during build/)
+  assert.match(workflow,/test "\$CURRENT_SOURCE_SHA" = "\$BUILT_SOURCE_SHA"/)
+  assert.match(workflow,/Refuse a Next canonical snapshot that advanced during build/)
+  assert.doesNotMatch(workflow,/actions\/cache\/restore@v4/)
 })
 
 test('A9 hydration logs bounded batch progress without changing coverage gate',()=>{
@@ -86,6 +94,7 @@ test('Pages and nightly workflow changes remain Full Validation gated on push an
   assert.match(fullValidation,/\.github\/workflows\/deploy_latest_stable_preview\.yml/)
   assert.match(fullValidation,/scripts\/sync_persistent_outputs\.sh/)
   assert.match(fullValidation,/tests\/test_sync_persistent_outputs\.sh/)
+  assert.match(fullValidation,/tests\/test_frontend_pages_authoritative_next\.py/)
   assert.match(fullValidation,/stamp_frontend_manifest\.py/)
   assert.match(fullValidation,/validate_frontend_charts\.py/)
   assert.match(fullValidation,/full-scan:/)
