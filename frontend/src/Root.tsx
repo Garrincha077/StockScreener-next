@@ -2,6 +2,7 @@ import {useEffect,useRef,useState,type CSSProperties,type KeyboardEvent,type Poi
 import DeepVueTerminal from './DeepVueTerminal'
 import LegacyTerminal from './LegacyTerminal'
 import FactorRegimePage from './FactorRegimePage'
+import GmliContextPage from './GmliContextPage'
 import GroupsPage from './GroupsPage'
 import OriginalEngineDock from './OriginalEngineDock'
 import LegacyConfirmationBadge from './LegacyConfirmationBadge'
@@ -23,7 +24,7 @@ const DEFAULT_ENGINE_WIDTH=420
 const MIN_ENGINE_WIDTH=330
 const MAX_ENGINE_WIDTH=650
 
-type Layer='stockscout'|'legacy'|'factors'
+type Layer='stockscout'|'legacy'|'factors'|'gmli'
 
 function initialEngineWidth(){
   try{
@@ -34,7 +35,7 @@ function initialEngineWidth(){
 function initialLayer():Layer{
   try{
     const value=localStorage.getItem(LAYER_KEY)
-    return value==='legacy'||value==='factors'?value:'stockscout'
+    return value==='legacy'||value==='factors'||value==='gmli'?value:'stockscout'
   }catch{return'stockscout'}
 }
 function clamp(value:number,min:number,max:number){return Math.max(min,Math.min(max,value))}
@@ -143,13 +144,14 @@ export default function Root(){
     </div>
   </>
 
-  const content=layer==='legacy'?<LegacyTerminal/>:layer==='factors'?<FactorRegimePage/>:stockscout
+  const content=layer==='legacy'?<LegacyTerminal/>:layer==='factors'?<FactorRegimePage/>:layer==='gmli'?<GmliContextPage/>:stockscout
 
   return <>
     <div className="ss-layer-switch" aria-label="Signal layer">
       <button className={layer==='stockscout'?'active':''} onClick={()=>chooseLayer('stockscout')}>STOCKSCOUT</button>
       <button className={`legacy ${layer==='legacy'?'active':''}`} onClick={()=>chooseLayer('legacy')}>LEGACY</button>
       <button className={`factors ${layer==='factors'?'active':''}`} onClick={()=>chooseLayer('factors')}>FACTORS</button>
+      <button className={`gmli ${layer==='gmli'?'active':''}`} onClick={()=>chooseLayer('gmli')}>GMLI</button>
     </div>
     {layer==='stockscout'&&view==='terminal'&&<LegacyConfirmationBadge/>}
     {content}
