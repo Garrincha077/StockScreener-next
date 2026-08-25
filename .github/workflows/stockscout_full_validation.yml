@@ -5,7 +5,7 @@ name: StockScout Full Validation
 # validation-gated as data-path changes. Data-only GMLI refresh commits remain
 # isolated and do not trigger an expensive stock rescan.
 # Experimental development is gated by pull_request; push validation is reserved
-# for controlled main promotion so next-dev commits do not duplicate the same
+# for controlled main promotion so development commits do not duplicate the same
 # expensive full scan. Reusable validation scans run non-persistent/non-deploying.
 on:
   push:
@@ -22,6 +22,7 @@ on:
       - 'tests/test_sync_persistent_outputs.sh'
       - 'refresh_gmli_context.py'
       - 'tests/test_refresh_gmli_context.py'
+      - 'tests/test_frontend_pages_authoritative_next.py'
       - 'stamp_frontend_manifest.py'
       - 'validate_frontend_charts.py'
       - 'validate_scan_session.py'
@@ -42,6 +43,7 @@ on:
       - 'tests/test_sync_persistent_outputs.sh'
       - 'refresh_gmli_context.py'
       - 'tests/test_refresh_gmli_context.py'
+      - 'tests/test_frontend_pages_authoritative_next.py'
       - 'stamp_frontend_manifest.py'
       - 'validate_frontend_charts.py'
       - 'validate_scan_session.py'
@@ -63,13 +65,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: LEGACY shadow, GMLI sidecar, client projection and publication contract tests
+      - name: LEGACY shadow, GMLI sidecar, Pages publisher, client projection and publication contract tests
         run: |
           python -m pip install --upgrade pip pytest pandas
           python -m pytest \
             tests/test_compute_legacy_confirmation.py \
             tests/test_build_legacy_confirmation_sidecar.py \
             tests/test_refresh_gmli_context.py \
+            tests/test_frontend_pages_authoritative_next.py \
             tests/test_prepare_frontend_payloads.py \
             tests/test_stamp_frontend_manifest.py \
             tests/test_validate_frontend_charts.py \
