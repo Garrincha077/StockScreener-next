@@ -1,4 +1,4 @@
-name: Build and publish next-dev preview
+name: Build next-dev public preview
 
 on:
   push:
@@ -9,8 +9,6 @@ on:
 permissions:
   contents: write
   actions: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: next-dev-static-preview
@@ -19,9 +17,6 @@ concurrency:
 jobs:
   build-preview:
     runs-on: ubuntu-latest
-    outputs:
-      production_run_id: ${{ steps.production.outputs.run_id }}
-      preview_generated_at: ${{ steps.preview.outputs.generated_at }}
     steps:
       - name: Checkout preview source
         uses: actions/checkout@v4
@@ -76,7 +71,6 @@ jobs:
           else
             cp -a /tmp/current-pages-artifact/. /tmp/current-pages-root/
           fi
-          test -s /tmp/current-pages-root/index.html
           test -s /tmp/current-pages-root/data/manifest.json
           test -d /tmp/current-pages-root/data/charts
 
@@ -146,46 +140,11 @@ jobs:
             "source_branch=preview/next-dev-live" \
             "source_sha=$GITHUB_SHA" \
             "data_ref=origin/main" \
-            "generated_at=${{ steps.preview.outputs.generated_at }}" > PREVIEW_SOURCE.txt
+            "generated_at=${{ steps.preview.outputs.generated_at }}" \
+            "preview_url=https://raw.githack.com/Garrincha077/StockScreener-next/next-dev-preview-site/index.html" > PREVIEW_SOURCE.txt
           git add -A
           git commit -m "preview: next-dev ${GITHUB_SHA::8}"
           git push origin HEAD:refs/heads/next-dev-preview-site --force
 
-      - name: Compose additive Pages artifact without changing live root
-        shell: bash
-        run: |
-          set -euo pipefail
-          rm -rf /tmp/combined-pages
-          cp -a /tmp/current-pages-root /tmp/combined-pages
-          ROOT_BEFORE=$(cd /tmp/combined-pages && find . -type f ! -path './next-dev-preview/*' -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
-          rm -rf /tmp/combined-pages/next-dev-preview
-          mkdir -p /tmp/combined-pages/next-dev-preview
-          cp -a /tmp/stockscout-next-dev-preview/. /tmp/combined-pages/next-dev-preview/
-          ROOT_AFTER=$(cd /tmp/combined-pages && find . -type f ! -path './next-dev-preview/*' -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
-          test "$ROOT_BEFORE" = "$ROOT_AFTER"
-          test -s /tmp/combined-pages/next-dev-preview/index.html
-          test -s /tmp/combined-pages/next-dev-preview/data/manifest.json
-          echo "Production root checksum preserved: $ROOT_AFTER"
-
-      - name: Upload combined Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: /tmp/combined-pages
-
-  deploy-preview:
-    needs: build-preview
-    runs-on: ubuntu-latest
-    concurrency:
-      group: stockscout-pages-deploy
-      cancel-in-progress: false
-    permissions:
-      contents: read
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}next-dev-preview/
-    steps:
-      - name: Deploy production-preserving artifact with next-dev preview subpath
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Preview URL
+        run: echo "https://raw.githack.com/Garrincha077/StockScreener-next/next-dev-preview-site/index.html"
