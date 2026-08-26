@@ -1,0 +1,68 @@
+name: Build next-dev static preview
+
+on:
+  push:
+    branches:
+      - 'preview/next-dev-live'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: next-dev-static-preview
+  cancel-in-progress: true
+
+jobs:
+  build-preview:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout preview source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Test and build preview
+        working-directory: frontend
+        run: npm run check
+
+      - name: Prepare lightweight static preview
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/stockscout-next-dev-preview
+          mkdir -p /tmp/stockscout-next-dev-preview
+          cp -a frontend/dist/. /tmp/stockscout-next-dev-preview/
+          # Keep the interactive terminal and LEGACY payloads, but do not duplicate
+          # the large chart archive into this disposable preview branch.
+          rm -rf /tmp/stockscout-next-dev-preview/data/charts
+          touch /tmp/stockscout-next-dev-preview/.nojekyll
+          test -s /tmp/stockscout-next-dev-preview/index.html
+          test -s /tmp/stockscout-next-dev-preview/data/manifest.json
+          test -s /tmp/stockscout-next-dev-preview/data/core.json
+          test -s /tmp/stockscout-next-dev-preview/data/legacy/index.json
+
+      - name: Publish generated preview branch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout --orphan next-dev-preview-site
+          git rm -rf .
+          cp -a /tmp/stockscout-next-dev-preview/. .
+          printf '%s\n' "source_branch=preview/next-dev-live" "source_sha=$GITHUB_SHA" > PREVIEW_SOURCE.txt
+          git add -A
+          git commit -m "preview: next-dev ${GITHUB_SHA::8}"
+          git push origin HEAD:refs/heads/next-dev-preview-site --force
