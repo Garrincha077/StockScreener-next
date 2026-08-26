@@ -6,6 +6,19 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-26 — LEGACY source transparency cleanup prepared from clean `main`
+
+- Branch: `ui/legacy-readonly-clarity`, created directly from current `main` `a5aa68fcf761920961d43c10f990e230fc562fe6`. Functional commits: `3158df311791683bec42e1875229c0d87c391dcc` and `4b99912621bedeeba7ab8c1e01b525689218a2ae`.
+- Changed only `frontend/src/LegacyTerminal.tsx` and `frontend/src/legacy-terminal.css`: exposed already-preserved Ryan source diagnostics; separated scan/current price (`Assumed entry` only when BUY trade geometry exists) from pivot/breakout; laid out source stop/target/risk/reward/R/R; exposed VCP and SELL component diagnostics; and made missing BUY evidence explicit instead of rendering misleading `—:1`, `—x` or a wall of blank geometry cards. SELL-only tickers now say that scan price is context only and that no Ryan BUY entry/stop/target/R/R package is implied.
+- The UI derives `hasBuyGeometry` only from existing numeric frozen source fields; it does not synthesize a price, stop, target, R/R or new signal. Missing source data stays missing and is labeled as such. Narrow-card grids are reduced to two columns on small screens for readability.
+- Behavior/model impact: presentation/evidence only. No frozen Ryan thresholds/scoring/emission rules, market gate, StockScout Core scoring/ranking/filtering, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage/chart mapping, canonical data, scan/workflow or `stock-screener2` changed.
+- Validation: **StockScout Validation #478 / run `32967505897` SUCCESS** on code head `4b999126...`, including frozen LEGACY execution graph verification, regression/integration tests, model compatibility, MA Cluster/Scout Tier audits, **LEGACY shadow exact-invariance/client-artifact audit**, and **Frontend runtime tests, TypeScript and Vite build**. Full Validation was not required because the slice is frontend-only and does not touch scan/data/workflow paths.
+- Repository cleanup: stale draft PRs **#3** and **#7** were closed unmerged as superseded; their old stacked hardening branches are not part of this slice.
+- Regression risk/decision: the new geometry availability state is display-only and intentionally conservative. A missing pivot may still be shown as `—` inside an otherwise valid BUY geometry package, because Ryan can provide stop/target/R/R without a detected breakout level. SELL diagnostics remain independent and read-only.
+
+**Next logical step**
+- Open a small PR from `ui/legacy-readonly-clarity` to `main`, verify the final PR-head checks/review state, squash-merge if green, then verify the resulting Pages publication/live LEGACY panel. Do not merge the diverged `next-dev` branch wholesale.
+
 ## 2026-08-25 — PR #25 dirty-worktree nightly sync P0 merged after first self-authored Next recovery
 
 - The first production-candidate scheduled Next nightly was run `32781812700` (`Daily Stock Screening (Post-Market)`, `schedule`, `main`, source SHA `d136a5f590dd8c0947abba0b19d87ed92e07fac6`). The optimized scan, completed-session guard, rich fundamentals, LEGACY + STOCKSCOUT export, canonical/model/fundamental audits, frozen LEGACY verification, client projection and 100% chart coverage all passed; the run failed only at post-scan persistence because generated tracked/untracked files left the worktree dirty before `git rebase origin/main`.
