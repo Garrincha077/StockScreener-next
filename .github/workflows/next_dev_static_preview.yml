@@ -33,11 +33,11 @@ jobs:
         run: |
           set -euo pipefail
           git fetch origin main
-          git checkout origin/main -- frontend/public/data
+          rm -rf frontend/public/data
+          git archive origin/main frontend/public/data | tar -x
           test -s frontend/public/data/manifest.json
           test -s frontend/public/data/core.json
           test -d frontend/public/data/legacy/details
-          test -d frontend/public/data/charts
 
       - name: Resolve current production Pages artifact
         id: production
@@ -55,6 +55,46 @@ jobs:
           )
           echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
           echo "Using current production Pages artifact run $RUN_ID"
+
+      - name: Download exact current production Pages artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: /tmp/current-pages-artifact
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.production.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Restore exact current production chart shards
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/current-pages-root
+          mkdir -p /tmp/current-pages-root
+          if [ -f /tmp/current-pages-artifact/artifact.tar ]; then
+            tar -xf /tmp/current-pages-artifact/artifact.tar -C /tmp/current-pages-root
+          else
+            cp -a /tmp/current-pages-artifact/. /tmp/current-pages-root/
+          fi
+          test -s /tmp/current-pages-root/index.html
+          test -s /tmp/current-pages-root/data/manifest.json
+          test -d /tmp/current-pages-root/data/charts
+
+          LIVE_ID=$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/current-pages-root/data/manifest.json')).get('scanId') or '')
+          PY
+          )
+          MAIN_ID=$(python - <<'PY'
+          import json
+          print(json.load(open('frontend/public/data/manifest.json')).get('scanId') or '')
+          PY
+          )
+          test -n "$LIVE_ID"
+          test "$LIVE_ID" = "$MAIN_ID"
+          rm -rf frontend/public/data/charts
+          cp -a /tmp/current-pages-root/data/charts frontend/public/data/charts
+          echo "Restored exact chart shards for scan $MAIN_ID"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -111,44 +151,11 @@ jobs:
           git commit -m "preview: next-dev ${GITHUB_SHA::8}"
           git push origin HEAD:refs/heads/next-dev-preview-site --force
 
-      - name: Download exact current production Pages artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: github-pages
-          path: /tmp/current-pages-artifact
-          repository: ${{ github.repository }}
-          run-id: ${{ steps.production.outputs.run_id }}
-          github-token: ${{ github.token }}
-
       - name: Compose additive Pages artifact without changing live root
         shell: bash
         run: |
           set -euo pipefail
-          rm -rf /tmp/current-pages-root /tmp/combined-pages
-          mkdir -p /tmp/current-pages-root
-          if [ -f /tmp/current-pages-artifact/artifact.tar ]; then
-            tar -xf /tmp/current-pages-artifact/artifact.tar -C /tmp/current-pages-root
-          else
-            cp -a /tmp/current-pages-artifact/. /tmp/current-pages-root/
-          fi
-          test -s /tmp/current-pages-root/index.html
-          test -s /tmp/current-pages-root/data/manifest.json
-
-          LIVE_ID=$(python - <<'PY'
-          import json
-          m=json.load(open('/tmp/current-pages-root/data/manifest.json'))
-          print(m.get('scanId') or '')
-          PY
-          )
-          MAIN_ID=$(python - <<'PY'
-          import json
-          m=json.load(open('frontend/public/data/manifest.json'))
-          print(m.get('scanId') or '')
-          PY
-          )
-          test -n "$LIVE_ID"
-          test "$LIVE_ID" = "$MAIN_ID"
-
+          rm -rf /tmp/combined-pages
           cp -a /tmp/current-pages-root /tmp/combined-pages
           ROOT_BEFORE=$(cd /tmp/combined-pages && find . -type f ! -path './next-dev-preview/*' -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
           rm -rf /tmp/combined-pages/next-dev-preview
@@ -159,7 +166,6 @@ jobs:
           test -s /tmp/combined-pages/next-dev-preview/index.html
           test -s /tmp/combined-pages/next-dev-preview/data/manifest.json
           echo "Production root checksum preserved: $ROOT_AFTER"
-          echo "Added preview for scan $MAIN_ID"
 
       - name: Upload combined Pages artifact
         uses: actions/upload-pages-artifact@v3
