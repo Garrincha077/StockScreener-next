@@ -6,6 +6,18 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-26 — LEGACY source diagnostics exposed read-only on `next-dev`
+
+- Branch/code commit: `next-dev` @ `c649f1fdb6581e31952b0c60023060b72e0d5433` (`ui: expose frozen legacy source diagnostics`).
+- Changed only `frontend/src/LegacyTerminal.tsx` to surface already-preserved RyanJHamby frozen source fields more clearly: BUY RS slope, up/down-day volume, numeric entry score, risk/reward dollars, R/R score, VCP base length, VCP source volume ratio and nested VCP quality factors; SELL now exposes breakdown/volume/RS component scores, RS slope, volume ratio, breakdown level and a display-only `FAILED BREAKOUT` badge when that phrase is present in the frozen source reasons.
+- Why: the LEGACY detail view already preserved `originalEngine` / `allDetails`, but several original-engine diagnostics were either buried in generic source details or nested and therefore not rendered. This change improves source-method transparency without adding calculations or a new composite score.
+- Behavior/model impact: presentation/evidence only. No StockScout Core scoring/ranking/filtering, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage/chart mapping, scan/data/workflow path, Ryan LEGACY scorer/runtime or market-gate semantics changed. `stock-screener2` was untouched.
+- Validation: compare `c7c709a...` -> `c649f1f...` shows exactly one changed file (`frontend/src/LegacyTerminal.tsx`, +13/-4). Push-triggered **StockScout Validation #475 / run `32961473295` SUCCESS** on the exact code commit. The run passed frozen LEGACY execution graph verification, regression/integration tests, model compatibility, MA Cluster/Scout Tier audits, **LEGACY shadow exact-invariance/client-artifact audit**, and **Frontend runtime tests, TypeScript and Vite build**. Full Validation was not required because no scan/data/workflow files changed.
+- Regression risk/decision: diagnostics are deliberately tolerant of missing source fields and render `—`; no missing value is synthesized. The failed-breakout badge is derived only from existing frozen source reason text and does not feed scoring. Nested VCP factors remain read-only source evidence.
+
+**Next logical step**
+- Visually inspect the LEGACY detail pane on at least one ticker with VCP details and one ticker with SELL evidence. Keep this UI slice on `next-dev`; do not promote or alter LEGACY calculations based on the diagnostics.
+
 ## 2026-08-25 — PR #25 dirty-worktree nightly sync P0 merged after first self-authored Next recovery
 
 - The first production-candidate scheduled Next nightly was run `32781812700` (`Daily Stock Screening (Post-Market)`, `schedule`, `main`, source SHA `d136a5f590dd8c0947abba0b19d87ed92e07fac6`). The optimized scan, completed-session guard, rich fundamentals, LEGACY + STOCKSCOUT export, canonical/model/fundamental audits, frozen LEGACY verification, client projection and 100% chart coverage all passed; the run failed only at post-scan persistence because generated tracked/untracked files left the worktree dirty before `git rebase origin/main`.
