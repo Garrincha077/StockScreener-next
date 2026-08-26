@@ -146,5 +146,42 @@ jobs:
           git commit -m "preview: next-dev ${GITHUB_SHA::8}"
           git push origin HEAD:refs/heads/next-dev-preview-site --force
 
+      - name: Record durable preview handoff on next-dev
+        shell: bash
+        env:
+          PREVIEW_GENERATED_AT: ${{ steps.preview.outputs.generated_at }}
+        run: |
+          set -euo pipefail
+          git fetch origin next-dev
+          rm -rf /tmp/next-dev-log
+          git worktree add --detach /tmp/next-dev-log origin/next-dev
+          cd /tmp/next-dev-log
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          path=Path('docs/PROJECT_LOG.md')
+          text=path.read_text(encoding='utf-8')
+          marker='## 2026-08-26 — isolated `next-dev` visual preview published'
+          if marker in text:
+              raise SystemExit(0)
+          section=f'''{marker}\n\n- Preview workflow/source branch: `preview/next-dev-live` @ `{os.environ['GITHUB_SHA']}`; generated static branch: `next-dev-preview-site`.\n- Purpose: provide a visual review surface for `next-dev` without merging it into `main` or changing `stock-screener2`. The preview build overlays the latest authoritative checked-in `main` Core/LEGACY payload and restores chart shards only from the exact current production Pages artifact for the same `scanId`.\n- Public preview: `https://raw.githack.com/Garrincha077/StockScreener-next/next-dev-preview-site/index.html`. This is a disposable development preview, not the production GitHub Pages endpoint.\n- Validation: preview workflow run `{os.environ['GITHUB_RUN_ID']}` passed `npm run check`, full static build, latest-data identity checks and exact chart-shard restore. Preview dataset `generatedAt={os.environ['PREVIEW_GENERATED_AT']}`. An attempted additive GitHub Pages subpath deployment was rejected by the protected Pages environment before deployment; no live Pages content was changed.\n- Behavior/model impact: preview/publication plumbing only. No StockScout Core or Ryan LEGACY scoring/runtime, scan generation, production scheduling, `main`, or stable fallback behavior changed. Full Validation was not required because the production scan/data/workflow path was not modified.\n\n**Next logical step**\n- Visually inspect the LEGACY detail panel in the isolated preview, especially a breakout ticker showing Assumed entry vs Pivot and a ticker with SELL evidence. Keep promotion to `main` separate and deliberate.\n\n'''
+          anchor='Keep this file concise and factual. Update it after every meaningful code/workflow change.\n\n'
+          if anchor not in text:
+              raise SystemExit('PROJECT_LOG anchor not found')
+          path.write_text(text.replace(anchor, anchor+section, 1), encoding='utf-8')
+          PY
+          if git diff --quiet -- docs/PROJECT_LOG.md; then
+            echo "PROJECT_LOG already contains preview handoff"
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add docs/PROJECT_LOG.md
+          git commit -m 'docs: log isolated next-dev preview'
+          git fetch origin next-dev
+          git rebase origin/next-dev
+          git push origin HEAD:next-dev
+
       - name: Preview URL
         run: echo "https://raw.githack.com/Garrincha077/StockScreener-next/next-dev-preview-site/index.html"
