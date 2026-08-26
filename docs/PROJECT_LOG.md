@@ -6,6 +6,17 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-26 — isolated `next-dev` visual preview published
+
+- Preview workflow/source branch: `preview/next-dev-live` @ `1b537b6fe33dc2a76615f66ea4916c4133f9e1d4`; generated static branch: `next-dev-preview-site`.
+- Purpose: provide a visual review surface for `next-dev` without merging it into `main` or changing `stock-screener2`. The preview build overlays the latest authoritative checked-in `main` Core/LEGACY payload and restores chart shards only from the exact current production Pages artifact for the same `scanId`.
+- Public preview: `https://raw.githack.com/Garrincha077/StockScreener-next/next-dev-preview-site/index.html`. This is a disposable development preview, not the production GitHub Pages endpoint.
+- Validation: preview workflow run `32966231434` passed `npm run check`, full static build, latest-data identity checks and exact chart-shard restore. Preview dataset `generatedAt=2026-08-25T22:30:36.458459+00:00`. An attempted additive GitHub Pages subpath deployment was rejected by the protected Pages environment before deployment; no live Pages content was changed.
+- Behavior/model impact: preview/publication plumbing only. No StockScout Core or Ryan LEGACY scoring/runtime, scan generation, production scheduling, `main`, or stable fallback behavior changed. Full Validation was not required because the production scan/data/workflow path was not modified.
+
+**Next logical step**
+- Visually inspect the LEGACY detail panel in the isolated preview, especially a breakout ticker showing Assumed entry vs Pivot and a ticker with SELL evidence. Keep promotion to `main` separate and deliberate.
+
 ## 2026-08-26 — LEGACY assumed-entry trade geometry clarified on `next-dev`
 
 - Branch/code commit: `next-dev` @ `396e9d68bbf6cd915e8cc927a5b2471600e64077` (`ui: clarify legacy assumed entry geometry`).
