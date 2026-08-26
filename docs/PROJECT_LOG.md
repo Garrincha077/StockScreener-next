@@ -6,6 +6,18 @@ Historical entries through the PR #15 / Chart Alerts closeout baseline on 2026-0
 
 Keep this file concise and factual. Update it after every meaningful code/workflow change.
 
+## 2026-08-26 — LEGACY assumed-entry trade geometry clarified on `next-dev`
+
+- Branch/code commit: `next-dev` @ `396e9d68bbf6cd915e8cc927a5b2471600e64077` (`ui: clarify legacy assumed entry geometry`).
+- Changed only `frontend/src/LegacyTerminal.tsx`: the table label now says `Entry Q`, the detail KPIs separately show `Assumed entry` (the scan/current row price used by Ryan's original R/R calculation) and `Pivot`, and a new **Original Trade Geometry · Source Assumption** block lays out assumed entry, pivot/breakout, stop, target, risk dollars, reward dollars, R/R and entry quality/score together.
+- Why: Ryan's original scorer does not return a separate execution `entry_price`; it computes risk/reward from `current_price`, while `breakout_price` is a distinct detected pivot/breakout level. The UI now states that distinction explicitly instead of allowing the categorical `Entry` quality field to look like an entry-price field.
+- Behavior/model impact: presentation/evidence only. No Ryan scoring, thresholds, market gate, stop/target calculation, StockScout Core scoring/ranking/filtering, scan/data/workflow path, chart mapping or `stock-screener2` changed.
+- Validation: compare `51fb402...` -> `396e9d6...` shows exactly one changed file (`frontend/src/LegacyTerminal.tsx`, +5/-4). Push-triggered **StockScout Validation #476 / run `32962977867` SUCCESS** on the exact code commit. Frozen LEGACY execution graph, regression/integration, model compatibility, MA Cluster/Scout Tier audits, **LEGACY shadow exact-invariance/client-artifact audit**, and **Frontend runtime tests, TypeScript and Vite build** all passed. Full Validation was not required because no scan/data/workflow files changed.
+- Regression risk/decision: `Assumed entry` deliberately uses the same selected scan row price already carried by the LEGACY payload; no synthetic optimal entry is invented. Pivot remains separate and may be `—` when the frozen source did not detect a breakout.
+
+**Next logical step**
+- Visually inspect a real LEGACY ticker with a detected breakout to confirm the assumed-entry/pivot distinction reads naturally in the operating UI. Keep this read-only clarification on `next-dev` until deliberately promoted.
+
 ## 2026-08-26 — LEGACY source diagnostics exposed read-only on `next-dev`
 
 - Branch/code commit: `next-dev` @ `c649f1fdb6581e31952b0c60023060b72e0d5433` (`ui: expose frozen legacy source diagnostics`).
@@ -91,7 +103,7 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 - Initial **Frontend Compile Smoke #249 / run `32651112707` FAILED** only because the new direct Node test used an extensionless ESM import. Commit `c0d85b431bf096f171243c6b8c922ad3c2512be1` changed that test import to `../watchlistStore.ts`; production store/Vite imports and behavior were not altered by the fix.
 - Final accepted gates on `c0d85b43...`: **Frontend Compile Smoke #250 / run `32651161131` SUCCESS**, including runtime tests, TypeScript/Vite and the expanded Mobile Rapid Review Playwright path, and **StockScout Validation #432 / run `32651161130` SUCCESS**, including regression/integration, model compatibility, MA Cluster, Scout Tier and exact LEGACY/Core invariance. Review threads were empty before merge.
 - Affected files/components: `frontend/src/watchlistStore.ts`, `frontend/src/deepvue/watchlistStore.test.ts`, `frontend/src/DeepVueTerminal.tsx`, `frontend/src/Phase4ReviewBar.tsx`, `frontend/src/phase4-review.css`, `frontend/e2e/mobile-rapid-review.spec.ts`, `docs/PROJECT_LOG.md`.
-- Behavior/model impact: intentional client-side watchlist UX/state refactor only. Watchlist membership semantics and persistence key are preserved. No scan/data/provenance workflow, canonical payload, saved-screen/sort/ranking logic, chart mapping, alert evaluation, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage or frozen LEGACY behavior changed. Stable `Garrincha077/stock-screener2` remained untouched. Full Validation was not required because the slice remained frontend-only.
+- Behavior/model impact: intentional client-side watchlist UX/state refactor only. Watchlist membership semantics and persistence key are preserved. No scan/data/provenance workflow, canonical payload, saved-screen/sort/ranking logic, chart mapping, alert evaluation, Opportunity v2, Emerging Leader, MA Cluster, Group Leadership, Fundamentals, RS, Stage or frozen LEGACY behavior changed. Stable `Garrincha077/stock-screener2` remained untouched. Full Validation was not required because this slice remained frontend-only.
 - Regression risk/decision: all watchlist entry points now share one store, so future watchlist actions must use this module rather than reintroduce local competing state. The browser gate is the contract for same-tab synchronization.
 
 **Next logical step**
@@ -129,7 +141,7 @@ Keep this file concise and factual. Update it after every meaningful code/workfl
 
 ## 2026-08-23 — PR #18 scan identity/publication reliability + Next nightly production-candidate promotion merged
 
-- PR #18 (`next-dev` -> `main`) was squash-merged as `20e9c22247253ad64ce4b2e5d8d233fe52a70003`. Final functional code head: `2f619087ddae926a699e2a0d5e26dbf62bc1719a`; temporary promotion scope was removed in docs-only cleanup head `177d3bf21a7d36b6c8c408a20eeb292109385e62` and durable log was recorded before merge.
+- PR #18 (`next-dev` -> `main`), was squash-merged as `20e9c22247253ad64ce4b2e5d8d233fe52a70003`. Final functional code head: `2f619087ddae926a699e2a0d5e26dbf62bc1719a`; temporary promotion scope was removed in docs-only cleanup head `177d3bf21a7d36b6c8c408a20eeb292109385e62` and durable log was recorded before merge.
 - Added first-class authoritative publication provenance to `manifest.json`: deterministic `scanId`, source repository/ref, source workflow run/attempt, source commit, generated time and canonical SHA, plus separate publication workflow identity. Projection/stamping remains additive and does not mutate canonical `latest.json`.
 - Next scheduled scan is promoted to **22:45 UTC Monday-Friday**, intentionally one hour behind Stable's 21:45 UTC scan. Scheduled mode persists canonical outputs and deploys Pages only after session/canonical/provenance/chart gates pass. Stable `Garrincha077/stock-screener2` remains untouched and serves only as fallback/source reference.
 - The former scheduled Stable-to-Next preview was converted to manual/code-change fallback so it cannot overwrite an authoritative Next nightly deployment after the fact. Reusable Full Validation runs remain `persist_outputs=false` and `deploy_pages=false` and use a separate validation concurrency lane so they do not block persistent nightly/manual runs.
