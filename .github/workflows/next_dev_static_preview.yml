@@ -1,4 +1,4 @@
-name: Build next-dev static preview
+name: Build and publish next-dev preview
 
 on:
   push:
@@ -8,6 +8,9 @@ on:
 
 permissions:
   contents: write
+  actions: read
+  pages: write
+  id-token: write
 
 concurrency:
   group: next-dev-static-preview
@@ -16,11 +19,42 @@ concurrency:
 jobs:
   build-preview:
     runs-on: ubuntu-latest
+    outputs:
+      production_run_id: ${{ steps.production.outputs.run_id }}
+      preview_generated_at: ${{ steps.preview.outputs.generated_at }}
     steps:
       - name: Checkout preview source
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
+
+      - name: Overlay latest authoritative main data
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          git checkout origin/main -- frontend/public/data
+          test -s frontend/public/data/manifest.json
+          test -s frontend/public/data/core.json
+          test -d frontend/public/data/legacy/details
+          test -d frontend/public/data/charts
+
+      - name: Resolve current production Pages artifact
+        id: production
+        shell: bash
+        run: |
+          set -euo pipefail
+          RUN_ID=$(python - <<'PY'
+          import json
+          m=json.load(open('frontend/public/data/manifest.json'))
+          run=str(((m.get('provenance') or {}).get('publication') or {}).get('workflowRunId') or '').strip()
+          if not run.isdigit():
+              raise SystemExit('Main manifest has no production publication workflowRunId')
+          print(run)
+          PY
+          )
+          echo "run_id=$RUN_ID" >> "$GITHUB_OUTPUT"
+          echo "Using current production Pages artifact run $RUN_ID"
 
       - name: Set up Node
         uses: actions/setup-node@v4
@@ -33,25 +67,31 @@ jobs:
         working-directory: frontend
         run: npm ci
 
-      - name: Test and build preview
+      - name: Test and build next-dev code with latest main data
         working-directory: frontend
         run: npm run check
 
-      - name: Prepare lightweight static preview
+      - name: Prepare full static preview
+        id: preview
         shell: bash
         run: |
           set -euo pipefail
           rm -rf /tmp/stockscout-next-dev-preview
           mkdir -p /tmp/stockscout-next-dev-preview
           cp -a frontend/dist/. /tmp/stockscout-next-dev-preview/
-          # Keep the interactive terminal and LEGACY payloads, but do not duplicate
-          # the large chart archive into this disposable preview branch.
-          rm -rf /tmp/stockscout-next-dev-preview/data/charts
           touch /tmp/stockscout-next-dev-preview/.nojekyll
           test -s /tmp/stockscout-next-dev-preview/index.html
           test -s /tmp/stockscout-next-dev-preview/data/manifest.json
           test -s /tmp/stockscout-next-dev-preview/data/core.json
           test -s /tmp/stockscout-next-dev-preview/data/legacy/index.json
+          test -d /tmp/stockscout-next-dev-preview/data/charts
+          GENERATED_AT=$(python - <<'PY'
+          import json
+          print(json.load(open('/tmp/stockscout-next-dev-preview/data/manifest.json'))['generatedAt'])
+          PY
+          )
+          echo "generated_at=$GENERATED_AT" >> "$GITHUB_OUTPUT"
+          echo "Preview generatedAt: $GENERATED_AT"
 
       - name: Publish generated preview branch
         shell: bash
@@ -62,7 +102,84 @@ jobs:
           git checkout --orphan next-dev-preview-site
           git rm -rf .
           cp -a /tmp/stockscout-next-dev-preview/. .
-          printf '%s\n' "source_branch=preview/next-dev-live" "source_sha=$GITHUB_SHA" > PREVIEW_SOURCE.txt
+          printf '%s\n' \
+            "source_branch=preview/next-dev-live" \
+            "source_sha=$GITHUB_SHA" \
+            "data_ref=origin/main" \
+            "generated_at=${{ steps.preview.outputs.generated_at }}" > PREVIEW_SOURCE.txt
           git add -A
           git commit -m "preview: next-dev ${GITHUB_SHA::8}"
           git push origin HEAD:refs/heads/next-dev-preview-site --force
+
+      - name: Download exact current production Pages artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: github-pages
+          path: /tmp/current-pages-artifact
+          repository: ${{ github.repository }}
+          run-id: ${{ steps.production.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      - name: Compose additive Pages artifact without changing live root
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf /tmp/current-pages-root /tmp/combined-pages
+          mkdir -p /tmp/current-pages-root
+          if [ -f /tmp/current-pages-artifact/artifact.tar ]; then
+            tar -xf /tmp/current-pages-artifact/artifact.tar -C /tmp/current-pages-root
+          else
+            cp -a /tmp/current-pages-artifact/. /tmp/current-pages-root/
+          fi
+          test -s /tmp/current-pages-root/index.html
+          test -s /tmp/current-pages-root/data/manifest.json
+
+          LIVE_ID=$(python - <<'PY'
+          import json
+          m=json.load(open('/tmp/current-pages-root/data/manifest.json'))
+          print(m.get('scanId') or '')
+          PY
+          )
+          MAIN_ID=$(python - <<'PY'
+          import json
+          m=json.load(open('frontend/public/data/manifest.json'))
+          print(m.get('scanId') or '')
+          PY
+          )
+          test -n "$LIVE_ID"
+          test "$LIVE_ID" = "$MAIN_ID"
+
+          cp -a /tmp/current-pages-root /tmp/combined-pages
+          ROOT_BEFORE=$(cd /tmp/combined-pages && find . -type f ! -path './next-dev-preview/*' -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
+          rm -rf /tmp/combined-pages/next-dev-preview
+          mkdir -p /tmp/combined-pages/next-dev-preview
+          cp -a /tmp/stockscout-next-dev-preview/. /tmp/combined-pages/next-dev-preview/
+          ROOT_AFTER=$(cd /tmp/combined-pages && find . -type f ! -path './next-dev-preview/*' -print0 | sort -z | xargs -0 sha256sum | sha256sum | cut -d' ' -f1)
+          test "$ROOT_BEFORE" = "$ROOT_AFTER"
+          test -s /tmp/combined-pages/next-dev-preview/index.html
+          test -s /tmp/combined-pages/next-dev-preview/data/manifest.json
+          echo "Production root checksum preserved: $ROOT_AFTER"
+          echo "Added preview for scan $MAIN_ID"
+
+      - name: Upload combined Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: /tmp/combined-pages
+
+  deploy-preview:
+    needs: build-preview
+    runs-on: ubuntu-latest
+    concurrency:
+      group: stockscout-pages-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}next-dev-preview/
+    steps:
+      - name: Deploy production-preserving artifact with next-dev preview subpath
+        id: deployment
+        uses: actions/deploy-pages@v4
