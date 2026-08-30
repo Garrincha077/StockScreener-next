@@ -9,15 +9,15 @@
   "dataHealth": {
     "active_money_version": "GMLI_GLOBAL_MONEY_V2_PBOC_OFFICIAL",
     "counts": {
-      "aging": 1,
+      "aging": 0,
       "fresh": 9,
-      "stale": 1,
+      "stale": 2,
       "unknown": 1
     },
-    "generated_at": "2026-08-29T12:44:21.173Z",
+    "generated_at": "2026-08-30T11:58:53.380Z",
     "items": [
       {
-        "age_days": 29,
+        "age_days": 30,
         "available_date": "2026-07-31",
         "decision_critical": true,
         "evidence_tier": "CORE",
@@ -30,7 +30,7 @@
       },
       {
         "active": false,
-        "age_days": 182,
+        "age_days": 183,
         "available_date": "2026-02-28",
         "decision_critical": false,
         "evidence_tier": "CORE_HISTORICAL_REFERENCE",
@@ -41,17 +41,17 @@
       },
       {
         "active": false,
-        "age_days": 60,
+        "age_days": 61,
         "available_date": "2026-06-30",
         "decision_critical": false,
         "evidence_tier": "RESEARCH_HISTORICAL",
-        "freshness": "AGING",
+        "freshness": "STALE",
         "key": "money_legacy_v18b",
         "label": "Historical v1.8b migration candidate",
         "promotion_gate": "BLOCKED_MISSING_FROZEN_INPUT_BYTES"
       },
       {
-        "age_days": 29,
+        "age_days": 30,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -59,7 +59,7 @@
         "label": "Money nowcast — US"
       },
       {
-        "age_days": 29,
+        "age_days": 30,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -67,7 +67,7 @@
         "label": "Money nowcast — Euro area"
       },
       {
-        "age_days": 29,
+        "age_days": 30,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -75,7 +75,7 @@
         "label": "Money nowcast — Japan"
       },
       {
-        "age_days": 29,
+        "age_days": 30,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -83,7 +83,7 @@
         "label": "Money nowcast — China"
       },
       {
-        "age_days": 29,
+        "age_days": 30,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-07-31",
         "decision_critical": true,
@@ -98,7 +98,7 @@
         "refreshable": true
       },
       {
-        "age_days": 29,
+        "age_days": 30,
         "automation_status": "BLOCKED_MISSING_FROZEN_CONSTRUCTION_PROVENANCE",
         "available_date": "2026-07-31",
         "evidence_tier": "OVERLAY",
@@ -112,7 +112,7 @@
         "refreshable": false
       },
       {
-        "age_days": 29,
+        "age_days": 30,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-07-31",
         "evidence_tier": "OVERLAY",
@@ -126,7 +126,7 @@
         "refreshable": true
       },
       {
-        "age_days": 29,
+        "age_days": 30,
         "assets": [
           "SPY",
           "QQQ",
@@ -152,7 +152,7 @@
       }
     ],
     "oldest_decision_critical_input": {
-      "age_days": 29,
+      "age_days": 30,
       "available_date": "2026-07-31",
       "freshness": "FRESH",
       "key": "money_core",
@@ -180,7 +180,7 @@
     },
     "status": "HEALTHY"
   },
-  "generatedAt": "2026-08-29T12:44:21.173Z",
+  "generatedAt": "2026-08-30T11:58:53.380Z",
   "history": {
     "fiscal": [
       {
@@ -5607,10 +5607,10 @@
   "source": {
     "baseUrl": "https://raw.githubusercontent.com/Garrincha077/NUEVO/gh-pages/api",
     "hashes": {
-      "context-history.json": "acf19babbbb5f7268bb03b2e4eb7f580b3e960499c1026d45bf9164805a621bf",
+      "context-history.json": "4b8ca1ce00d16ee70790281af1f00daafdcbad87f78fdf6681eb8d949c46b31e",
       "money-extremes.json": "1f687bde87677ee8326e523b7fef81ec9bd38560ed434aab840cf784b08c7476",
-      "refresh-status.json": "825440e0d98bc653b2ca9b9957fd6702c2734d0b44293d1d1d90b1826645a480",
-      "report.json": "d6f499e9181c52172cc9bb5d5a0c60a2644c9de2552e37b231a5bacb16cd856a"
+      "refresh-status.json": "db46c47c9d6e0b1ff551a530c9389a0f00c27ef2c197630e19800817cf483c05",
+      "report.json": "d4d4d6fda63ffc89633d08d3b36e2f6e8c340756f613cab6445e1373d181d915"
     },
     "ref": "gh-pages",
     "reportSchema": "gmli-report-v1.6",
