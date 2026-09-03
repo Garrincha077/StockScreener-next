@@ -8350,5 +8350,17 @@
   "OABI": {
     "last_updated": "2026-09-02T23:32:19.007617",
     "in_earnings_season": false
+  },
+  "SMMT": {
+    "last_updated": "2026-09-03T23:28:28.515886",
+    "in_earnings_season": false
+  },
+  "TVA": {
+    "last_updated": "2026-09-03T23:28:30.911492",
+    "in_earnings_season": false
+  },
+  "STRT": {
+    "last_updated": "2026-09-03T23:28:53.777424",
+    "in_earnings_season": false
   }
 }
