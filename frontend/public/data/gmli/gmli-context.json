@@ -10,14 +10,14 @@
     "active_money_version": "GMLI_GLOBAL_MONEY_V2_PBOC_OFFICIAL",
     "counts": {
       "aging": 0,
-      "fresh": 9,
+      "fresh": 10,
       "stale": 2,
-      "unknown": 1
+      "unknown": 0
     },
-    "generated_at": "2026-09-02T11:24:51.215Z",
+    "generated_at": "2026-09-03T11:20:58.986Z",
     "items": [
       {
-        "age_days": 33,
+        "age_days": 34,
         "available_date": "2026-07-31",
         "decision_critical": true,
         "evidence_tier": "CORE",
@@ -30,7 +30,7 @@
       },
       {
         "active": false,
-        "age_days": 186,
+        "age_days": 187,
         "available_date": "2026-02-28",
         "decision_critical": false,
         "evidence_tier": "CORE_HISTORICAL_REFERENCE",
@@ -41,7 +41,7 @@
       },
       {
         "active": false,
-        "age_days": 64,
+        "age_days": 65,
         "available_date": "2026-06-30",
         "decision_critical": false,
         "evidence_tier": "RESEARCH_HISTORICAL",
@@ -51,7 +51,7 @@
         "promotion_gate": "BLOCKED_MISSING_FROZEN_INPUT_BYTES"
       },
       {
-        "age_days": 33,
+        "age_days": 34,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -59,7 +59,7 @@
         "label": "Money nowcast — US"
       },
       {
-        "age_days": 33,
+        "age_days": 34,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -67,7 +67,7 @@
         "label": "Money nowcast — Euro area"
       },
       {
-        "age_days": 33,
+        "age_days": 34,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -75,7 +75,7 @@
         "label": "Money nowcast — Japan"
       },
       {
-        "age_days": 33,
+        "age_days": 34,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -83,7 +83,7 @@
         "label": "Money nowcast — China"
       },
       {
-        "age_days": 33,
+        "age_days": 34,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-07-31",
         "decision_critical": true,
@@ -98,7 +98,7 @@
         "refreshable": true
       },
       {
-        "age_days": 33,
+        "age_days": 34,
         "automation_status": "BLOCKED_MISSING_FROZEN_CONSTRUCTION_PROVENANCE",
         "available_date": "2026-07-31",
         "evidence_tier": "OVERLAY",
@@ -112,7 +112,7 @@
         "refreshable": false
       },
       {
-        "age_days": 2,
+        "age_days": 3,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-08-31",
         "evidence_tier": "OVERLAY",
@@ -126,7 +126,7 @@
         "refreshable": true
       },
       {
-        "age_days": 2,
+        "age_days": 3,
         "assets": [
           "SPY",
           "QQQ",
@@ -141,18 +141,18 @@
         "label": "Core asset completed-month structure"
       },
       {
-        "age_days": null,
-        "available_date": null,
+        "age_days": 9,
+        "available_date": "2026-08-25",
         "decision_critical": false,
         "evidence_tier": "RESEARCH",
-        "freshness": "UNKNOWN",
+        "freshness": "FRESH",
         "key": "cftc_positioning",
         "label": "Core asset CFTC positioning",
         "role": "ENTRY_QUALITY_ONLY"
       }
     ],
     "oldest_decision_critical_input": {
-      "age_days": 33,
+      "age_days": 34,
       "available_date": "2026-07-31",
       "freshness": "FRESH",
       "key": "money_core",
@@ -180,7 +180,7 @@
     },
     "status": "HEALTHY"
   },
-  "generatedAt": "2026-09-02T11:24:51.215Z",
+  "generatedAt": "2026-09-03T11:20:58.986Z",
   "history": {
     "fiscal": [
       {
@@ -5615,10 +5615,10 @@
   "source": {
     "baseUrl": "https://raw.githubusercontent.com/Garrincha077/NUEVO/gh-pages/api",
     "hashes": {
-      "context-history.json": "cc9851a44acd221a4e14d454dc82d30d1976c4d8c374fd9ed3e6d45d21182abf",
+      "context-history.json": "3283ff46b2f1181acce61609efaf7b286766b517d83cca757aeae5057a3c3528",
       "money-extremes.json": "4459d512f83e324b384dd5751a6b51bf9173bf2f30188b570713d70769bd6fdc",
-      "refresh-status.json": "adeaed170c1e27a2191104c8bad307c5b68654549b2c24f725aa4a2eaf93ae90",
-      "report.json": "71973f8a80d19c47fe9b955abeeaa7e54b8d05696752e63f880294d6c1aa9359"
+      "refresh-status.json": "60f9c287546d84c39b69e1e736e06080d71fd65ca6463937d07f28ff2540b8f9",
+      "report.json": "9d120354befc20bff00ac77f014ccf249525ee3cf9c1b6ac4fd9412603522366"
     },
     "ref": "gh-pages",
     "reportSchema": "gmli-report-v1.6",
