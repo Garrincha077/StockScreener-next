@@ -14,10 +14,10 @@
       "stale": 2,
       "unknown": 0
     },
-    "generated_at": "2026-09-03T11:20:58.986Z",
+    "generated_at": "2026-09-04T11:24:08.485Z",
     "items": [
       {
-        "age_days": 34,
+        "age_days": 35,
         "available_date": "2026-07-31",
         "decision_critical": true,
         "evidence_tier": "CORE",
@@ -30,7 +30,7 @@
       },
       {
         "active": false,
-        "age_days": 187,
+        "age_days": 188,
         "available_date": "2026-02-28",
         "decision_critical": false,
         "evidence_tier": "CORE_HISTORICAL_REFERENCE",
@@ -41,7 +41,7 @@
       },
       {
         "active": false,
-        "age_days": 65,
+        "age_days": 66,
         "available_date": "2026-06-30",
         "decision_critical": false,
         "evidence_tier": "RESEARCH_HISTORICAL",
@@ -51,7 +51,7 @@
         "promotion_gate": "BLOCKED_MISSING_FROZEN_INPUT_BYTES"
       },
       {
-        "age_days": 34,
+        "age_days": 35,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -59,7 +59,7 @@
         "label": "Money nowcast — US"
       },
       {
-        "age_days": 34,
+        "age_days": 35,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -67,7 +67,7 @@
         "label": "Money nowcast — Euro area"
       },
       {
-        "age_days": 34,
+        "age_days": 35,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -75,7 +75,7 @@
         "label": "Money nowcast — Japan"
       },
       {
-        "age_days": 34,
+        "age_days": 35,
         "available_date": "2026-07",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -83,7 +83,7 @@
         "label": "Money nowcast — China"
       },
       {
-        "age_days": 34,
+        "age_days": 35,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-07-31",
         "decision_critical": true,
@@ -98,7 +98,7 @@
         "refreshable": true
       },
       {
-        "age_days": 34,
+        "age_days": 35,
         "automation_status": "BLOCKED_MISSING_FROZEN_CONSTRUCTION_PROVENANCE",
         "available_date": "2026-07-31",
         "evidence_tier": "OVERLAY",
@@ -112,7 +112,7 @@
         "refreshable": false
       },
       {
-        "age_days": 3,
+        "age_days": 4,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-08-31",
         "evidence_tier": "OVERLAY",
@@ -126,7 +126,7 @@
         "refreshable": true
       },
       {
-        "age_days": 3,
+        "age_days": 4,
         "assets": [
           "SPY",
           "QQQ",
@@ -141,7 +141,7 @@
         "label": "Core asset completed-month structure"
       },
       {
-        "age_days": 9,
+        "age_days": 10,
         "available_date": "2026-08-25",
         "decision_critical": false,
         "evidence_tier": "RESEARCH",
@@ -152,7 +152,7 @@
       }
     ],
     "oldest_decision_critical_input": {
-      "age_days": 34,
+      "age_days": 35,
       "available_date": "2026-07-31",
       "freshness": "FRESH",
       "key": "money_core",
@@ -180,7 +180,7 @@
     },
     "status": "HEALTHY"
   },
-  "generatedAt": "2026-09-03T11:20:58.986Z",
+  "generatedAt": "2026-09-04T11:24:08.485Z",
   "history": {
     "fiscal": [
       {
@@ -5615,10 +5615,10 @@
   "source": {
     "baseUrl": "https://raw.githubusercontent.com/Garrincha077/NUEVO/gh-pages/api",
     "hashes": {
-      "context-history.json": "3283ff46b2f1181acce61609efaf7b286766b517d83cca757aeae5057a3c3528",
+      "context-history.json": "88be98eecd4ef990f3b60d5054895e7a52c21bb7a99f0d6ddb5b5d56663a1878",
       "money-extremes.json": "4459d512f83e324b384dd5751a6b51bf9173bf2f30188b570713d70769bd6fdc",
-      "refresh-status.json": "60f9c287546d84c39b69e1e736e06080d71fd65ca6463937d07f28ff2540b8f9",
-      "report.json": "9d120354befc20bff00ac77f014ccf249525ee3cf9c1b6ac4fd9412603522366"
+      "refresh-status.json": "882903ad1be807d29cb128bcf9578ed93968b0d52e924abb6181f642d51b2ab5",
+      "report.json": "f2762bb2c2ad40616527b444e37240a4ec6ae0c7b99150804670eec2752dddde"
     },
     "ref": "gh-pages",
     "reportSchema": "gmli-report-v1.6",
