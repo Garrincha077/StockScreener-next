@@ -1,0 +1,50 @@
+{
+  "data": {
+    "ticker": "HOS",
+    "fetch_date": "2026-09-08T23:34:23.587255",
+    "quarterly_revenue": {
+      "2024-12-31 00:00:00": 160869000.0,
+      "2025-09-30 00:00:00": 199116000.0
+    },
+    "revenue_qoq_change": 23.775245696809204,
+    "gross_margin": 82.81,
+    "margin_change": 0.06,
+    "operating_margin": 30.34,
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_operating_cash_flow": {
+      "2024-12-31 00:00:00": -58650000.0
+    },
+    "operating_cash_flow_qoq_change": null,
+    "operating_cash_flow_yoy_change": null,
+    "quarterly_capex": {
+      "2024-12-31 00:00:00": -34707000.0
+    },
+    "quarterly_free_cash_flow": {
+      "2024-12-31 00:00:00": -93357000.0
+    },
+    "free_cash_flow_qoq_change": null,
+    "free_cash_flow_yoy_change": null,
+    "free_cash_flow_margin": -46.88573494847225,
+    "quarterly_cash": {
+      "2024-12-31 00:00:00": 80803000.0,
+      "2025-09-30 00:00:00": 97757000.0
+    },
+    "cash_latest": 97757000.0,
+    "quarterly_total_debt": {
+      "2024-12-31 00:00:00": 466175000.0,
+      "2025-09-30 00:00:00": 473811000.0
+    },
+    "total_debt_latest": 473811000.0,
+    "total_debt_qoq_change": 1.638011476376897,
+    "total_debt_yoy_change": null,
+    "net_debt_latest": 376054000.0,
+    "fundamental_periods": [
+      "2024-12-31",
+      "2025-09-30"
+    ]
+  },
+  "fetched_at": "2026-09-08T23:34:23.588646",
+  "extended_fetched_at": "2026-09-08T23:34:51.001838"
+}
