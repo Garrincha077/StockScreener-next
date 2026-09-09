@@ -2368,8 +2368,8 @@
     "in_earnings_season": false
   },
   "SMBC": {
-    "last_updated": "2026-07-22T15:19:14.704054",
-    "in_earnings_season": true
+    "last_updated": "2026-09-09T23:29:38.976333",
+    "in_earnings_season": false
   },
   "SMBK": {
     "last_updated": "2026-09-02T23:54:25.557214",
@@ -5880,8 +5880,8 @@
     "in_earnings_season": false
   },
   "CV": {
-    "last_updated": "2026-07-29T14:40:19.663923",
-    "in_earnings_season": true
+    "last_updated": "2026-09-09T23:29:21.073785",
+    "in_earnings_season": false
   },
   "CVBF": {
     "last_updated": "2026-09-02T23:38:52.849166",
@@ -6476,8 +6476,8 @@
     "in_earnings_season": false
   },
   "FBYD": {
-    "last_updated": "2026-08-13T13:47:53.389214",
-    "in_earnings_season": true
+    "last_updated": "2026-09-09T23:29:25.406337",
+    "in_earnings_season": false
   },
   "FC": {
     "last_updated": "2026-07-29T14:45:59.973684",
@@ -7232,7 +7232,7 @@
     "in_earnings_season": false
   },
   "FAC": {
-    "last_updated": "2026-09-01T00:47:35.582584",
+    "last_updated": "2026-09-09T23:29:24.383095",
     "in_earnings_season": false
   },
   "FNV": {
@@ -7768,7 +7768,7 @@
     "in_earnings_season": false
   },
   "MCGA": {
-    "last_updated": "2026-09-01T00:47:40.464182",
+    "last_updated": "2026-09-09T23:29:32.371566",
     "in_earnings_season": false
   },
   "MP": {
@@ -7812,7 +7812,7 @@
     "in_earnings_season": false
   },
   "ACDC": {
-    "last_updated": "2026-09-01T00:47:31.240574",
+    "last_updated": "2026-09-09T23:29:17.825404",
     "in_earnings_season": false
   },
   "AVBC": {
@@ -8369,6 +8369,30 @@
   },
   "HOS": {
     "last_updated": "2026-09-08T23:34:23.592119",
+    "in_earnings_season": false
+  },
+  "ARCT": {
+    "last_updated": "2026-09-09T23:28:43.569871",
+    "in_earnings_season": false
+  },
+  "CNL": {
+    "last_updated": "2026-09-09T23:28:46.774130",
+    "in_earnings_season": false
+  },
+  "JILL": {
+    "last_updated": "2026-09-09T23:28:55.028474",
+    "in_earnings_season": false
+  },
+  "IRD": {
+    "last_updated": "2026-09-09T23:28:55.066491",
+    "in_earnings_season": false
+  },
+  "STAA": {
+    "last_updated": "2026-09-09T23:29:05.519375",
+    "in_earnings_season": false
+  },
+  "OSG": {
+    "last_updated": "2026-09-09T23:29:34.857715",
     "in_earnings_season": false
   }
 }
