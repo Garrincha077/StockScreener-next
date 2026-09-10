@@ -720,7 +720,7 @@
     "in_earnings_season": false
   },
   "MCB": {
-    "last_updated": "2026-08-25T22:15:29.139375",
+    "last_updated": "2026-09-10T23:25:11.463447",
     "in_earnings_season": false
   },
   "MCFT": {
@@ -2688,8 +2688,8 @@
     "in_earnings_season": false
   },
   "THFF": {
-    "last_updated": "2026-07-30T15:17:36.433454",
-    "in_earnings_season": true
+    "last_updated": "2026-09-10T23:25:20.090855",
+    "in_earnings_season": false
   },
   "THG": {
     "last_updated": "2026-09-02T23:55:48.412475",
@@ -4260,7 +4260,7 @@
     "in_earnings_season": false
   },
   "ELMD": {
-    "last_updated": "2026-09-01T23:32:38.878650",
+    "last_updated": "2026-09-10T23:25:05.500942",
     "in_earnings_season": false
   },
   "FSUN": {
@@ -7884,8 +7884,8 @@
     "in_earnings_season": false
   },
   "ANGX": {
-    "last_updated": "2026-08-12T13:28:58.914005",
-    "in_earnings_season": true
+    "last_updated": "2026-09-10T23:25:00.071832",
+    "in_earnings_season": false
   },
   "ANIK": {
     "last_updated": "2026-09-02T23:34:09.564120",
@@ -8008,7 +8008,7 @@
     "in_earnings_season": false
   },
   "TMP": {
-    "last_updated": "2026-09-01T23:32:52.784844",
+    "last_updated": "2026-09-10T23:25:21.067960",
     "in_earnings_season": false
   },
   "ONCH": {
@@ -8252,7 +8252,7 @@
     "in_earnings_season": false
   },
   "FRPH": {
-    "last_updated": "2026-08-29T03:19:21.409651",
+    "last_updated": "2026-09-10T23:25:07.326865",
     "in_earnings_season": false
   },
   "TSQ": {
@@ -8340,11 +8340,11 @@
     "in_earnings_season": false
   },
   "PNRG": {
-    "last_updated": "2026-09-01T23:32:18.928965",
+    "last_updated": "2026-09-10T23:25:14.239511",
     "in_earnings_season": false
   },
   "PXS": {
-    "last_updated": "2026-09-01T23:32:19.728507",
+    "last_updated": "2026-09-10T23:25:16.739889",
     "in_earnings_season": false
   },
   "OABI": {
@@ -8393,6 +8393,14 @@
   },
   "OSG": {
     "last_updated": "2026-09-09T23:29:34.857715",
+    "in_earnings_season": false
+  },
+  "CBC": {
+    "last_updated": "2026-09-10T23:24:36.540284",
+    "in_earnings_season": false
+  },
+  "VHC": {
+    "last_updated": "2026-09-10T23:25:22.754563",
     "in_earnings_season": false
   }
 }
