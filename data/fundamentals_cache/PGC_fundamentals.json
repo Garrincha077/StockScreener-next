@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "PGC",
-    "fetch_date": "2026-09-02T23:51:10.485630",
+    "fetch_date": "2026-09-11T23:49:10.363462",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
@@ -20,10 +20,10 @@
       "2025-09-30 00:00:00": NaN,
       "2025-12-31 00:00:00": 0.69,
       "2026-03-31 00:00:00": 0.8,
-      "2026-06-30 00:00:00": 0.86
+      "2026-06-30 00:00:00": 0.85
     },
-    "eps_qoq_change": 7.499999999999993,
-    "eps_yoy_change": 91.1111111111111,
+    "eps_qoq_change": 6.249999999999992,
+    "eps_yoy_change": 88.88888888888889,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -103,6 +103,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-02T23:51:10.572873",
-  "extended_fetched_at": "2026-09-02T23:51:10.572873"
+  "fetched_at": "2026-09-11T23:49:10.473721",
+  "extended_fetched_at": "2026-09-11T23:49:10.473721"
 }

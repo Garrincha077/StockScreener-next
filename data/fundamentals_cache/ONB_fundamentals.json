@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "ONB",
-    "fetch_date": "2026-09-02T23:50:15.628449",
+    "fetch_date": "2026-09-11T23:48:15.879877",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 647307000.0,
       "2025-09-30 00:00:00": 705070000.0,
@@ -16,10 +16,10 @@
       "2025-09-30 00:00:00": 0.458909,
       "2025-12-31 00:00:00": 0.548105,
       "2026-03-31 00:00:00": 0.59,
-      "2026-06-30 00:00:00": 0.65
+      "2026-06-30 00:00:00": 0.64102
     },
-    "eps_qoq_change": 10.169491525423737,
-    "eps_yoy_change": 92.8737596733609,
+    "eps_qoq_change": 8.647457627118655,
+    "eps_yoy_change": 90.20913450125816,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -96,6 +96,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-02T23:50:15.697355",
-  "extended_fetched_at": "2026-09-02T23:50:15.697355"
+  "fetched_at": "2026-09-11T23:48:15.966748",
+  "extended_fetched_at": "2026-09-11T23:48:15.966748"
 }

@@ -1,65 +1,82 @@
 {
   "data": {
     "ticker": "NVRI",
-    "fetch_date": "2026-09-02T23:49:40.398057",
+    "fetch_date": "2026-09-11T23:47:41.389886",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": 547907000.0,
-      "2026-03-31 00:00:00": 549803000.0
+      "2025-06-30 00:00:00": 315972000.0,
+      "2026-03-31 00:00:00": 549803000.0,
+      "2026-06-30 00:00:00": 187342000.0
     },
-    "revenue_qoq_change": 0.3460441279268197,
+    "revenue_qoq_change": -65.92561335605663,
     "quarterly_eps": {
       "2025-03-31 00:00:00": -0.320587,
-      "2026-03-31 00:00:00": -0.379348
+      "2025-06-30 00:00:00": -1.700682,
+      "2026-03-31 00:00:00": -0.379348,
+      "2026-06-30 00:00:00": -14.21
     },
-    "eps_qoq_change": -18.329189892291332,
-    "gross_margin": 19.2,
-    "margin_change": -3.27,
-    "operating_margin": 2.48,
+    "eps_qoq_change": -3645.9008614781146,
+    "gross_margin": -84.46,
+    "margin_change": -103.66,
+    "operating_margin": -130.47,
     "quarterly_inventory": {
-      "2026-03-31 00:00:00": 164505000.0
+      "2026-03-31 00:00:00": 164505000.0,
+      "2026-06-30 00:00:00": 134094000.0
     },
-    "inventory_to_sales_ratio": 0.299,
+    "inventory_qoq_change": -18.49,
+    "inventory_to_sales_ratio": 0.716,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
     "quarterly_operating_cash_flow": {
       "2025-03-31 00:00:00": -20685000.0,
-      "2026-03-31 00:00:00": -13389000.0
+      "2025-06-30 00:00:00": 49258000.0,
+      "2026-03-31 00:00:00": -13389000.0,
+      "2026-06-30 00:00:00": -262013000.0
     },
-    "operating_cash_flow_qoq_change": 35.27193618564176,
+    "operating_cash_flow_qoq_change": -1856.9273284039139,
     "operating_cash_flow_yoy_change": null,
     "quarterly_capex": {
       "2025-03-31 00:00:00": -14972000.0,
-      "2026-03-31 00:00:00": -19304000.0
+      "2025-06-30 00:00:00": -45738000.0,
+      "2026-03-31 00:00:00": -19304000.0,
+      "2026-06-30 00:00:00": -49291000.0
     },
     "quarterly_free_cash_flow": {
       "2025-03-31 00:00:00": -35657000.0,
-      "2026-03-31 00:00:00": -32693000.0
+      "2025-06-30 00:00:00": 3520000.0,
+      "2026-03-31 00:00:00": -32693000.0,
+      "2026-06-30 00:00:00": -311304000.0
     },
-    "free_cash_flow_qoq_change": 8.312533303418682,
+    "free_cash_flow_qoq_change": -852.2038356834796,
     "free_cash_flow_yoy_change": null,
-    "free_cash_flow_margin": -5.946311678910446,
+    "free_cash_flow_margin": -166.1688249298075,
     "quarterly_cash": {
-      "2026-03-31 00:00:00": 105617000.0
+      "2026-03-31 00:00:00": 105617000.0,
+      "2026-06-30 00:00:00": 253427000.0
     },
-    "cash_latest": 105617000.0,
+    "cash_latest": 253427000.0,
     "quarterly_total_debt": {
-      "2026-03-31 00:00:00": 1752082000.0
+      "2026-03-31 00:00:00": 1752082000.0,
+      "2026-06-30 00:00:00": 420264000.0
     },
-    "total_debt_latest": 1752082000.0,
-    "total_debt_qoq_change": null,
+    "total_debt_latest": 420264000.0,
+    "total_debt_qoq_change": -76.01345142521868,
     "total_debt_yoy_change": null,
-    "net_debt_latest": 1646465000.0,
+    "net_debt_latest": 166837000.0,
     "quarterly_shares_outstanding": {
-      "2026-03-31 00:00:00": 28114013.0
+      "2026-03-31 00:00:00": 28114013.0,
+      "2026-06-30 00:00:00": 28103750.0
     },
-    "shares_outstanding_latest": 28114013.0,
+    "shares_outstanding_latest": 28103750.0,
     "share_dilution_yoy_change": null,
     "fundamental_periods": [
       "2025-03-31",
-      "2026-03-31"
+      "2025-06-30",
+      "2026-03-31",
+      "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-02T23:49:40.447616",
-  "extended_fetched_at": "2026-09-02T23:49:40.447616"
+  "fetched_at": "2026-09-11T23:47:41.465874",
+  "extended_fetched_at": "2026-09-11T23:47:41.465874"
 }

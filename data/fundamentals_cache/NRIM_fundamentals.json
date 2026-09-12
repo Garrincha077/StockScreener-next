@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "NRIM",
-    "fetch_date": "2026-09-02T23:49:24.271066",
+    "fetch_date": "2026-09-11T23:47:25.332138",
     "quarterly_revenue": {
       "2024-12-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 50232000.0,
@@ -14,14 +14,14 @@
     "revenue_yoy_change": 7.248367574454531,
     "quarterly_eps": {
       "2024-12-31 00:00:00": NaN,
-      "2025-06-30 00:00:00": 0.52,
+      "2025-06-30 00:00:00": 0.5225,
       "2025-09-30 00:00:00": 1.2,
       "2025-12-31 00:00:00": 0.55,
       "2026-03-31 00:00:00": 0.61,
       "2026-06-30 00:00:00": 0.68
     },
     "eps_qoq_change": 11.475409836065584,
-    "eps_yoy_change": 30.769230769230777,
+    "eps_yoy_change": 30.143540669856478,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -98,6 +98,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-02T23:49:24.354353",
-  "extended_fetched_at": "2026-09-02T23:49:24.354353"
+  "fetched_at": "2026-09-11T23:47:25.435308",
+  "extended_fetched_at": "2026-09-11T23:47:25.435308"
 }
