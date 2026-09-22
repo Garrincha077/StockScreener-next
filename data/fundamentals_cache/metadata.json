@@ -3432,7 +3432,7 @@
     "in_earnings_season": false
   },
   "WYY": {
-    "last_updated": "2026-09-11T23:56:25.843618",
+    "last_updated": "2026-09-22T23:46:21.688578",
     "in_earnings_season": false
   },
   "XEL": {
@@ -7340,7 +7340,7 @@
     "in_earnings_season": false
   },
   "CVCO": {
-    "last_updated": "2026-08-29T03:19:07.590162",
+    "last_updated": "2026-09-22T23:46:05.167622",
     "in_earnings_season": false
   },
   "CVRX": {
@@ -7636,7 +7636,7 @@
     "in_earnings_season": false
   },
   "PSBD": {
-    "last_updated": "2026-09-02T23:51:53.511528",
+    "last_updated": "2026-09-22T23:46:15.195536",
     "in_earnings_season": false
   },
   "RWAY": {
@@ -8272,7 +8272,7 @@
     "in_earnings_season": false
   },
   "COYA": {
-    "last_updated": "2026-08-25T21:57:31.825092",
+    "last_updated": "2026-09-22T23:46:04.289108",
     "in_earnings_season": false
   },
   "IA": {
@@ -8340,7 +8340,7 @@
     "in_earnings_season": false
   },
   "PNRG": {
-    "last_updated": "2026-09-10T23:25:14.239511",
+    "last_updated": "2026-09-22T23:46:14.354424",
     "in_earnings_season": false
   },
   "PXS": {
@@ -8453,6 +8453,10 @@
   },
   "ORIC": {
     "last_updated": "2026-09-22T00:17:58.681803",
+    "in_earnings_season": false
+  },
+  "SBC": {
+    "last_updated": "2026-09-22T23:46:18.485670",
     "in_earnings_season": false
   }
 }
