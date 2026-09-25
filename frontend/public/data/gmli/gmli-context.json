@@ -9,15 +9,15 @@
   "dataHealth": {
     "active_money_version": "GMLI_GLOBAL_MONEY_V2_PBOC_OFFICIAL",
     "counts": {
-      "aging": 2,
-      "fresh": 8,
+      "aging": 1,
+      "fresh": 9,
       "stale": 2,
       "unknown": 0
     },
-    "generated_at": "2026-09-24T12:12:34.250Z",
+    "generated_at": "2026-09-25T12:13:23.975Z",
     "items": [
       {
-        "age_days": 24,
+        "age_days": 25,
         "available_date": "2026-08-31",
         "decision_critical": true,
         "evidence_tier": "CORE",
@@ -30,7 +30,7 @@
       },
       {
         "active": false,
-        "age_days": 208,
+        "age_days": 209,
         "available_date": "2026-02-28",
         "decision_critical": false,
         "evidence_tier": "CORE_HISTORICAL_REFERENCE",
@@ -41,7 +41,7 @@
       },
       {
         "active": false,
-        "age_days": 86,
+        "age_days": 87,
         "available_date": "2026-06-30",
         "decision_critical": false,
         "evidence_tier": "RESEARCH_HISTORICAL",
@@ -51,7 +51,7 @@
         "promotion_gate": "BLOCKED_MISSING_FROZEN_INPUT_BYTES"
       },
       {
-        "age_days": 24,
+        "age_days": 25,
         "available_date": "2026-08",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -59,15 +59,15 @@
         "label": "Money nowcast — US"
       },
       {
-        "age_days": 55,
-        "available_date": "2026-07",
+        "age_days": 25,
+        "available_date": "2026-08",
         "evidence_tier": "RESEARCH",
-        "freshness": "AGING",
+        "freshness": "FRESH",
         "key": "money_nowcast_euro_area",
         "label": "Money nowcast — Euro area"
       },
       {
-        "age_days": 24,
+        "age_days": 25,
         "available_date": "2026-08",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -75,7 +75,7 @@
         "label": "Money nowcast — Japan"
       },
       {
-        "age_days": 24,
+        "age_days": 25,
         "available_date": "2026-08",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -83,7 +83,7 @@
         "label": "Money nowcast — China"
       },
       {
-        "age_days": 24,
+        "age_days": 25,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-08-31",
         "decision_critical": true,
@@ -98,7 +98,7 @@
         "refreshable": true
       },
       {
-        "age_days": 55,
+        "age_days": 56,
         "automation_status": "BLOCKED_MISSING_FROZEN_CONSTRUCTION_PROVENANCE",
         "available_date": "2026-07-31",
         "evidence_tier": "OVERLAY",
@@ -112,7 +112,7 @@
         "refreshable": false
       },
       {
-        "age_days": 24,
+        "age_days": 25,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-08-31",
         "evidence_tier": "OVERLAY",
@@ -126,7 +126,7 @@
         "refreshable": true
       },
       {
-        "age_days": 24,
+        "age_days": 25,
         "assets": [
           "SPY",
           "QQQ",
@@ -141,7 +141,7 @@
         "label": "Core asset completed-month structure"
       },
       {
-        "age_days": 9,
+        "age_days": 10,
         "available_date": "2026-09-15",
         "decision_critical": false,
         "evidence_tier": "RESEARCH",
@@ -152,7 +152,7 @@
       }
     ],
     "oldest_decision_critical_input": {
-      "age_days": 24,
+      "age_days": 25,
       "available_date": "2026-08-31",
       "freshness": "FRESH",
       "key": "money_core",
@@ -180,7 +180,7 @@
     },
     "status": "HEALTHY"
   },
-  "generatedAt": "2026-09-24T12:12:34.250Z",
+  "generatedAt": "2026-09-25T12:13:23.975Z",
   "history": {
     "fiscal": [
       {
@@ -3448,27 +3448,27 @@
       "fx_neutral_accel3": {
         "band": "NORMAL",
         "percentile": 42.916666666666664,
-        "value_pp": -0.10235630486493452,
-        "z": -0.05600850935884605
+        "value_pp": -0.10418858593492608,
+        "z": -0.05760439384706832
       },
       "fx_neutral_level": {
         "band": "NORMAL",
-        "percentile": 42.083333333333336,
-        "value_pct": 5.803660535372171,
-        "z": -0.38057621441575434
+        "percentile": 41.25,
+        "value_pct": 5.80182825430218,
+        "z": -0.3812777565282119
       },
       "month": "2026-07",
       "usd_accel3": {
         "band": "NORMAL",
         "percentile": 29.583333333333332,
-        "value_pp": -1.9544626986028497,
-        "z": -0.6198238254096661
+        "value_pp": -1.9562560450738058,
+        "z": -0.6203735017911924
       },
       "usd_level": {
         "band": "NORMAL",
         "percentile": 64.58333333333333,
-        "value_pct": 7.492361854352527,
-        "z": 0.219256880483841
+        "value_pct": 7.490568507881571,
+        "z": 0.21893061442848338
       }
     },
     "rows": [
@@ -5395,29 +5395,29 @@
       {
         "available_date": "2026-01-31",
         "fx_neutral_accel3_percentile": 67.91666666666667,
-        "fx_neutral_accel3_pp": 0.18482162144164072,
+        "fx_neutral_accel3_pp": 0.18482162144163716,
         "fx_neutral_accel3_window_n": 120,
-        "fx_neutral_accel3_z": 0.20775260530254125,
+        "fx_neutral_accel3_z": 0.20775260530253817,
         "fx_neutral_level_percentile": 39.583333333333336,
         "fx_neutral_level_window_n": 120,
-        "fx_neutral_level_z": -0.42781151762845937,
-        "fx_neutral_yoy_pct": 5.786107658813939,
+        "fx_neutral_level_z": -0.42781151762846076,
+        "fx_neutral_yoy_pct": 5.786107658813935,
         "month": "2025-12",
         "usd_accel3_percentile": 85.41666666666667,
-        "usd_accel3_pp": 3.783320650780544,
+        "usd_accel3_pp": 3.7833206507805386,
         "usd_accel3_window_n": 120,
-        "usd_accel3_z": 1.116320051565468,
+        "usd_accel3_z": 1.1163200515654665,
         "usd_level_percentile": 79.58333333333333,
         "usd_level_window_n": 120,
-        "usd_level_z": 0.6805022294053962,
-        "usd_yoy_pct": 9.774603814352426
+        "usd_level_z": 0.6805022294053952,
+        "usd_yoy_pct": 9.774603814352421
       },
       {
         "available_date": "2026-02-28",
         "fx_neutral_accel3_percentile": 75.41666666666667,
         "fx_neutral_accel3_pp": 0.34153871859051854,
         "fx_neutral_accel3_window_n": 120,
-        "fx_neutral_accel3_z": 0.3463712307574051,
+        "fx_neutral_accel3_z": 0.34637123075740517,
         "fx_neutral_level_percentile": 46.25,
         "fx_neutral_level_window_n": 120,
         "fx_neutral_level_z": -0.3552312257345324,
@@ -5435,38 +5435,38 @@
       {
         "available_date": "2026-03-31",
         "fx_neutral_accel3_percentile": 88.75,
-        "fx_neutral_accel3_pp": 0.6160129827104548,
+        "fx_neutral_accel3_pp": 0.6160129827104583,
         "fx_neutral_accel3_window_n": 120,
-        "fx_neutral_accel3_z": 0.5823989168263762,
+        "fx_neutral_accel3_z": 0.5823989168263792,
         "fx_neutral_level_percentile": 47.916666666666664,
         "fx_neutral_level_window_n": 120,
-        "fx_neutral_level_z": -0.2992201152651137,
-        "fx_neutral_yoy_pct": 6.0864464502104285,
+        "fx_neutral_level_z": -0.29922011526511233,
+        "fx_neutral_yoy_pct": 6.086446450210432,
         "month": "2026-02",
         "usd_accel3_percentile": 85.41666666666667,
-        "usd_accel3_pp": 3.8021968625221287,
+        "usd_accel3_pp": 3.8021968625221323,
         "usd_accel3_window_n": 120,
-        "usd_accel3_z": 1.1093373758640663,
+        "usd_accel3_z": 1.1093373758640677,
         "usd_level_percentile": 83.75,
         "usd_level_window_n": 120,
-        "usd_level_z": 0.9759413290118161,
-        "usd_yoy_pct": 11.517576917758372
+        "usd_level_z": 0.9759413290118167,
+        "usd_yoy_pct": 11.517576917758376
       },
       {
         "available_date": "2026-04-30",
         "fx_neutral_accel3_percentile": 63.75,
-        "fx_neutral_accel3_pp": 0.12959604002967318,
+        "fx_neutral_accel3_pp": 0.12959604002967673,
         "fx_neutral_accel3_window_n": 120,
-        "fx_neutral_accel3_z": 0.15786572716020247,
+        "fx_neutral_accel3_z": 0.15786572716020558,
         "fx_neutral_level_percentile": 46.25,
         "fx_neutral_level_window_n": 120,
         "fx_neutral_level_z": -0.35859031722283113,
         "fx_neutral_yoy_pct": 5.915703698843612,
         "month": "2026-03",
         "usd_accel3_percentile": 47.083333333333336,
-        "usd_accel3_pp": -0.16944942284543707,
+        "usd_accel3_pp": -0.16944942284543174,
         "usd_accel3_window_n": 120,
-        "usd_accel3_z": -0.09376385455281411,
+        "usd_accel3_z": -0.09376385455281248,
         "usd_level_percentile": 77.08333333333333,
         "usd_level_window_n": 120,
         "usd_level_z": 0.6191541966298718,
@@ -5477,10 +5477,10 @@
         "fx_neutral_accel3_percentile": 48.75,
         "fx_neutral_accel3_pp": -0.05035046522628317,
         "fx_neutral_accel3_window_n": 120,
-        "fx_neutral_accel3_z": -0.0014187823221774032,
+        "fx_neutral_accel3_z": -0.0014187823221774335,
         "fx_neutral_level_percentile": 45.416666666666664,
         "fx_neutral_level_window_n": 120,
-        "fx_neutral_level_z": -0.35609583546486195,
+        "fx_neutral_level_z": -0.356095835464862,
         "fx_neutral_yoy_pct": 5.906016840237106,
         "month": "2026-04",
         "usd_accel3_percentile": 30.416666666666668,
@@ -5495,18 +5495,18 @@
       {
         "available_date": "2026-06-30",
         "fx_neutral_accel3_percentile": 54.583333333333336,
-        "fx_neutral_accel3_pp": 0.02512140115551187,
+        "fx_neutral_accel3_pp": 0.025121401155508316,
         "fx_neutral_accel3_window_n": 120,
-        "fx_neutral_accel3_z": 0.062257395031553975,
+        "fx_neutral_accel3_z": 0.06225739503155086,
         "fx_neutral_level_percentile": 51.25,
         "fx_neutral_level_window_n": 120,
         "fx_neutral_level_z": -0.2718953612881193,
         "fx_neutral_yoy_pct": 6.11156785136594,
         "month": "2026-05",
         "usd_accel3_percentile": 24.583333333333332,
-        "usd_accel3_pp": -2.2175733907404904,
+        "usd_accel3_pp": -2.217573390740494,
         "usd_accel3_window_n": 120,
-        "usd_accel3_z": -0.7046696751686451,
+        "usd_accel3_z": -0.7046696751686462,
         "usd_level_percentile": 74.58333333333333,
         "usd_level_window_n": 120,
         "usd_level_z": 0.5553732343676171,
@@ -5515,42 +5515,42 @@
       {
         "available_date": "2026-07-31",
         "fx_neutral_accel3_percentile": 53.75,
-        "fx_neutral_accel3_pp": -0.0055160996091689896,
+        "fx_neutral_accel3_pp": -0.005516099609165437,
         "fx_neutral_accel3_window_n": 120,
-        "fx_neutral_accel3_z": 0.033218875616536477,
+        "fx_neutral_accel3_z": 0.03321887561653957,
         "fx_neutral_level_percentile": 46.25,
         "fx_neutral_level_window_n": 120,
-        "fx_neutral_level_z": -0.3439981788641587,
-        "fx_neutral_yoy_pct": 5.910187599234443,
+        "fx_neutral_level_z": -0.34399817886415734,
+        "fx_neutral_yoy_pct": 5.910187599234447,
         "month": "2026-06",
         "usd_accel3_percentile": 32.083333333333336,
-        "usd_accel3_pp": -1.6845219590032183,
+        "usd_accel3_pp": -1.6845219590032148,
         "usd_accel3_window_n": 120,
-        "usd_accel3_z": -0.5355960887954717,
+        "usd_accel3_z": -0.5355960887954706,
         "usd_level_percentile": 69.58333333333333,
         "usd_level_window_n": 120,
-        "usd_level_z": 0.3003863353454053,
-        "usd_yoy_pct": 7.920632432503771
+        "usd_level_z": 0.30038633534540593,
+        "usd_yoy_pct": 7.9206324325037745
       },
       {
         "available_date": "2026-08-31",
         "fx_neutral_accel3_percentile": 42.916666666666664,
-        "fx_neutral_accel3_pp": -0.10235630486493452,
+        "fx_neutral_accel3_pp": -0.10418858593492608,
         "fx_neutral_accel3_window_n": 120,
-        "fx_neutral_accel3_z": -0.05600850935884605,
-        "fx_neutral_level_percentile": 42.083333333333336,
+        "fx_neutral_accel3_z": -0.05760439384706832,
+        "fx_neutral_level_percentile": 41.25,
         "fx_neutral_level_window_n": 120,
-        "fx_neutral_level_z": -0.38057621441575434,
-        "fx_neutral_yoy_pct": 5.803660535372171,
+        "fx_neutral_level_z": -0.3812777565282119,
+        "fx_neutral_yoy_pct": 5.80182825430218,
         "month": "2026-07",
         "usd_accel3_percentile": 29.583333333333332,
-        "usd_accel3_pp": -1.9544626986028497,
+        "usd_accel3_pp": -1.9562560450738058,
         "usd_accel3_window_n": 120,
-        "usd_accel3_z": -0.6198238254096661,
+        "usd_accel3_z": -0.6203735017911924,
         "usd_level_percentile": 64.58333333333333,
         "usd_level_window_n": 120,
-        "usd_level_z": 0.219256880483841,
-        "usd_yoy_pct": 7.492361854352527
+        "usd_level_z": 0.21893061442848338,
+        "usd_yoy_pct": 7.490568507881571
       }
     ],
     "scoringEffect": "NONE",
@@ -5597,12 +5597,12 @@
       "availableDate": "2026-08-31",
       "freshness": "FRESH",
       "fxNeutralRegime": "NEUTRAL",
-      "fxNeutralScore": 43.7,
-      "fxNeutralYoYPct": 5.803661,
+      "fxNeutralScore": 43.6,
+      "fxNeutralYoYPct": 5.801828,
       "observationMonth": "2026-07",
       "usdRegime": "NEUTRAL",
-      "usdScore": 53.7,
-      "usdYoYPct": 7.492362,
+      "usdScore": 53.6,
+      "usdYoYPct": 7.490569,
       "version": "GMLI_GLOBAL_MONEY_V2_PBOC_OFFICIAL"
     },
     "provisional": false,
@@ -5635,10 +5635,10 @@
   "source": {
     "baseUrl": "https://raw.githubusercontent.com/Garrincha077/NUEVO/gh-pages/api",
     "hashes": {
-      "context-history.json": "a1ac1737bbbf1586f7420bb5b0965a3bd12f4d1431230f2f707710882b12c73b",
-      "money-extremes.json": "9ad6d0df14b7872ef2cb7edfdfbe8295f0749197d034580aa730512f75d68cf1",
-      "refresh-status.json": "84de30526f2f98a1028efbb4ab35d4fc40b4cacc83ca716750d6049eacb914e8",
-      "report.json": "18102e2c371e2071573374673c9889170a8b3b0bd1c0a73d997d1420a182376b"
+      "context-history.json": "9530432232ac7bbdd3036b97bab88f4ecf58336071adb2279eaa92719163df58",
+      "money-extremes.json": "8702287e1c8cf826f6520b67add945a4048721e24a6a9b3a7b0467a96137b8da",
+      "refresh-status.json": "882bf6e9ce053efea0bdc47674d132a1c3eaed62dd13e082cca2fa0e60a08eb7",
+      "report.json": "9e25e7b205641c8f4c0f1263b945752a5be37a87d3ddcb338f984a2fffd61589"
     },
     "ref": "gh-pages",
     "reportSchema": "gmli-report-v1.6",
