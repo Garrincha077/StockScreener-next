@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-05T11:50:43.927984Z",
+  "generatedAt": "2026-09-26T13:06:42.558151Z",
   "source": {
     "provider": "Kenneth R. French Data Library",
     "ff5Url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip",
@@ -15,9 +15,9 @@
   },
   "range": {
     "firstMonth": "1963-07",
-    "lastMonth": "2026-07",
+    "lastMonth": "2026-08",
     "rollingFirstMonth": "1973-06",
-    "alignedMonths": 757
+    "alignedMonths": 758
   },
   "commonScale": {
     "minPct": -7.595,
@@ -25,9 +25,9 @@
   },
   "summary": {
     "mostImproving12m": [
-      "HML",
       "MOM",
-      "MKT_RF"
+      "HML",
+      "SMB"
     ],
     "activeDroughts": 3
   },
@@ -37,14 +37,14 @@
       "sourceCode": "Mkt-RF",
       "label": "Market over cash",
       "latest": {
-        "month": "2026-07",
-        "premiumPct": 12.362,
-        "delta1mPp": -0.503,
-        "delta6mPp": -0.796,
-        "delta12mPp": 1.112,
-        "slope12mPpPerMonth": 0.0264,
-        "recent12mPremiumPct": 14.714,
-        "historicalPercentile": 90.6,
+        "month": "2026-08",
+        "premiumPct": 12.59,
+        "delta1mPp": 0.229,
+        "delta6mPp": -0.441,
+        "delta12mPp": 0.443,
+        "slope12mPpPerMonth": 0.01,
+        "recent12mPremiumPct": 15.514,
+        "historicalPercentile": 91.7,
         "regime": "STRONG"
       },
       "currentDrought": {
@@ -2614,7 +2614,11 @@
         },
         {
           "month": "2026-07",
-          "premiumPct": 12.362
+          "premiumPct": 12.361
+        },
+        {
+          "month": "2026-08",
+          "premiumPct": 12.59
         }
       ]
     },
@@ -2623,22 +2627,22 @@
       "sourceCode": "SMB",
       "label": "Small caps over large",
       "latest": {
-        "month": "2026-07",
-        "premiumPct": -2.249,
-        "delta1mPp": -0.252,
-        "delta6mPp": -0.208,
-        "delta12mPp": 1.108,
-        "slope12mPpPerMonth": 0.084,
-        "recent12mPremiumPct": 9.262,
-        "historicalPercentile": 15.2,
+        "month": "2026-08",
+        "premiumPct": -2.461,
+        "delta1mPp": -0.215,
+        "delta6mPp": -0.397,
+        "delta12mPp": 0.468,
+        "slope12mPpPerMonth": 0.0608,
+        "recent12mPremiumPct": 3.716,
+        "historicalPercentile": 11.3,
         "regime": "RECOVERY"
       },
       "currentDrought": {
         "active": true,
         "startMonth": "2019-06",
-        "endMonth": "2026-07",
-        "months": 86,
-        "duration": "7y 2m",
+        "endMonth": "2026-08",
+        "months": 87,
+        "duration": "7y 3m",
         "ongoing": true
       },
       "longestDrought": {
@@ -5200,7 +5204,11 @@
         },
         {
           "month": "2026-07",
-          "premiumPct": -2.249
+          "premiumPct": -2.246
+        },
+        {
+          "month": "2026-08",
+          "premiumPct": -2.461
         }
       ]
     },
@@ -5209,30 +5217,30 @@
       "sourceCode": "HML",
       "label": "Value over growth",
       "latest": {
-        "month": "2026-07",
-        "premiumPct": -0.354,
-        "delta1mPp": 0.335,
-        "delta6mPp": 0.845,
-        "delta12mPp": 1.629,
-        "slope12mPpPerMonth": 0.1452,
-        "recent12mPremiumPct": 19.327,
-        "historicalPercentile": 22.9,
+        "month": "2026-08",
+        "premiumPct": -1.022,
+        "delta1mPp": -0.668,
+        "delta6mPp": -0.156,
+        "delta12mPp": 0.807,
+        "slope12mPpPerMonth": 0.1302,
+        "recent12mPremiumPct": 10.283,
+        "historicalPercentile": 20.2,
         "regime": "RECOVERY"
       },
       "currentDrought": {
         "active": true,
         "startMonth": "2014-09",
-        "endMonth": "2026-07",
-        "months": 143,
-        "duration": "11y 11m",
+        "endMonth": "2026-08",
+        "months": 144,
+        "duration": "12y",
         "ongoing": true
       },
       "longestDrought": {
         "active": true,
         "startMonth": "2014-09",
-        "endMonth": "2026-07",
-        "months": 143,
-        "duration": "11y 11m",
+        "endMonth": "2026-08",
+        "months": 144,
+        "duration": "12y",
         "ongoing": true
       },
       "series": [
@@ -7787,6 +7795,10 @@
         {
           "month": "2026-07",
           "premiumPct": -0.354
+        },
+        {
+          "month": "2026-08",
+          "premiumPct": -1.022
         }
       ]
     },
@@ -7795,14 +7807,14 @@
       "sourceCode": "RMW",
       "label": "Profitable over unprofitable",
       "latest": {
-        "month": "2026-07",
-        "premiumPct": 2.143,
-        "delta1mPp": 0.93,
-        "delta6mPp": -1.085,
-        "delta12mPp": -1.944,
-        "slope12mPpPerMonth": -0.1856,
-        "recent12mPremiumPct": -11.637,
-        "historicalPercentile": 31.5,
+        "month": "2026-08",
+        "premiumPct": 1.909,
+        "delta1mPp": -0.236,
+        "delta6mPp": -1.154,
+        "delta12mPp": -2.037,
+        "slope12mPpPerMonth": -0.1705,
+        "recent12mPremiumPct": -14.638,
+        "historicalPercentile": 29.6,
         "regime": "DETERIORATING"
       },
       "currentDrought": {
@@ -10372,7 +10384,11 @@
         },
         {
           "month": "2026-07",
-          "premiumPct": 2.143
+          "premiumPct": 2.145
+        },
+        {
+          "month": "2026-08",
+          "premiumPct": 1.909
         }
       ]
     },
@@ -10381,30 +10397,30 @@
       "sourceCode": "CMA",
       "label": "Conservative over aggressive",
       "latest": {
-        "month": "2026-07",
-        "premiumPct": -0.791,
-        "delta1mPp": 0.347,
-        "delta6mPp": 0.327,
-        "delta12mPp": -0.167,
-        "slope12mPpPerMonth": -0.0278,
-        "recent12mPremiumPct": 3.58,
-        "historicalPercentile": 7.4,
+        "month": "2026-08",
+        "premiumPct": -0.961,
+        "delta1mPp": -0.163,
+        "delta6mPp": -0.137,
+        "delta12mPp": -0.404,
+        "slope12mPpPerMonth": -0.007,
+        "recent12mPremiumPct": -0.541,
+        "historicalPercentile": 5.5,
         "regime": "DEEPENING_DROUGHT"
       },
       "currentDrought": {
         "active": true,
         "startMonth": "2023-05",
-        "endMonth": "2026-07",
-        "months": 39,
-        "duration": "3y 3m",
+        "endMonth": "2026-08",
+        "months": 40,
+        "duration": "3y 4m",
         "ongoing": true
       },
       "longestDrought": {
         "active": true,
         "startMonth": "2023-05",
-        "endMonth": "2026-07",
-        "months": 39,
-        "duration": "3y 3m",
+        "endMonth": "2026-08",
+        "months": 40,
+        "duration": "3y 4m",
         "ongoing": true
       },
       "series": [
@@ -12958,7 +12974,11 @@
         },
         {
           "month": "2026-07",
-          "premiumPct": -0.791
+          "premiumPct": -0.799
+        },
+        {
+          "month": "2026-08",
+          "premiumPct": -0.961
         }
       ]
     },
@@ -12967,14 +12987,14 @@
       "sourceCode": "Mom",
       "label": "Winners over losers",
       "latest": {
-        "month": "2026-07",
-        "premiumPct": 1.658,
-        "delta1mPp": -0.984,
-        "delta6mPp": 1.87,
-        "delta12mPp": 1.382,
-        "slope12mPpPerMonth": 0.2572,
-        "recent12mPremiumPct": 6.722,
-        "historicalPercentile": 26.6,
+        "month": "2026-08",
+        "premiumPct": 1.426,
+        "delta1mPp": -0.238,
+        "delta6mPp": 1.061,
+        "delta12mPp": 1.3,
+        "slope12mPpPerMonth": 0.2428,
+        "recent12mPremiumPct": 4.468,
+        "historicalPercentile": 25.7,
         "regime": "STRONG"
       },
       "currentDrought": {
@@ -15544,7 +15564,11 @@
         },
         {
           "month": "2026-07",
-          "premiumPct": 1.658
+          "premiumPct": 1.664
+        },
+        {
+          "month": "2026-08",
+          "premiumPct": 1.426
         }
       ]
     }
