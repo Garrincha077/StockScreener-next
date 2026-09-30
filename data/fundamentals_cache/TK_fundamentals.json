@@ -1,20 +1,15 @@
 {
   "data": {
     "ticker": "TK",
-    "fetch_date": "2026-09-22T00:42:56.313055",
+    "fetch_date": "2026-09-30T01:05:12.796216",
     "quarterly_revenue": {
-      "2024-12-31 00:00:00": 256566000.0,
-      "2026-06-30 00:00:00": NaN
+      "2024-12-31 00:00:00": 256566000.0
     },
-    "revenue_qoq_change": null,
     "quarterly_eps": {
-      "2024-12-31 00:00:00": 0.28,
-      "2026-06-30 00:00:00": 1.33
+      "2024-12-31 00:00:00": 0.28
     },
-    "eps_qoq_change": 375.0,
-    "gross_margin": NaN,
-    "margin_change": NaN,
-    "operating_margin": NaN,
+    "gross_margin": 21.9,
+    "operating_margin": 17.09,
     "quarterly_inventory": {
       "2024-12-31 00:00:00": 45990000.0,
       "2025-06-30 00:00:00": 33897000.0,
@@ -72,6 +67,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-22T00:42:56.352574",
-  "extended_fetched_at": "2026-09-22T00:42:56.352574"
+  "fetched_at": "2026-09-30T01:05:12.867758",
+  "extended_fetched_at": "2026-09-30T01:05:12.867758"
 }
