@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "REFI",
-    "fetch_date": "2026-09-23T23:59:18.330167",
+    "fetch_date": "2026-10-02T01:07:33.267158",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 14589987.0,
       "2025-09-30 00:00:00": 13685274.0,
@@ -24,7 +24,6 @@
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
     "quarterly_operating_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 6463337.0,
       "2025-09-30 00:00:00": 8185180.0,
@@ -35,7 +34,6 @@
     "operating_cash_flow_qoq_change": 186.21726925820695,
     "operating_cash_flow_yoy_change": 40.10350999800877,
     "quarterly_free_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 6463337.0,
       "2025-09-30 00:00:00": 8185180.0,
@@ -78,7 +76,6 @@
     "shares_outstanding_latest": 21314392.0,
     "share_dilution_yoy_change": 1.137704704116918,
     "fundamental_periods": [
-      "2024-12-31",
       "2025-03-31",
       "2025-06-30",
       "2025-09-30",
@@ -87,6 +84,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-23T23:59:18.384275",
-  "extended_fetched_at": "2026-09-23T23:59:18.384275"
+  "fetched_at": "2026-10-02T01:07:33.296363",
+  "extended_fetched_at": "2026-10-02T01:07:33.296363"
 }

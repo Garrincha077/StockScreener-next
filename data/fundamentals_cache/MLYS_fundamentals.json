@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "MLYS",
-    "fetch_date": "2026-09-23T23:58:29.863327",
+    "fetch_date": "2026-10-02T01:06:48.349269",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 0.0,
@@ -27,7 +27,6 @@
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
     "quarterly_operating_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": -30169000.0,
       "2025-09-30 00:00:00": -28872000.0,
@@ -38,7 +37,6 @@
     "operating_cash_flow_qoq_change": 17.51919130500874,
     "operating_cash_flow_yoy_change": -7.912095197056582,
     "quarterly_free_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": -30169000.0,
       "2025-09-30 00:00:00": -28872000.0,
@@ -50,7 +48,6 @@
     "free_cash_flow_yoy_change": -7.912095197056582,
     "free_cash_flow_margin": null,
     "quarterly_cash": {
-      "2024-12-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 324916000.0,
       "2025-09-30 00:00:00": 593628000.0,
       "2025-12-31 00:00:00": 656635000.0,
@@ -60,7 +57,6 @@
     "cash_latest": 661412000.0,
     "net_debt_latest": -661412000.0,
     "quarterly_shares_outstanding": {
-      "2024-12-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 65725409.0,
       "2025-09-30 00:00:00": 78969459.0,
       "2025-12-31 00:00:00": 81536557.0,
@@ -70,7 +66,6 @@
     "shares_outstanding_latest": 88351196.0,
     "share_dilution_yoy_change": 34.42471845249377,
     "fundamental_periods": [
-      "2024-12-31",
       "2025-03-31",
       "2025-06-30",
       "2025-09-30",
@@ -79,6 +74,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-23T23:58:29.925811",
-  "extended_fetched_at": "2026-09-23T23:58:29.925811"
+  "fetched_at": "2026-10-02T01:06:48.377205",
+  "extended_fetched_at": "2026-10-02T01:06:48.377205"
 }
