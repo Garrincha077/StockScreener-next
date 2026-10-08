@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "AFG",
-    "fetch_date": "2026-09-30T00:43:34.689792",
+    "fetch_date": "2026-10-08T01:15:00.160540",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 1930000000.0,
       "2025-09-30 00:00:00": 2304000000.0,
@@ -24,7 +24,6 @@
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
     "quarterly_operating_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 191000000.0,
       "2025-09-30 00:00:00": 216000000.0,
@@ -35,7 +34,6 @@
     "operating_cash_flow_qoq_change": -80.59071729957806,
     "operating_cash_flow_yoy_change": -51.832460732984295,
     "quarterly_free_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 191000000.0,
       "2025-09-30 00:00:00": 216000000.0,
@@ -78,7 +76,6 @@
     "shares_outstanding_latest": 82916648.0,
     "share_dilution_yoy_change": -0.5624624118528004,
     "fundamental_periods": [
-      "2024-12-31",
       "2025-03-31",
       "2025-06-30",
       "2025-09-30",
@@ -87,6 +84,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-30T00:43:34.766598",
-  "extended_fetched_at": "2026-09-30T00:43:34.766598"
+  "fetched_at": "2026-10-08T01:15:00.192880",
+  "extended_fetched_at": "2026-10-08T01:15:00.192880"
 }

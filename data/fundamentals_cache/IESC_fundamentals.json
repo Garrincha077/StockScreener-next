@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "IESC",
-    "fetch_date": "2026-09-30T00:54:23.484243",
+    "fetch_date": "2026-10-08T01:25:29.274055",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 890158000.0,
@@ -39,7 +39,6 @@
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
     "quarterly_operating_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 91991000.0,
       "2025-09-30 00:00:00": 132001000.0,
@@ -50,7 +49,6 @@
     "operating_cash_flow_qoq_change": 4.984218577541971,
     "operating_cash_flow_yoy_change": 17.874574686654128,
     "quarterly_capex": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": -17148000.0,
       "2025-09-30 00:00:00": -19983000.0,
@@ -59,7 +57,6 @@
       "2026-06-30 00:00:00": -44635000.0
     },
     "quarterly_free_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": NaN,
@@ -102,7 +99,6 @@
     "shares_outstanding_latest": 39848678.0,
     "share_dilution_yoy_change": 0.3521785783072139,
     "fundamental_periods": [
-      "2024-12-31",
       "2025-03-31",
       "2025-06-30",
       "2025-09-30",
@@ -111,6 +107,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-30T00:54:23.602275",
-  "extended_fetched_at": "2026-09-30T00:54:23.602275"
+  "fetched_at": "2026-10-08T01:25:29.323692",
+  "extended_fetched_at": "2026-10-08T01:25:29.323692"
 }

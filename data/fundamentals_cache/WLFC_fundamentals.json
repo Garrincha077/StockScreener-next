@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "WLFC",
-    "fetch_date": "2026-09-30T01:07:28.815345",
+    "fetch_date": "2026-10-08T01:38:09.064322",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 195502000.0,
       "2025-09-30 00:00:00": 183389000.0,
@@ -36,7 +36,6 @@
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
     "quarterly_operating_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": NaN,
@@ -47,7 +46,6 @@
     "operating_cash_flow_qoq_change": null,
     "operating_cash_flow_yoy_change": null,
     "quarterly_capex": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": -135256000.0,
       "2025-09-30 00:00:00": -161741000.0,
@@ -56,7 +54,6 @@
       "2026-06-30 00:00:00": -347528000.0
     },
     "quarterly_free_cash_flow": {
-      "2024-12-31 00:00:00": NaN,
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": -31078000.0,
       "2025-09-30 00:00:00": -97859000.0,
@@ -96,7 +93,6 @@
     "shares_outstanding_latest": 22808001.0,
     "share_dilution_yoy_change": -0.553734466971877,
     "fundamental_periods": [
-      "2024-12-31",
       "2025-03-31",
       "2025-06-30",
       "2025-09-30",
@@ -105,6 +101,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-09-30T01:07:28.905247",
-  "extended_fetched_at": "2026-09-30T01:07:28.905247"
+  "fetched_at": "2026-10-08T01:38:09.103095",
+  "extended_fetched_at": "2026-10-08T01:38:09.103095"
 }
