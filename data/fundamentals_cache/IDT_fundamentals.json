@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "IDT",
-    "fetch_date": "2026-10-08T01:25:25.787374",
+    "fetch_date": "2026-10-15T23:52:10.465579",
     "quarterly_revenue": {
       "2025-01-31 00:00:00": NaN,
       "2025-04-30 00:00:00": 301985000.0,
@@ -24,7 +24,7 @@
     "eps_yoy_change": 1.1627906976744196,
     "gross_margin": 38.8,
     "margin_change": 0.96,
-    "operating_margin": NaN,
+    "operating_margin": 9.37,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -94,6 +94,6 @@
       "2026-04-30"
     ]
   },
-  "fetched_at": "2026-10-08T01:25:25.830264",
-  "extended_fetched_at": "2026-10-08T01:25:25.830264"
+  "fetched_at": "2026-10-15T23:52:10.466755",
+  "extended_fetched_at": "2026-10-16T00:03:27.976504"
 }
