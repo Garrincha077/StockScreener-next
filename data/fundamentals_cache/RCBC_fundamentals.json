@@ -1,0 +1,17 @@
+{
+  "data": {
+    "ticker": "RCBC",
+    "fetch_date": "2026-10-27T00:45:07.464062",
+    "quarterly_eps": {
+      "2026-09-30 00:00:00": 2.16
+    },
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "fundamental_periods": [
+      "2026-09-30"
+    ]
+  },
+  "fetched_at": "2026-10-27T00:45:07.464327",
+  "extended_fetched_at": "2026-10-27T00:51:31.383800"
+}
