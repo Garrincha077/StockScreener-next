@@ -1,7 +1,7 @@
 {
   "data": {
     "ticker": "IFF",
-    "fetch_date": "2026-10-23T00:11:02.328540",
+    "fetch_date": "2026-10-30T01:18:13.316437",
     "quarterly_revenue": {
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 1919000000.0,
@@ -31,10 +31,10 @@
       "2025-09-30 00:00:00": 2449000000.0,
       "2025-12-31 00:00:00": 2364000000.0,
       "2026-03-31 00:00:00": 2370000000.0,
-      "2026-06-30 00:00:00": 1505000000.0
+      "2026-06-30 00:00:00": 1550000000.0
     },
-    "inventory_qoq_change": -36.5,
-    "inventory_to_sales_ratio": 0.77,
+    "inventory_qoq_change": -34.6,
+    "inventory_to_sales_ratio": 0.793,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -107,6 +107,6 @@
       "2026-06-30"
     ]
   },
-  "fetched_at": "2026-10-23T00:11:02.330137",
-  "extended_fetched_at": "2026-10-23T00:21:14.230854"
+  "fetched_at": "2026-10-30T01:18:13.318871",
+  "extended_fetched_at": "2026-10-30T01:26:29.381119"
 }

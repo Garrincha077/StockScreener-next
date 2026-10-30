@@ -1,28 +1,30 @@
 {
   "data": {
     "ticker": "FFIV",
-    "fetch_date": "2026-10-23T00:10:27.801911",
+    "fetch_date": "2026-10-30T01:17:46.768982",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 780370000.0,
       "2025-09-30 00:00:00": 810090000.0,
       "2025-12-31 00:00:00": 822465000.0,
       "2026-03-31 00:00:00": 811700000.0,
-      "2026-06-30 00:00:00": 865077000.0
+      "2026-06-30 00:00:00": 865077000.0,
+      "2026-09-30 00:00:00": NaN
     },
-    "revenue_qoq_change": 6.57595170629543,
-    "revenue_yoy_change": 10.854722759716545,
+    "revenue_qoq_change": null,
+    "revenue_yoy_change": null,
     "quarterly_eps": {
-      "2025-06-30 00:00:00": 3.25,
+      "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": 3.26,
       "2025-12-31 00:00:00": 3.1,
       "2026-03-31 00:00:00": 2.58,
-      "2026-06-30 00:00:00": 3.62
+      "2026-06-30 00:00:00": 3.62,
+      "2026-09-30 00:00:00": 3.23
     },
-    "eps_qoq_change": 40.310077519379846,
-    "eps_yoy_change": 11.384615384615387,
-    "gross_margin": 82.25,
-    "margin_change": 0.84,
-    "operating_margin": 24.65,
+    "eps_qoq_change": -10.77348066298343,
+    "eps_yoy_change": -0.9202453987730002,
+    "gross_margin": NaN,
+    "margin_change": NaN,
+    "operating_margin": NaN,
     "quarterly_inventory": {
       "2025-06-30 00:00:00": 66920000.0,
       "2025-09-30 00:00:00": 77229000.0,
@@ -31,7 +33,7 @@
       "2026-06-30 00:00:00": 126890000.0
     },
     "inventory_qoq_change": 40.53,
-    "inventory_to_sales_ratio": 0.147,
+    "inventory_to_sales_ratio": NaN,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -94,9 +96,10 @@
       "2025-09-30",
       "2025-12-31",
       "2026-03-31",
-      "2026-06-30"
+      "2026-06-30",
+      "2026-09-30"
     ]
   },
-  "fetched_at": "2026-10-23T00:10:27.803166",
-  "extended_fetched_at": "2026-10-23T00:19:24.525689"
+  "fetched_at": "2026-10-30T01:17:46.770599",
+  "extended_fetched_at": "2026-10-30T01:24:56.145619"
 }
