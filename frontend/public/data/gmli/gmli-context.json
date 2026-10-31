@@ -9,15 +9,15 @@
   "dataHealth": {
     "active_money_version": "GMLI_GLOBAL_MONEY_V2_PBOC_OFFICIAL",
     "counts": {
-      "aging": 1,
+      "aging": 0,
       "fresh": 8,
-      "stale": 3,
+      "stale": 4,
       "unknown": 0
     },
-    "generated_at": "2026-10-30T13:34:16.719Z",
+    "generated_at": "2026-10-31T13:04:43.487Z",
     "items": [
       {
-        "age_days": 30,
+        "age_days": 31,
         "available_date": "2026-09-30",
         "decision_critical": true,
         "evidence_tier": "CORE",
@@ -30,7 +30,7 @@
       },
       {
         "active": false,
-        "age_days": 244,
+        "age_days": 245,
         "available_date": "2026-02-28",
         "decision_critical": false,
         "evidence_tier": "CORE_HISTORICAL_REFERENCE",
@@ -41,7 +41,7 @@
       },
       {
         "active": false,
-        "age_days": 122,
+        "age_days": 123,
         "available_date": "2026-06-30",
         "decision_critical": false,
         "evidence_tier": "RESEARCH_HISTORICAL",
@@ -51,7 +51,7 @@
         "promotion_gate": "BLOCKED_MISSING_FROZEN_INPUT_BYTES"
       },
       {
-        "age_days": 30,
+        "age_days": 31,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -59,7 +59,7 @@
         "label": "Money nowcast — US"
       },
       {
-        "age_days": 30,
+        "age_days": 31,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -67,7 +67,7 @@
         "label": "Money nowcast — Euro area"
       },
       {
-        "age_days": 30,
+        "age_days": 31,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -75,17 +75,17 @@
         "label": "Money nowcast — Japan"
       },
       {
-        "age_days": 60,
+        "age_days": 61,
         "available_date": "2026-08",
         "evidence_tier": "RESEARCH",
-        "freshness": "AGING",
+        "freshness": "STALE",
         "key": "money_nowcast_china",
         "label": "Money nowcast — China"
       },
       {
-        "age_days": 30,
+        "age_days": 0,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
-        "available_date": "2026-09-30",
+        "available_date": "2026-10-31",
         "decision_critical": true,
         "evidence_tier": "OVERLAY",
         "freshness": "FRESH",
@@ -98,7 +98,7 @@
         "refreshable": true
       },
       {
-        "age_days": 91,
+        "age_days": 92,
         "automation_status": "BLOCKED_MISSING_FROZEN_CONSTRUCTION_PROVENANCE",
         "available_date": "2026-07-31",
         "evidence_tier": "OVERLAY",
@@ -112,9 +112,9 @@
         "refreshable": false
       },
       {
-        "age_days": 30,
+        "age_days": 0,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
-        "available_date": "2026-09-30",
+        "available_date": "2026-10-31",
         "evidence_tier": "OVERLAY",
         "freshness": "FRESH",
         "key": "fiscal",
@@ -126,7 +126,7 @@
         "refreshable": true
       },
       {
-        "age_days": 30,
+        "age_days": 31,
         "assets": [
           "SPY",
           "QQQ",
@@ -141,8 +141,8 @@
         "label": "Core asset completed-month structure"
       },
       {
-        "age_days": 10,
-        "available_date": "2026-10-20",
+        "age_days": 4,
+        "available_date": "2026-10-27",
         "decision_critical": false,
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -152,7 +152,7 @@
       }
     ],
     "oldest_decision_critical_input": {
-      "age_days": 30,
+      "age_days": 31,
       "available_date": "2026-09-30",
       "freshness": "FRESH",
       "key": "money_core",
@@ -180,7 +180,7 @@
     },
     "status": "HEALTHY"
   },
-  "generatedAt": "2026-10-30T13:34:16.719Z",
+  "generatedAt": "2026-10-31T13:04:43.487Z",
   "history": {
     "fiscal": [
       {
@@ -1030,352 +1030,352 @@
         "observation_month": "2026-08",
         "regime": "NEUTRAL",
         "score": 45.2504
+      },
+      {
+        "available_date": "2026-10-31",
+        "deficit_pct_gdp": 6.0361,
+        "fiscal_impulse_pp": 0.3412,
+        "observation_month": "2026-09",
+        "regime": "NEUTRAL",
+        "score": 48.8004
       }
     ],
     "funding": [
       {
-        "available_date": "2016-10-31",
-        "observation_month": "2016-09",
-        "observed_conditions_score": 53.694,
-        "regime": "NEUTRAL",
-        "score": 53.694,
-        "structural_support_score": 59.8992
-      },
-      {
         "available_date": "2016-11-30",
         "observation_month": "2016-10",
-        "observed_conditions_score": 54.3097,
+        "observed_conditions_score": 54.0192,
         "regime": "NEUTRAL",
-        "score": 54.3097,
-        "structural_support_score": 59.2619
+        "score": 54.0192,
+        "structural_support_score": 59.1893
       },
       {
         "available_date": "2016-12-31",
         "observation_month": "2016-11",
-        "observed_conditions_score": 56.1352,
+        "observed_conditions_score": 55.8562,
         "regime": "NEUTRAL",
-        "score": 56.1352,
-        "structural_support_score": 56.4665
+        "score": 55.8562,
+        "structural_support_score": 56.3968
       },
       {
         "available_date": "2017-01-31",
         "observation_month": "2016-12",
-        "observed_conditions_score": 56.9521,
+        "observed_conditions_score": 56.6642,
         "regime": "NEUTRAL",
-        "score": 53.2518,
-        "structural_support_score": 53.2518
+        "score": 53.1798,
+        "structural_support_score": 53.1798
       },
       {
         "available_date": "2017-02-28",
         "observation_month": "2017-01",
-        "observed_conditions_score": 56.9657,
+        "observed_conditions_score": 56.6414,
         "regime": "NEUTRAL",
-        "score": 54.295,
-        "structural_support_score": 54.295
+        "score": 54.2139,
+        "structural_support_score": 54.2139
       },
       {
         "available_date": "2017-03-31",
         "observation_month": "2017-02",
-        "observed_conditions_score": 57.215,
+        "observed_conditions_score": 56.881,
         "regime": "NEUTRAL",
-        "score": 54.5245,
-        "structural_support_score": 54.5245
+        "score": 54.441,
+        "structural_support_score": 54.441
       },
       {
         "available_date": "2017-04-30",
         "observation_month": "2017-03",
-        "observed_conditions_score": 57.5153,
+        "observed_conditions_score": 57.2004,
         "regime": "NEUTRAL",
-        "score": 54.3022,
-        "structural_support_score": 54.3022
+        "score": 54.2235,
+        "structural_support_score": 54.2235
       },
       {
         "available_date": "2017-05-31",
         "observation_month": "2017-04",
-        "observed_conditions_score": 57.8003,
+        "observed_conditions_score": 57.4758,
         "regime": "NEUTRAL",
-        "score": 56.0746,
-        "structural_support_score": 56.0746
+        "score": 55.9935,
+        "structural_support_score": 55.9935
       },
       {
         "available_date": "2017-06-30",
         "observation_month": "2017-05",
-        "observed_conditions_score": 58.395,
+        "observed_conditions_score": 58.0486,
         "regime": "NEUTRAL",
-        "score": 55.8822,
-        "structural_support_score": 55.8822
+        "score": 55.7956,
+        "structural_support_score": 55.7956
       },
       {
         "available_date": "2017-07-31",
         "observation_month": "2017-06",
-        "observed_conditions_score": 58.9349,
+        "observed_conditions_score": 58.5968,
         "regime": "NEUTRAL",
-        "score": 56.8617,
-        "structural_support_score": 56.8617
+        "score": 56.7772,
+        "structural_support_score": 56.7772
       },
       {
         "available_date": "2017-08-31",
         "observation_month": "2017-07",
-        "observed_conditions_score": 59.5751,
+        "observed_conditions_score": 59.2391,
         "regime": "NEUTRAL",
-        "score": 55.8841,
-        "structural_support_score": 55.8841
+        "score": 55.8,
+        "structural_support_score": 55.8
       },
       {
         "available_date": "2017-09-30",
         "observation_month": "2017-08",
-        "observed_conditions_score": 59.0268,
+        "observed_conditions_score": 58.6892,
         "regime": "NEUTRAL",
-        "score": 56.8272,
-        "structural_support_score": 56.8272
+        "score": 56.7428,
+        "structural_support_score": 56.7428
       },
       {
         "available_date": "2017-10-31",
         "observation_month": "2017-09",
-        "observed_conditions_score": 58.3084,
+        "observed_conditions_score": 57.9583,
         "regime": "NEUTRAL",
-        "score": 56.9759,
-        "structural_support_score": 56.9759
+        "score": 56.8884,
+        "structural_support_score": 56.8884
       },
       {
         "available_date": "2017-11-30",
         "observation_month": "2017-10",
-        "observed_conditions_score": 58.8977,
+        "observed_conditions_score": 58.5273,
         "regime": "NEUTRAL",
-        "score": 55.3987,
-        "structural_support_score": 55.3987
+        "score": 55.3061,
+        "structural_support_score": 55.3061
       },
       {
         "available_date": "2017-12-31",
         "observation_month": "2017-11",
-        "observed_conditions_score": 59.4182,
+        "observed_conditions_score": 59.0124,
         "regime": "NEUTRAL",
-        "score": 55.6523,
-        "structural_support_score": 55.6523
+        "score": 55.5508,
+        "structural_support_score": 55.5508
       },
       {
         "available_date": "2018-01-31",
         "observation_month": "2017-12",
-        "observed_conditions_score": 59.3038,
+        "observed_conditions_score": 58.8956,
         "regime": "NEUTRAL",
-        "score": 55.2741,
-        "structural_support_score": 55.2741
+        "score": 55.172,
+        "structural_support_score": 55.172
       },
       {
         "available_date": "2018-02-28",
         "observation_month": "2018-01",
-        "observed_conditions_score": 59.3666,
+        "observed_conditions_score": 58.9686,
         "regime": "NEUTRAL",
-        "score": 54.1661,
-        "structural_support_score": 54.1661
+        "score": 54.0665,
+        "structural_support_score": 54.0665
       },
       {
         "available_date": "2018-03-31",
         "observation_month": "2018-02",
-        "observed_conditions_score": 58.1566,
+        "observed_conditions_score": 57.7517,
         "regime": "NEUTRAL",
-        "score": 51.1984,
-        "structural_support_score": 51.1984
+        "score": 51.0972,
+        "structural_support_score": 51.0972
       },
       {
         "available_date": "2018-04-30",
         "observation_month": "2018-03",
-        "observed_conditions_score": 56.8101,
+        "observed_conditions_score": 56.3967,
         "regime": "NEUTRAL",
-        "score": 51.2033,
-        "structural_support_score": 51.2033
+        "score": 51.0999,
+        "structural_support_score": 51.0999
       },
       {
         "available_date": "2018-05-31",
         "observation_month": "2018-04",
-        "observed_conditions_score": 56.5696,
+        "observed_conditions_score": 56.1365,
         "regime": "NEUTRAL",
-        "score": 51.1042,
-        "structural_support_score": 51.1042
+        "score": 50.9959,
+        "structural_support_score": 50.9959
       },
       {
         "available_date": "2018-06-30",
         "observation_month": "2018-05",
-        "observed_conditions_score": 57.3462,
+        "observed_conditions_score": 56.9138,
         "regime": "NEUTRAL",
-        "score": 50.13,
-        "structural_support_score": 50.13
+        "score": 50.0219,
+        "structural_support_score": 50.0219
       },
       {
         "available_date": "2018-07-31",
         "observation_month": "2018-06",
-        "observed_conditions_score": 56.9667,
+        "observed_conditions_score": 56.539,
         "regime": "NEUTRAL",
-        "score": 50.6762,
-        "structural_support_score": 50.6762
+        "score": 50.5693,
+        "structural_support_score": 50.5693
       },
       {
         "available_date": "2018-08-31",
         "observation_month": "2018-07",
-        "observed_conditions_score": 56.942,
+        "observed_conditions_score": 56.5385,
         "regime": "NEUTRAL",
-        "score": 50.9953,
-        "structural_support_score": 50.9953
+        "score": 50.8944,
+        "structural_support_score": 50.8944
       },
       {
         "available_date": "2018-09-30",
         "observation_month": "2018-08",
-        "observed_conditions_score": 57.7806,
+        "observed_conditions_score": 57.3851,
         "regime": "NEUTRAL",
-        "score": 51.2358,
-        "structural_support_score": 51.2358
+        "score": 51.1369,
+        "structural_support_score": 51.1369
       },
       {
         "available_date": "2018-10-31",
         "observation_month": "2018-09",
-        "observed_conditions_score": 57.934,
+        "observed_conditions_score": 57.5419,
         "regime": "NEUTRAL",
-        "score": 50.243,
-        "structural_support_score": 50.243
+        "score": 50.145,
+        "structural_support_score": 50.145
       },
       {
         "available_date": "2018-11-30",
         "observation_month": "2018-10",
-        "observed_conditions_score": 57.353,
+        "observed_conditions_score": 56.9225,
         "regime": "NEUTRAL",
-        "score": 48.3326,
-        "structural_support_score": 48.3326
+        "score": 48.225,
+        "structural_support_score": 48.225
       },
       {
         "available_date": "2018-12-31",
         "observation_month": "2018-11",
-        "observed_conditions_score": 56.1373,
+        "observed_conditions_score": 55.6385,
         "regime": "NEUTRAL",
-        "score": 47.127,
-        "structural_support_score": 47.127
+        "score": 47.0023,
+        "structural_support_score": 47.0023
       },
       {
         "available_date": "2019-01-31",
         "observation_month": "2018-12",
-        "observed_conditions_score": 53.8642,
+        "observed_conditions_score": 53.2593,
         "regime": "NEUTRAL",
-        "score": 47.4865,
-        "structural_support_score": 47.4865
+        "score": 47.3353,
+        "structural_support_score": 47.3353
       },
       {
         "available_date": "2019-02-28",
         "observation_month": "2019-01",
-        "observed_conditions_score": 55.04,
+        "observed_conditions_score": 54.3841,
         "regime": "NEUTRAL",
-        "score": 47.0522,
-        "structural_support_score": 47.0522
+        "score": 46.8882,
+        "structural_support_score": 46.8882
       },
       {
         "available_date": "2019-03-31",
         "observation_month": "2019-02",
-        "observed_conditions_score": 57.4003,
+        "observed_conditions_score": 56.7326,
         "regime": "NEUTRAL",
-        "score": 50.3576,
-        "structural_support_score": 50.3576
+        "score": 50.1906,
+        "structural_support_score": 50.1906
       },
       {
         "available_date": "2019-04-30",
         "observation_month": "2019-03",
-        "observed_conditions_score": 59.6126,
+        "observed_conditions_score": 58.8508,
         "regime": "NEUTRAL",
-        "score": 53.6929,
-        "structural_support_score": 53.6929
+        "score": 53.5024,
+        "structural_support_score": 53.5024
       },
       {
         "available_date": "2019-05-31",
         "observation_month": "2019-04",
-        "observed_conditions_score": 60.9951,
+        "observed_conditions_score": 60.1562,
         "regime": "NEUTRAL",
-        "score": 52.8707,
-        "structural_support_score": 52.8707
+        "score": 52.661,
+        "structural_support_score": 52.661
       },
       {
         "available_date": "2019-06-30",
         "observation_month": "2019-05",
-        "observed_conditions_score": 61.025,
+        "observed_conditions_score": 60.0264,
         "regime": "NEUTRAL",
-        "score": 54.1784,
-        "structural_support_score": 54.1784
+        "score": 53.9287,
+        "structural_support_score": 53.9287
       },
       {
         "available_date": "2019-07-31",
         "observation_month": "2019-06",
-        "observed_conditions_score": 60.3215,
+        "observed_conditions_score": 59.1307,
         "regime": "NEUTRAL",
-        "score": 56.5174,
-        "structural_support_score": 56.5174
+        "score": 56.2197,
+        "structural_support_score": 56.2197
       },
       {
         "available_date": "2019-08-31",
         "observation_month": "2019-07",
-        "observed_conditions_score": 60.5567,
-        "regime": "SUPPORTIVE",
-        "score": 60.3555,
-        "structural_support_score": 60.3555
+        "observed_conditions_score": 59.2448,
+        "regime": "NEUTRAL",
+        "score": 59.2448,
+        "structural_support_score": 60.0276
       },
       {
         "available_date": "2019-09-30",
         "observation_month": "2019-08",
-        "observed_conditions_score": 57.3282,
+        "observed_conditions_score": 55.9022,
         "regime": "NEUTRAL",
-        "score": 57.3282,
-        "structural_support_score": 61.8643
+        "score": 55.9022,
+        "structural_support_score": 61.5078
       },
       {
         "available_date": "2019-10-31",
         "observation_month": "2019-09",
-        "observed_conditions_score": 56.0661,
+        "observed_conditions_score": 54.612,
         "regime": "NEUTRAL",
-        "score": 56.0661,
-        "structural_support_score": 58.6839
+        "score": 54.612,
+        "structural_support_score": 58.3204
       },
       {
         "available_date": "2019-11-30",
         "observation_month": "2019-10",
-        "observed_conditions_score": 55.3457,
+        "observed_conditions_score": 53.8542,
         "regime": "NEUTRAL",
-        "score": 55.3457,
-        "structural_support_score": 58.9652
+        "score": 53.8542,
+        "structural_support_score": 58.5923
       },
       {
         "available_date": "2019-12-31",
         "observation_month": "2019-11",
-        "observed_conditions_score": 59.1626,
+        "observed_conditions_score": 57.577,
         "regime": "NEUTRAL",
-        "score": 59.1626,
-        "structural_support_score": 60.7804
+        "score": 57.577,
+        "structural_support_score": 60.384
       },
       {
         "available_date": "2020-01-31",
         "observation_month": "2019-12",
-        "observed_conditions_score": 55.5166,
+        "observed_conditions_score": 53.7204,
         "regime": "NEUTRAL",
-        "score": 55.5166,
-        "structural_support_score": 66.8945
+        "score": 53.7204,
+        "structural_support_score": 66.4455
       },
       {
         "available_date": "2020-02-29",
         "observation_month": "2020-01",
-        "observed_conditions_score": 59.4899,
+        "observed_conditions_score": 57.8006,
         "regime": "NEUTRAL",
-        "score": 59.4899,
-        "structural_support_score": 65.3624
+        "score": 57.8006,
+        "structural_support_score": 64.94
       },
       {
         "available_date": "2020-03-31",
         "observation_month": "2020-02",
-        "observed_conditions_score": 57.4797,
+        "observed_conditions_score": 55.8219,
         "regime": "NEUTRAL",
-        "score": 57.4797,
-        "structural_support_score": 66.7971
+        "score": 55.8219,
+        "structural_support_score": 66.3826
       },
       {
         "available_date": "2020-04-30",
         "observation_month": "2020-03",
-        "observed_conditions_score": 1.3363,
+        "observed_conditions_score": 0,
         "regime": "RESTRICTIVE",
-        "score": 1.3363,
-        "structural_support_score": 63.7955
+        "score": 0,
+        "structural_support_score": 63.4615
       },
       {
         "available_date": "2020-05-31",
@@ -1388,610 +1388,618 @@
       {
         "available_date": "2020-06-30",
         "observation_month": "2020-05",
-        "observed_conditions_score": 20.7796,
+        "observed_conditions_score": 21.1306,
         "regime": "RESTRICTIVE",
-        "score": 20.7796,
-        "structural_support_score": 72.4745
+        "score": 21.1306,
+        "structural_support_score": 72.5623
       },
       {
         "available_date": "2020-07-31",
         "observation_month": "2020-06",
-        "observed_conditions_score": 43.8765,
+        "observed_conditions_score": 45.6826,
         "regime": "NEUTRAL",
-        "score": 43.8765,
-        "structural_support_score": 74.0571
+        "score": 45.6826,
+        "structural_support_score": 74.5086
       },
       {
         "available_date": "2020-08-31",
         "observation_month": "2020-07",
-        "observed_conditions_score": 46.901,
+        "observed_conditions_score": 49.3004,
         "regime": "NEUTRAL",
-        "score": 46.901,
-        "structural_support_score": 64.2086
+        "score": 49.3004,
+        "structural_support_score": 64.8085
       },
       {
         "available_date": "2020-09-30",
         "observation_month": "2020-08",
-        "observed_conditions_score": 51.5922,
+        "observed_conditions_score": 53.8736,
         "regime": "NEUTRAL",
-        "score": 51.5922,
-        "structural_support_score": 67.0566
+        "score": 53.8736,
+        "structural_support_score": 67.6269
       },
       {
         "available_date": "2020-10-31",
         "observation_month": "2020-09",
-        "observed_conditions_score": 58.3529,
-        "regime": "NEUTRAL",
-        "score": 58.3529,
-        "structural_support_score": 70.5487
+        "observed_conditions_score": 60.9043,
+        "regime": "SUPPORTIVE",
+        "score": 60.9043,
+        "structural_support_score": 71.1865
       },
       {
         "available_date": "2020-11-30",
         "observation_month": "2020-10",
-        "observed_conditions_score": 51.9619,
+        "observed_conditions_score": 53.9262,
         "regime": "NEUTRAL",
-        "score": 51.9619,
-        "structural_support_score": 70.5352
+        "score": 53.9262,
+        "structural_support_score": 71.0262
       },
       {
         "available_date": "2020-12-31",
         "observation_month": "2020-11",
-        "observed_conditions_score": 52.1285,
+        "observed_conditions_score": 52.8702,
         "regime": "NEUTRAL",
-        "score": 52.1285,
-        "structural_support_score": 68.7069
+        "score": 52.8702,
+        "structural_support_score": 68.8923
       },
       {
         "available_date": "2021-01-31",
         "observation_month": "2020-12",
-        "observed_conditions_score": 53.8638,
+        "observed_conditions_score": 54.0408,
         "regime": "NEUTRAL",
-        "score": 53.8638,
-        "structural_support_score": 69.7289
+        "score": 54.0408,
+        "structural_support_score": 69.7732
       },
       {
         "available_date": "2021-02-28",
         "observation_month": "2021-01",
-        "observed_conditions_score": 55.4975,
+        "observed_conditions_score": 55.6903,
         "regime": "NEUTRAL",
-        "score": 55.4975,
-        "structural_support_score": 69.0865
+        "score": 55.6903,
+        "structural_support_score": 69.1347
       },
       {
         "available_date": "2021-03-31",
         "observation_month": "2021-02",
-        "observed_conditions_score": 58.8689,
+        "observed_conditions_score": 58.8643,
         "regime": "NEUTRAL",
-        "score": 58.8689,
-        "structural_support_score": 67.8042
+        "score": 58.8643,
+        "structural_support_score": 67.803
       },
       {
         "available_date": "2021-04-30",
         "observation_month": "2021-03",
-        "observed_conditions_score": 59.5263,
+        "observed_conditions_score": 59.0973,
         "regime": "NEUTRAL",
-        "score": 59.5263,
-        "structural_support_score": 67.0082
+        "score": 59.0973,
+        "structural_support_score": 66.9009
       },
       {
         "available_date": "2021-05-31",
         "observation_month": "2021-04",
-        "observed_conditions_score": 60.4502,
-        "regime": "SUPPORTIVE",
-        "score": 60.4502,
-        "structural_support_score": 66.3813
+        "observed_conditions_score": 59.9481,
+        "regime": "NEUTRAL",
+        "score": 59.9481,
+        "structural_support_score": 66.2557
       },
       {
         "available_date": "2021-06-30",
         "observation_month": "2021-05",
-        "observed_conditions_score": 60.8148,
+        "observed_conditions_score": 60.5361,
         "regime": "SUPPORTIVE",
-        "score": 60.8148,
-        "structural_support_score": 65.3105
+        "score": 60.5361,
+        "structural_support_score": 65.2408
       },
       {
         "available_date": "2021-07-31",
         "observation_month": "2021-06",
-        "observed_conditions_score": 62.6246,
+        "observed_conditions_score": 62.5127,
         "regime": "SUPPORTIVE",
-        "score": 61.6914,
-        "structural_support_score": 61.6914
+        "score": 61.6634,
+        "structural_support_score": 61.6634
       },
       {
         "available_date": "2021-08-31",
         "observation_month": "2021-07",
-        "observed_conditions_score": 62.6867,
+        "observed_conditions_score": 62.3427,
         "regime": "SUPPORTIVE",
-        "score": 62.6867,
-        "structural_support_score": 65.9731
+        "score": 62.3427,
+        "structural_support_score": 65.8871
       },
       {
         "available_date": "2021-09-30",
         "observation_month": "2021-08",
-        "observed_conditions_score": 61.5168,
+        "observed_conditions_score": 61.074,
         "regime": "SUPPORTIVE",
-        "score": 61.5168,
-        "structural_support_score": 67.5138
+        "score": 61.074,
+        "structural_support_score": 67.4031
       },
       {
         "available_date": "2021-10-31",
         "observation_month": "2021-09",
-        "observed_conditions_score": 64.2802,
+        "observed_conditions_score": 63.9218,
         "regime": "SUPPORTIVE",
-        "score": 64.2802,
-        "structural_support_score": 66.3962
+        "score": 63.9218,
+        "structural_support_score": 66.3067
       },
       {
         "available_date": "2021-11-30",
         "observation_month": "2021-10",
-        "observed_conditions_score": 61.7593,
+        "observed_conditions_score": 61.0344,
         "regime": "SUPPORTIVE",
-        "score": 61.6601,
-        "structural_support_score": 61.6601
+        "score": 61.0344,
+        "structural_support_score": 61.4789
       },
       {
         "available_date": "2021-12-31",
         "observation_month": "2021-11",
-        "observed_conditions_score": 53.1344,
+        "observed_conditions_score": 52.2536,
         "regime": "NEUTRAL",
-        "score": 53.1344,
-        "structural_support_score": 59.0869
+        "score": 52.2536,
+        "structural_support_score": 58.8668
       },
       {
         "available_date": "2022-01-31",
         "observation_month": "2021-12",
-        "observed_conditions_score": 47.955,
+        "observed_conditions_score": 47.2816,
         "regime": "NEUTRAL",
-        "score": 47.955,
-        "structural_support_score": 57.6469
+        "score": 47.2816,
+        "structural_support_score": 57.4785
       },
       {
         "available_date": "2022-02-28",
         "observation_month": "2022-01",
-        "observed_conditions_score": 50.0147,
+        "observed_conditions_score": 49.2776,
         "regime": "NEUTRAL",
-        "score": 50.0147,
-        "structural_support_score": 52.0989
+        "score": 49.2776,
+        "structural_support_score": 51.9146
       },
       {
         "available_date": "2022-03-31",
         "observation_month": "2022-02",
-        "observed_conditions_score": 43.1527,
+        "observed_conditions_score": 41.8355,
         "regime": "NEUTRAL",
-        "score": 43.1527,
-        "structural_support_score": 47.7617
+        "score": 41.8355,
+        "structural_support_score": 47.4324
       },
       {
         "available_date": "2022-04-30",
         "observation_month": "2022-03",
-        "observed_conditions_score": 28.517,
+        "observed_conditions_score": 26.7624,
         "regime": "RESTRICTIVE",
-        "score": 28.517,
-        "structural_support_score": 44.8714
+        "score": 26.7624,
+        "structural_support_score": 44.4327
       },
       {
         "available_date": "2022-05-31",
         "observation_month": "2022-04",
-        "observed_conditions_score": 28.2998,
+        "observed_conditions_score": 26.8934,
         "regime": "RESTRICTIVE",
-        "score": 28.2998,
-        "structural_support_score": 35.6759
+        "score": 26.8934,
+        "structural_support_score": 35.3243
       },
       {
         "available_date": "2022-06-30",
         "observation_month": "2022-05",
-        "observed_conditions_score": 17.1143,
+        "observed_conditions_score": 16.1587,
         "regime": "RESTRICTIVE",
-        "score": 17.1143,
-        "structural_support_score": 30.256
+        "score": 16.1587,
+        "structural_support_score": 30.0171
       },
       {
         "available_date": "2022-07-31",
         "observation_month": "2022-06",
-        "observed_conditions_score": 9.0459,
+        "observed_conditions_score": 8.3437,
         "regime": "RESTRICTIVE",
-        "score": 9.0459,
-        "structural_support_score": 24.4328
+        "score": 8.3437,
+        "structural_support_score": 24.2572
       },
       {
         "available_date": "2022-08-31",
         "observation_month": "2022-07",
-        "observed_conditions_score": 12.3476,
+        "observed_conditions_score": 11.3676,
         "regime": "RESTRICTIVE",
-        "score": 12.3476,
-        "structural_support_score": 33.8512
+        "score": 11.3676,
+        "structural_support_score": 33.6062
       },
       {
         "available_date": "2022-09-30",
         "observation_month": "2022-08",
-        "observed_conditions_score": 21.8827,
+        "observed_conditions_score": 21.3381,
         "regime": "RESTRICTIVE",
-        "score": 21.8827,
-        "structural_support_score": 38.6425
+        "score": 21.3381,
+        "structural_support_score": 38.5064
       },
       {
         "available_date": "2022-10-31",
         "observation_month": "2022-09",
-        "observed_conditions_score": 15.7218,
+        "observed_conditions_score": 16.0953,
         "regime": "RESTRICTIVE",
-        "score": 15.7218,
-        "structural_support_score": 27.853
+        "score": 16.0953,
+        "structural_support_score": 27.9464
       },
       {
         "available_date": "2022-11-30",
         "observation_month": "2022-10",
-        "observed_conditions_score": 9.4876,
+        "observed_conditions_score": 10.1,
         "regime": "RESTRICTIVE",
-        "score": 9.4876,
-        "structural_support_score": 21.3571
+        "score": 10.1,
+        "structural_support_score": 21.5102
       },
       {
         "available_date": "2022-12-31",
         "observation_month": "2022-11",
-        "observed_conditions_score": 19.1943,
+        "observed_conditions_score": 19.1818,
         "regime": "RESTRICTIVE",
-        "score": 19.1943,
-        "structural_support_score": 27.7195
+        "score": 19.1818,
+        "structural_support_score": 27.7164
       },
       {
         "available_date": "2023-01-31",
         "observation_month": "2022-12",
-        "observed_conditions_score": 22.8416,
+        "observed_conditions_score": 22.8126,
         "regime": "RESTRICTIVE",
-        "score": 22.8416,
-        "structural_support_score": 34.0749
+        "score": 22.8126,
+        "structural_support_score": 34.0677
       },
       {
         "available_date": "2023-02-28",
         "observation_month": "2023-01",
-        "observed_conditions_score": 30.8958,
+        "observed_conditions_score": 31.0444,
         "regime": "RESTRICTIVE",
-        "score": 30.8958,
-        "structural_support_score": 37.5095
+        "score": 31.0444,
+        "structural_support_score": 37.5466
       },
       {
         "available_date": "2023-03-31",
         "observation_month": "2023-02",
-        "observed_conditions_score": 33.3224,
+        "observed_conditions_score": 33.2546,
         "regime": "RESTRICTIVE",
-        "score": 33.3224,
-        "structural_support_score": 35.0196
+        "score": 33.2546,
+        "structural_support_score": 35.0027
       },
       {
         "available_date": "2023-04-30",
         "observation_month": "2023-03",
-        "observed_conditions_score": 21.1115,
+        "observed_conditions_score": 20.823,
         "regime": "RESTRICTIVE",
-        "score": 21.1115,
-        "structural_support_score": 37.885
+        "score": 20.823,
+        "structural_support_score": 37.8129
       },
       {
         "available_date": "2023-05-31",
         "observation_month": "2023-04",
-        "observed_conditions_score": 26.0638,
+        "observed_conditions_score": 25.8517,
         "regime": "RESTRICTIVE",
-        "score": 26.0638,
-        "structural_support_score": 39.8526
+        "score": 25.8517,
+        "structural_support_score": 39.7995
       },
       {
         "available_date": "2023-06-30",
         "observation_month": "2023-05",
-        "observed_conditions_score": 30.9856,
+        "observed_conditions_score": 30.7065,
         "regime": "RESTRICTIVE",
-        "score": 30.9856,
-        "structural_support_score": 41.9072
+        "score": 30.7065,
+        "structural_support_score": 41.8375
       },
       {
         "available_date": "2023-07-31",
         "observation_month": "2023-06",
-        "observed_conditions_score": 31.4055,
+        "observed_conditions_score": 31.3989,
         "regime": "RESTRICTIVE",
-        "score": 31.4055,
-        "structural_support_score": 34.9717
+        "score": 31.3989,
+        "structural_support_score": 34.97
       },
       {
         "available_date": "2023-08-31",
         "observation_month": "2023-07",
-        "observed_conditions_score": 34.1869,
+        "observed_conditions_score": 33.622,
         "regime": "RESTRICTIVE",
-        "score": 34.1869,
-        "structural_support_score": 36.984
+        "score": 33.622,
+        "structural_support_score": 36.8428
       },
       {
         "available_date": "2023-09-30",
         "observation_month": "2023-08",
-        "observed_conditions_score": 36.6564,
+        "observed_conditions_score": 35.8689,
         "regime": "RESTRICTIVE",
-        "score": 33.808,
-        "structural_support_score": 33.808
+        "score": 33.6111,
+        "structural_support_score": 33.6111
       },
       {
         "available_date": "2023-10-31",
         "observation_month": "2023-09",
-        "observed_conditions_score": 35.7402,
+        "observed_conditions_score": 34.9563,
         "regime": "RESTRICTIVE",
-        "score": 31.6218,
-        "structural_support_score": 31.6218
+        "score": 31.4259,
+        "structural_support_score": 31.4259
       },
       {
         "available_date": "2023-11-30",
         "observation_month": "2023-10",
-        "observed_conditions_score": 33.3405,
+        "observed_conditions_score": 32.4055,
         "regime": "RESTRICTIVE",
-        "score": 27.0294,
-        "structural_support_score": 27.0294
+        "score": 26.7956,
+        "structural_support_score": 26.7956
       },
       {
         "available_date": "2023-12-31",
         "observation_month": "2023-11",
-        "observed_conditions_score": 37.9272,
+        "observed_conditions_score": 36.9099,
         "regime": "RESTRICTIVE",
-        "score": 32.6673,
-        "structural_support_score": 32.6673
+        "score": 32.413,
+        "structural_support_score": 32.413
       },
       {
         "available_date": "2024-01-31",
         "observation_month": "2023-12",
-        "observed_conditions_score": 42.2635,
+        "observed_conditions_score": 41.7649,
         "regime": "NEUTRAL",
-        "score": 40.1981,
-        "structural_support_score": 40.1981
+        "score": 40.0734,
+        "structural_support_score": 40.0734
       },
       {
         "available_date": "2024-02-29",
         "observation_month": "2024-01",
-        "observed_conditions_score": 45.6492,
+        "observed_conditions_score": 45.9593,
         "regime": "NEUTRAL",
-        "score": 41.0637,
-        "structural_support_score": 41.0637
+        "score": 41.1412,
+        "structural_support_score": 41.1412
       },
       {
         "available_date": "2024-03-31",
         "observation_month": "2024-02",
-        "observed_conditions_score": 47.6512,
+        "observed_conditions_score": 47.6615,
         "regime": "RESTRICTIVE",
-        "score": 38.5366,
-        "structural_support_score": 38.5366
+        "score": 38.5392,
+        "structural_support_score": 38.5392
       },
       {
         "available_date": "2024-04-30",
         "observation_month": "2024-03",
-        "observed_conditions_score": 51.4249,
+        "observed_conditions_score": 50.7524,
         "regime": "RESTRICTIVE",
-        "score": 39.2617,
-        "structural_support_score": 39.2617
+        "score": 39.0936,
+        "structural_support_score": 39.0936
       },
       {
         "available_date": "2024-05-31",
         "observation_month": "2024-04",
-        "observed_conditions_score": 50.9391,
+        "observed_conditions_score": 50.1849,
         "regime": "RESTRICTIVE",
-        "score": 33.6468,
-        "structural_support_score": 33.6468
+        "score": 33.4582,
+        "structural_support_score": 33.4582
       },
       {
         "available_date": "2024-06-30",
         "observation_month": "2024-05",
-        "observed_conditions_score": 51.3426,
+        "observed_conditions_score": 50.5818,
         "regime": "RESTRICTIVE",
-        "score": 34.8004,
-        "structural_support_score": 34.8004
+        "score": 34.6101,
+        "structural_support_score": 34.6101
       },
       {
         "available_date": "2024-07-31",
         "observation_month": "2024-06",
-        "observed_conditions_score": 47.9924,
+        "observed_conditions_score": 47.2463,
         "regime": "RESTRICTIVE",
-        "score": 35.7858,
-        "structural_support_score": 35.7858
+        "score": 35.5993,
+        "structural_support_score": 35.5993
       },
       {
         "available_date": "2024-08-31",
         "observation_month": "2024-07",
-        "observed_conditions_score": 45.7365,
+        "observed_conditions_score": 44.6016,
         "regime": "RESTRICTIVE",
-        "score": 37.4188,
-        "structural_support_score": 37.4188
+        "score": 37.1351,
+        "structural_support_score": 37.1351
       },
       {
         "available_date": "2024-09-30",
         "observation_month": "2024-08",
-        "observed_conditions_score": 46.4661,
+        "observed_conditions_score": 45.6375,
         "regime": "NEUTRAL",
-        "score": 40.7083,
-        "structural_support_score": 40.7083
+        "score": 40.5012,
+        "structural_support_score": 40.5012
       },
       {
         "available_date": "2024-10-31",
         "observation_month": "2024-09",
-        "observed_conditions_score": 52.7159,
+        "observed_conditions_score": 52.2781,
         "regime": "NEUTRAL",
-        "score": 42.9836,
-        "structural_support_score": 42.9836
+        "score": 42.8742,
+        "structural_support_score": 42.8742
       },
       {
         "available_date": "2024-11-30",
         "observation_month": "2024-10",
-        "observed_conditions_score": 55.9181,
+        "observed_conditions_score": 55.3914,
         "regime": "RESTRICTIVE",
-        "score": 39.7767,
-        "structural_support_score": 39.7767
+        "score": 39.645,
+        "structural_support_score": 39.645
       },
       {
         "available_date": "2024-12-31",
         "observation_month": "2024-11",
-        "observed_conditions_score": 59.3015,
+        "observed_conditions_score": 58.8431,
         "regime": "RESTRICTIVE",
-        "score": 36.9525,
-        "structural_support_score": 36.9525
+        "score": 36.8379,
+        "structural_support_score": 36.8379
       },
       {
         "available_date": "2025-01-31",
         "observation_month": "2024-12",
-        "observed_conditions_score": 58.9735,
+        "observed_conditions_score": 58.4924,
         "regime": "RESTRICTIVE",
-        "score": 37.6752,
-        "structural_support_score": 37.6752
+        "score": 37.555,
+        "structural_support_score": 37.555
       },
       {
         "available_date": "2025-02-28",
         "observation_month": "2025-01",
-        "observed_conditions_score": 59.4807,
+        "observed_conditions_score": 59.0049,
         "regime": "RESTRICTIVE",
-        "score": 34.7176,
-        "structural_support_score": 34.7176
+        "score": 34.5987,
+        "structural_support_score": 34.5987
       },
       {
         "available_date": "2025-03-31",
         "observation_month": "2025-02",
-        "observed_conditions_score": 55.5765,
+        "observed_conditions_score": 55.5449,
         "regime": "RESTRICTIVE",
-        "score": 37.3277,
-        "structural_support_score": 37.3277
+        "score": 37.3198,
+        "structural_support_score": 37.3198
       },
       {
         "available_date": "2025-04-30",
         "observation_month": "2025-03",
-        "observed_conditions_score": 51.5319,
+        "observed_conditions_score": 50.6929,
         "regime": "RESTRICTIVE",
-        "score": 39.1051,
-        "structural_support_score": 39.1051
+        "score": 38.8953,
+        "structural_support_score": 38.8953
       },
       {
         "available_date": "2025-05-31",
         "observation_month": "2025-04",
-        "observed_conditions_score": 47.8707,
+        "observed_conditions_score": 46.5577,
         "regime": "RESTRICTIVE",
-        "score": 36.4714,
-        "structural_support_score": 36.4714
+        "score": 36.1431,
+        "structural_support_score": 36.1431
       },
       {
         "available_date": "2025-06-30",
         "observation_month": "2025-05",
-        "observed_conditions_score": 54.0234,
+        "observed_conditions_score": 52.8312,
         "regime": "RESTRICTIVE",
-        "score": 36.7123,
-        "structural_support_score": 36.7123
+        "score": 36.4143,
+        "structural_support_score": 36.4143
       },
       {
         "available_date": "2025-07-31",
         "observation_month": "2025-06",
-        "observed_conditions_score": 57.4015,
+        "observed_conditions_score": 57.2232,
         "regime": "RESTRICTIVE",
-        "score": 38.0653,
-        "structural_support_score": 38.0653
+        "score": 38.0207,
+        "structural_support_score": 38.0207
       },
       {
         "available_date": "2025-08-31",
         "observation_month": "2025-07",
-        "observed_conditions_score": 60.3471,
+        "observed_conditions_score": 60.6526,
         "regime": "NEUTRAL",
-        "score": 41.1169,
-        "structural_support_score": 41.1169
+        "score": 41.1933,
+        "structural_support_score": 41.1933
       },
       {
         "available_date": "2025-09-30",
         "observation_month": "2025-08",
-        "observed_conditions_score": 61.6845,
+        "observed_conditions_score": 61.4965,
         "regime": "NEUTRAL",
-        "score": 41.2753,
-        "structural_support_score": 41.2753
+        "score": 41.2283,
+        "structural_support_score": 41.2283
       },
       {
         "available_date": "2025-10-31",
         "observation_month": "2025-09",
-        "observed_conditions_score": 62.0199,
+        "observed_conditions_score": 61.3115,
         "regime": "RESTRICTIVE",
-        "score": 39.8482,
-        "structural_support_score": 39.8482
+        "score": 39.6711,
+        "structural_support_score": 39.6711
       },
       {
         "available_date": "2025-11-30",
         "observation_month": "2025-10",
-        "observed_conditions_score": 62.4712,
+        "observed_conditions_score": 62.0135,
         "regime": "RESTRICTIVE",
-        "score": 38.9798,
-        "structural_support_score": 38.9798
+        "score": 38.8653,
+        "structural_support_score": 38.8653
       },
       {
         "available_date": "2025-12-31",
         "observation_month": "2025-11",
-        "observed_conditions_score": 60.9112,
+        "observed_conditions_score": 60.576,
         "regime": "RESTRICTIVE",
-        "score": 39.4392,
-        "structural_support_score": 39.4392
+        "score": 39.3554,
+        "structural_support_score": 39.3554
       },
       {
         "available_date": "2026-01-31",
         "observation_month": "2025-12",
-        "observed_conditions_score": 59.554,
+        "observed_conditions_score": 59.3036,
         "regime": "NEUTRAL",
-        "score": 40.4469,
-        "structural_support_score": 40.4469
+        "score": 40.3843,
+        "structural_support_score": 40.3843
       },
       {
         "available_date": "2026-02-28",
         "observation_month": "2026-01",
-        "observed_conditions_score": 62.0902,
+        "observed_conditions_score": 61.5184,
         "regime": "NEUTRAL",
-        "score": 41.4644,
-        "structural_support_score": 41.4644
+        "score": 41.3215,
+        "structural_support_score": 41.3215
       },
       {
         "available_date": "2026-03-31",
         "observation_month": "2026-02",
-        "observed_conditions_score": 58.3898,
+        "observed_conditions_score": 57.6209,
         "regime": "NEUTRAL",
-        "score": 41.8424,
-        "structural_support_score": 41.8424
+        "score": 41.6501,
+        "structural_support_score": 41.6501
       },
       {
         "available_date": "2026-04-30",
         "observation_month": "2026-03",
-        "observed_conditions_score": 51.2025,
+        "observed_conditions_score": 50.2676,
         "regime": "RESTRICTIVE",
-        "score": 38.8283,
-        "structural_support_score": 38.8283
+        "score": 38.5946,
+        "structural_support_score": 38.5946
       },
       {
         "available_date": "2026-05-31",
         "observation_month": "2026-04",
-        "observed_conditions_score": 53.1252,
+        "observed_conditions_score": 51.8235,
         "regime": "RESTRICTIVE",
-        "score": 38.7106,
-        "structural_support_score": 38.7106
+        "score": 38.3852,
+        "structural_support_score": 38.3852
       },
       {
         "available_date": "2026-06-30",
         "observation_month": "2026-05",
-        "observed_conditions_score": 55.086,
+        "observed_conditions_score": 54.0007,
         "regime": "RESTRICTIVE",
-        "score": 38.4105,
-        "structural_support_score": 38.4105
+        "score": 38.1392,
+        "structural_support_score": 38.1392
       },
       {
         "available_date": "2026-07-31",
         "observation_month": "2026-06",
-        "observed_conditions_score": 58.9431,
+        "observed_conditions_score": 58.0227,
         "regime": "RESTRICTIVE",
-        "score": 37.9294,
-        "structural_support_score": 37.9294
+        "score": 37.6992,
+        "structural_support_score": 37.6992
       },
       {
         "available_date": "2026-08-31",
         "observation_month": "2026-07",
-        "observed_conditions_score": 60.3026,
+        "observed_conditions_score": 60.1364,
         "regime": "RESTRICTIVE",
-        "score": 38.4063,
-        "structural_support_score": 38.4063
+        "score": 38.3648,
+        "structural_support_score": 38.3648
       },
       {
         "available_date": "2026-09-30",
         "observation_month": "2026-08",
-        "observed_conditions_score": 60.5483,
+        "observed_conditions_score": 60.5982,
         "regime": "RESTRICTIVE",
-        "score": 36.1414,
-        "structural_support_score": 36.1414
+        "score": 36.1539,
+        "structural_support_score": 36.1539
+      },
+      {
+        "available_date": "2026-10-31",
+        "observation_month": "2026-09",
+        "observed_conditions_score": 58.3913,
+        "regime": "RESTRICTIVE",
+        "score": 34.9634,
+        "structural_support_score": 34.9634
       }
     ],
     "market": [
@@ -5587,23 +5595,23 @@
   "regime": {
     "fiscal": {
       "automaticGlobalConvictionWeight": 0,
-      "availableDate": "2026-09-30",
-      "deficitPctGdp": 5.4285,
-      "fiscalImpulsePp": -0.8052,
-      "observationMonth": "2026-08",
+      "availableDate": "2026-10-31",
+      "deficitPctGdp": 6.0361,
+      "fiscalImpulsePp": 0.3412,
+      "observationMonth": "2026-09",
       "regime": "NEUTRAL",
       "role": "MIXED",
-      "score": 45.2504,
+      "score": 48.8004,
       "version": "GMLI_FISCAL_V2_DEFICIT_IMPULSE"
     },
     "funding": {
-      "availableDate": "2026-09-30",
-      "observationMonth": "2026-08",
-      "observedConditionsScore": 60.5483,
+      "availableDate": "2026-10-31",
+      "observationMonth": "2026-09",
+      "observedConditionsScore": 58.3913,
       "regime": "RESTRICTIVE",
       "role": "REACTIVE_CONFIRMATION",
-      "score": 36.1414,
-      "structuralSupportScore": 36.1414,
+      "score": 34.9634,
+      "structuralSupportScore": 34.9634,
       "version": "GMLI_FUNDING_V2_EFFECTIVE_CONDITIONS"
     },
     "label": "NEUTRAL",
@@ -5663,10 +5671,10 @@
   "source": {
     "baseUrl": "https://raw.githubusercontent.com/Garrincha077/NUEVO/gh-pages/api",
     "hashes": {
-      "context-history.json": "5b28d4fcb7325c55fe8e1fb5c4b28118f14e6ad4d7147802ea4b291e0b6169a5",
+      "context-history.json": "9a9c50f6ad21223574f49ecbefe8554c292c8d9e5c051a4ff0023ec781a617bb",
       "money-extremes.json": "5b1a30562b4eacb02e02c8cc9915860a6a31a739fe4a7bec66225464aba2d36a",
-      "refresh-status.json": "415f6e58aae55f11d78dbc8bec380c84b06103c17a4cdaeb05cf3a9b9962db8a",
-      "report.json": "65cb1b4fa4b0e56dfdce62eaf9ae0b79983dff53c3f49674fe504195ecd99ce4"
+      "refresh-status.json": "22baf2f4b7db9df3f4a81010241f053c624c1bf7158d5482d83b91d96105406d",
+      "report.json": "5cbb2a996c6ad205c52ee31f0a701223a6fa7f7477712ef048a7705a9ed3fdd9"
     },
     "ref": "gh-pages",
     "reportSchema": "gmli-report-v1.6",
