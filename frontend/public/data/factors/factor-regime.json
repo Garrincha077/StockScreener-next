@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "generatedAt": "2026-09-26T13:06:42.558151Z",
+  "generatedAt": "2026-10-31T14:32:35.526354Z",
   "source": {
     "provider": "Kenneth R. French Data Library",
     "ff5Url": "https://mba.tuck.dartmouth.edu/pages/faculty/ken.french/ftp/F-F_Research_Data_5_Factors_2x3_CSV.zip",
@@ -15,9 +15,9 @@
   },
   "range": {
     "firstMonth": "1963-07",
-    "lastMonth": "2026-08",
+    "lastMonth": "2026-09",
     "rollingFirstMonth": "1973-06",
-    "alignedMonths": 758
+    "alignedMonths": 759
   },
   "commonScale": {
     "minPct": -7.595,
@@ -27,7 +27,7 @@
     "mostImproving12m": [
       "MOM",
       "HML",
-      "SMB"
+      "CMA"
     ],
     "activeDroughts": 3
   },
@@ -37,15 +37,15 @@
       "sourceCode": "Mkt-RF",
       "label": "Market over cash",
       "latest": {
-        "month": "2026-08",
-        "premiumPct": 12.59,
-        "delta1mPp": 0.229,
-        "delta6mPp": -0.441,
-        "delta12mPp": 0.443,
-        "slope12mPpPerMonth": 0.01,
-        "recent12mPremiumPct": 15.514,
-        "historicalPercentile": 91.7,
-        "regime": "STRONG"
+        "month": "2026-09",
+        "premiumPct": 12.439,
+        "delta1mPp": -0.151,
+        "delta6mPp": 0.76,
+        "delta12mPp": -0.433,
+        "slope12mPpPerMonth": 0.0178,
+        "recent12mPremiumPct": 10.531,
+        "historicalPercentile": 90.8,
+        "regime": "DETERIORATING"
       },
       "currentDrought": {
         "active": false,
@@ -2619,6 +2619,10 @@
         {
           "month": "2026-08",
           "premiumPct": 12.59
+        },
+        {
+          "month": "2026-09",
+          "premiumPct": 12.439
         }
       ]
     },
@@ -2627,22 +2631,22 @@
       "sourceCode": "SMB",
       "label": "Small caps over large",
       "latest": {
-        "month": "2026-08",
-        "premiumPct": -2.461,
-        "delta1mPp": -0.215,
-        "delta6mPp": -0.397,
-        "delta12mPp": 0.468,
-        "slope12mPpPerMonth": 0.0608,
-        "recent12mPremiumPct": 3.716,
-        "historicalPercentile": 11.3,
-        "regime": "RECOVERY"
+        "month": "2026-09",
+        "premiumPct": -3.092,
+        "delta1mPp": -0.632,
+        "delta6mPp": -0.995,
+        "delta12mPp": -0.226,
+        "slope12mPpPerMonth": 0.0129,
+        "recent12mPremiumPct": 1.15,
+        "historicalPercentile": 4.7,
+        "regime": "DEEPENING_DROUGHT"
       },
       "currentDrought": {
         "active": true,
         "startMonth": "2019-06",
-        "endMonth": "2026-08",
-        "months": 87,
-        "duration": "7y 3m",
+        "endMonth": "2026-09",
+        "months": 88,
+        "duration": "7y 4m",
         "ongoing": true
       },
       "longestDrought": {
@@ -5208,7 +5212,11 @@
         },
         {
           "month": "2026-08",
-          "premiumPct": -2.461
+          "premiumPct": -2.46
+        },
+        {
+          "month": "2026-09",
+          "premiumPct": -3.092
         }
       ]
     },
@@ -5217,30 +5225,30 @@
       "sourceCode": "HML",
       "label": "Value over growth",
       "latest": {
-        "month": "2026-08",
-        "premiumPct": -1.022,
-        "delta1mPp": -0.668,
-        "delta6mPp": -0.156,
-        "delta12mPp": 0.807,
-        "slope12mPpPerMonth": 0.1302,
-        "recent12mPremiumPct": 10.283,
-        "historicalPercentile": 20.2,
+        "month": "2026-09",
+        "premiumPct": -1.055,
+        "delta1mPp": -0.033,
+        "delta6mPp": -0.389,
+        "delta12mPp": 0.931,
+        "slope12mPpPerMonth": 0.1012,
+        "recent12mPremiumPct": 9.726,
+        "historicalPercentile": 20.0,
         "regime": "RECOVERY"
       },
       "currentDrought": {
         "active": true,
         "startMonth": "2014-09",
-        "endMonth": "2026-08",
-        "months": 144,
-        "duration": "12y",
+        "endMonth": "2026-09",
+        "months": 145,
+        "duration": "12y 1m",
         "ongoing": true
       },
       "longestDrought": {
         "active": true,
         "startMonth": "2014-09",
-        "endMonth": "2026-08",
-        "months": 144,
-        "duration": "12y",
+        "endMonth": "2026-09",
+        "months": 145,
+        "duration": "12y 1m",
         "ongoing": true
       },
       "series": [
@@ -7799,6 +7807,10 @@
         {
           "month": "2026-08",
           "premiumPct": -1.022
+        },
+        {
+          "month": "2026-09",
+          "premiumPct": -1.055
         }
       ]
     },
@@ -7807,14 +7819,14 @@
       "sourceCode": "RMW",
       "label": "Profitable over unprofitable",
       "latest": {
-        "month": "2026-08",
-        "premiumPct": 1.909,
-        "delta1mPp": -0.236,
-        "delta6mPp": -1.154,
-        "delta12mPp": -2.037,
-        "slope12mPpPerMonth": -0.1705,
-        "recent12mPremiumPct": -14.638,
-        "historicalPercentile": 29.6,
+        "month": "2026-09",
+        "premiumPct": 1.803,
+        "delta1mPp": -0.105,
+        "delta6mPp": -0.979,
+        "delta12mPp": -1.747,
+        "slope12mPpPerMonth": -0.1632,
+        "recent12mPremiumPct": -15.701,
+        "historicalPercentile": 28.8,
         "regime": "DETERIORATING"
       },
       "currentDrought": {
@@ -10388,7 +10400,11 @@
         },
         {
           "month": "2026-08",
-          "premiumPct": 1.909
+          "premiumPct": 1.908
+        },
+        {
+          "month": "2026-09",
+          "premiumPct": 1.803
         }
       ]
     },
@@ -10397,30 +10413,30 @@
       "sourceCode": "CMA",
       "label": "Conservative over aggressive",
       "latest": {
-        "month": "2026-08",
-        "premiumPct": -0.961,
-        "delta1mPp": -0.163,
-        "delta6mPp": -0.137,
-        "delta12mPp": -0.404,
-        "slope12mPpPerMonth": -0.007,
-        "recent12mPremiumPct": -0.541,
-        "historicalPercentile": 5.5,
+        "month": "2026-09",
+        "premiumPct": -0.856,
+        "delta1mPp": 0.104,
+        "delta6mPp": -0.014,
+        "delta12mPp": -0.129,
+        "slope12mPpPerMonth": 0.0132,
+        "recent12mPremiumPct": 2.878,
+        "historicalPercentile": 6.4,
         "regime": "DEEPENING_DROUGHT"
       },
       "currentDrought": {
         "active": true,
         "startMonth": "2023-05",
-        "endMonth": "2026-08",
-        "months": 40,
-        "duration": "3y 4m",
+        "endMonth": "2026-09",
+        "months": 41,
+        "duration": "3y 5m",
         "ongoing": true
       },
       "longestDrought": {
         "active": true,
         "startMonth": "2023-05",
-        "endMonth": "2026-08",
-        "months": 40,
-        "duration": "3y 4m",
+        "endMonth": "2026-09",
+        "months": 41,
+        "duration": "3y 5m",
         "ongoing": true
       },
       "series": [
@@ -12974,11 +12990,15 @@
         },
         {
           "month": "2026-07",
-          "premiumPct": -0.799
+          "premiumPct": -0.798
         },
         {
           "month": "2026-08",
-          "premiumPct": -0.961
+          "premiumPct": -0.96
+        },
+        {
+          "month": "2026-09",
+          "premiumPct": -0.856
         }
       ]
     },
@@ -12987,14 +13007,14 @@
       "sourceCode": "Mom",
       "label": "Winners over losers",
       "latest": {
-        "month": "2026-08",
-        "premiumPct": 1.426,
-        "delta1mPp": -0.238,
-        "delta6mPp": 1.061,
-        "delta12mPp": 1.3,
-        "slope12mPpPerMonth": 0.2428,
-        "recent12mPremiumPct": 4.468,
-        "historicalPercentile": 25.7,
+        "month": "2026-09",
+        "premiumPct": 2.072,
+        "delta1mPp": 0.637,
+        "delta6mPp": 1.031,
+        "delta12mPp": 2.007,
+        "slope12mPpPerMonth": 0.2414,
+        "recent12mPremiumPct": 6.646,
+        "historicalPercentile": 28.4,
         "regime": "STRONG"
       },
       "currentDrought": {
@@ -15564,11 +15584,15 @@
         },
         {
           "month": "2026-07",
-          "premiumPct": 1.664
+          "premiumPct": 1.663
         },
         {
           "month": "2026-08",
-          "premiumPct": 1.426
+          "premiumPct": 1.435
+        },
+        {
+          "month": "2026-09",
+          "premiumPct": 2.072
         }
       ]
     }
