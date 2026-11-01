@@ -14,10 +14,10 @@
       "stale": 4,
       "unknown": 0
     },
-    "generated_at": "2026-10-31T13:04:43.487Z",
+    "generated_at": "2026-11-01T13:47:44.305Z",
     "items": [
       {
-        "age_days": 31,
+        "age_days": 32,
         "available_date": "2026-09-30",
         "decision_critical": true,
         "evidence_tier": "CORE",
@@ -30,7 +30,7 @@
       },
       {
         "active": false,
-        "age_days": 245,
+        "age_days": 246,
         "available_date": "2026-02-28",
         "decision_critical": false,
         "evidence_tier": "CORE_HISTORICAL_REFERENCE",
@@ -41,7 +41,7 @@
       },
       {
         "active": false,
-        "age_days": 123,
+        "age_days": 124,
         "available_date": "2026-06-30",
         "decision_critical": false,
         "evidence_tier": "RESEARCH_HISTORICAL",
@@ -51,7 +51,7 @@
         "promotion_gate": "BLOCKED_MISSING_FROZEN_INPUT_BYTES"
       },
       {
-        "age_days": 31,
+        "age_days": 32,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -59,7 +59,7 @@
         "label": "Money nowcast — US"
       },
       {
-        "age_days": 31,
+        "age_days": 32,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -67,7 +67,7 @@
         "label": "Money nowcast — Euro area"
       },
       {
-        "age_days": 31,
+        "age_days": 32,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -75,7 +75,7 @@
         "label": "Money nowcast — Japan"
       },
       {
-        "age_days": 61,
+        "age_days": 62,
         "available_date": "2026-08",
         "evidence_tier": "RESEARCH",
         "freshness": "STALE",
@@ -83,7 +83,7 @@
         "label": "Money nowcast — China"
       },
       {
-        "age_days": 0,
+        "age_days": 1,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-10-31",
         "decision_critical": true,
@@ -98,7 +98,7 @@
         "refreshable": true
       },
       {
-        "age_days": 92,
+        "age_days": 93,
         "automation_status": "BLOCKED_MISSING_FROZEN_CONSTRUCTION_PROVENANCE",
         "available_date": "2026-07-31",
         "evidence_tier": "OVERLAY",
@@ -112,7 +112,7 @@
         "refreshable": false
       },
       {
-        "age_days": 0,
+        "age_days": 1,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-10-31",
         "evidence_tier": "OVERLAY",
@@ -126,14 +126,14 @@
         "refreshable": true
       },
       {
-        "age_days": 31,
+        "age_days": 1,
         "assets": [
           "SPY",
           "QQQ",
           "GLD",
           "DBC"
         ],
-        "available_date": "2026-09",
+        "available_date": "2026-10",
         "decision_critical": true,
         "evidence_tier": "RESEARCH",
         "freshness": "FRESH",
@@ -141,7 +141,7 @@
         "label": "Core asset completed-month structure"
       },
       {
-        "age_days": 4,
+        "age_days": 5,
         "available_date": "2026-10-27",
         "decision_critical": false,
         "evidence_tier": "RESEARCH",
@@ -152,7 +152,7 @@
       }
     ],
     "oldest_decision_critical_input": {
-      "age_days": 31,
+      "age_days": 32,
       "available_date": "2026-09-30",
       "freshness": "FRESH",
       "key": "money_core",
@@ -180,7 +180,7 @@
     },
     "status": "HEALTHY"
   },
-  "generatedAt": "2026-10-31T13:04:43.487Z",
+  "generatedAt": "2026-11-01T13:47:44.305Z",
   "history": {
     "fiscal": [
       {
@@ -2006,18 +2006,6 @@
       {
         "assets_positive": {
           "DBC": true,
-          "GLD": true,
-          "QQQ": true,
-          "SPY": true
-        },
-        "month": "2016-10",
-        "positive": 4,
-        "score_0_2": 2,
-        "total": 4
-      },
-      {
-        "assets_positive": {
-          "DBC": true,
           "GLD": false,
           "QQQ": true,
           "SPY": true
@@ -3440,6 +3428,18 @@
         },
         "month": "2026-09",
         "positive": 4,
+        "score_0_2": 2,
+        "total": 4
+      },
+      {
+        "assets_positive": {
+          "DBC": true,
+          "GLD": false,
+          "QQQ": true,
+          "SPY": true
+        },
+        "month": "2026-10",
+        "positive": 3,
         "score_0_2": 2,
         "total": 4
       }
@@ -5618,12 +5618,12 @@
     "market": {
       "assetsPositive": {
         "DBC": true,
-        "GLD": true,
+        "GLD": false,
         "QQQ": true,
         "SPY": true
       },
-      "month": "2026-09",
-      "positive": 4,
+      "month": "2026-10",
+      "positive": 3,
       "role": "REACTIVE_CONFIRMATION",
       "score0To2": 2,
       "total": 4
@@ -5671,10 +5671,10 @@
   "source": {
     "baseUrl": "https://raw.githubusercontent.com/Garrincha077/NUEVO/gh-pages/api",
     "hashes": {
-      "context-history.json": "9a9c50f6ad21223574f49ecbefe8554c292c8d9e5c051a4ff0023ec781a617bb",
+      "context-history.json": "10b8e1dd6b31a3dd31c6f6f99345dadf53d2fc496641712be2a9372c10611188",
       "money-extremes.json": "5b1a30562b4eacb02e02c8cc9915860a6a31a739fe4a7bec66225464aba2d36a",
-      "refresh-status.json": "22baf2f4b7db9df3f4a81010241f053c624c1bf7158d5482d83b91d96105406d",
-      "report.json": "5cbb2a996c6ad205c52ee31f0a701223a6fa7f7477712ef048a7705a9ed3fdd9"
+      "refresh-status.json": "aacdfb3a9d3cdfe93e8bf56ac9afbfb334099cddbf4ec2f06e31bb05a6d55aee",
+      "report.json": "f8ee93382cf19ae5e0c4ede388638e01462199dc7891f9fe7b1e005d941a5d2d"
     },
     "ref": "gh-pages",
     "reportSchema": "gmli-report-v1.6",
