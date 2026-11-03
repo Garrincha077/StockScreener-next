@@ -1,28 +1,30 @@
 {
   "data": {
     "ticker": "MRAM",
-    "fetch_date": "2026-10-24T00:01:55.406491",
+    "fetch_date": "2026-11-03T03:06:45.878831",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 13201000.0,
       "2025-09-30 00:00:00": 14060000.0,
       "2025-12-31 00:00:00": 14803000.0,
       "2026-03-31 00:00:00": 14872000.0,
-      "2026-06-30 00:00:00": 18736000.0
+      "2026-06-30 00:00:00": 18736000.0,
+      "2026-09-30 00:00:00": NaN
     },
-    "revenue_qoq_change": 25.981710597095216,
-    "revenue_yoy_change": 41.928641769562915,
+    "revenue_qoq_change": null,
+    "revenue_yoy_change": null,
     "quarterly_eps": {
-      "2025-06-30 00:00:00": -0.03,
+      "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": 0.0,
       "2025-12-31 00:00:00": 0.05,
       "2026-03-31 00:00:00": -0.01,
-      "2026-06-30 00:00:00": -0.15
+      "2026-06-30 00:00:00": -0.15,
+      "2026-09-30 00:00:00": -0.29
     },
-    "eps_qoq_change": -1399.9999999999998,
-    "eps_yoy_change": -400.0,
-    "gross_margin": 53.89,
-    "margin_change": 1.15,
-    "operating_margin": -23.39,
+    "eps_qoq_change": -93.33333333333333,
+    "eps_yoy_change": null,
+    "gross_margin": NaN,
+    "margin_change": NaN,
+    "operating_margin": NaN,
     "quarterly_inventory": {
       "2025-06-30 00:00:00": 11306000.0,
       "2025-09-30 00:00:00": 11819000.0,
@@ -31,7 +33,7 @@
       "2026-06-30 00:00:00": 13085000.0
     },
     "inventory_qoq_change": 16.26,
-    "inventory_to_sales_ratio": 0.698,
+    "inventory_to_sales_ratio": NaN,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -98,9 +100,10 @@
       "2025-09-30",
       "2025-12-31",
       "2026-03-31",
-      "2026-06-30"
+      "2026-06-30",
+      "2026-09-30"
     ]
   },
-  "fetched_at": "2026-10-24T00:01:55.430107",
-  "extended_fetched_at": "2026-10-24T00:01:55.430107"
+  "fetched_at": "2026-11-03T03:06:45.922479",
+  "extended_fetched_at": "2026-11-03T03:06:45.922479"
 }
