@@ -1,28 +1,30 @@
 {
   "data": {
     "ticker": "ODFL",
-    "fetch_date": "2026-10-27T00:50:50.423187",
+    "fetch_date": "2026-11-04T01:43:19.234047",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 1407724000.0,
       "2025-09-30 00:00:00": 1406511000.0,
       "2025-12-31 00:00:00": 1307296000.0,
       "2026-03-31 00:00:00": 1334696000.0,
-      "2026-06-30 00:00:00": 1554004000.0
+      "2026-06-30 00:00:00": 1554004000.0,
+      "2026-09-30 00:00:00": NaN
     },
-    "revenue_qoq_change": 16.431307204037473,
-    "revenue_yoy_change": 10.391241464946253,
+    "revenue_qoq_change": null,
+    "revenue_yoy_change": null,
     "quarterly_eps": {
-      "2025-06-30 00:00:00": 1.27,
+      "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": 1.28,
       "2025-12-31 00:00:00": 1.09,
       "2026-03-31 00:00:00": 1.14,
-      "2026-06-30 00:00:00": 1.68
+      "2026-06-30 00:00:00": 1.68,
+      "2026-09-30 00:00:00": 1.65
     },
-    "eps_qoq_change": 47.36842105263159,
-    "eps_yoy_change": 32.283464566929126,
-    "gross_margin": 36.26,
-    "margin_change": 4.07,
-    "operating_margin": 29.94,
+    "eps_qoq_change": -1.7857142857142874,
+    "eps_yoy_change": 28.90624999999999,
+    "gross_margin": NaN,
+    "margin_change": NaN,
+    "operating_margin": NaN,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -89,9 +91,10 @@
       "2025-09-30",
       "2025-12-31",
       "2026-03-31",
-      "2026-06-30"
+      "2026-06-30",
+      "2026-09-30"
     ]
   },
-  "fetched_at": "2026-10-27T00:50:50.476194",
-  "extended_fetched_at": "2026-10-27T00:50:50.476194"
+  "fetched_at": "2026-11-04T01:43:19.271889",
+  "extended_fetched_at": "2026-11-04T01:43:19.271889"
 }
