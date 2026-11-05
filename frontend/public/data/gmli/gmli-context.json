@@ -9,19 +9,19 @@
   "dataHealth": {
     "active_money_version": "GMLI_GLOBAL_MONEY_V2_PBOC_OFFICIAL",
     "counts": {
-      "aging": 0,
-      "fresh": 8,
+      "aging": 4,
+      "fresh": 4,
       "stale": 4,
       "unknown": 0
     },
-    "generated_at": "2026-11-04T14:53:55.531Z",
+    "generated_at": "2026-11-05T14:59:02.670Z",
     "items": [
       {
-        "age_days": 35,
+        "age_days": 36,
         "available_date": "2026-09-30",
         "decision_critical": true,
         "evidence_tier": "CORE",
-        "freshness": "FRESH",
+        "freshness": "AGING",
         "key": "money_core",
         "label": "Active Money Core V2",
         "promotion_status": "PASS_MONEY_V2_PRODUCTION_PROMOTION",
@@ -30,7 +30,7 @@
       },
       {
         "active": false,
-        "age_days": 249,
+        "age_days": 250,
         "available_date": "2026-02-28",
         "decision_critical": false,
         "evidence_tier": "CORE_HISTORICAL_REFERENCE",
@@ -41,7 +41,7 @@
       },
       {
         "active": false,
-        "age_days": 127,
+        "age_days": 128,
         "available_date": "2026-06-30",
         "decision_critical": false,
         "evidence_tier": "RESEARCH_HISTORICAL",
@@ -51,31 +51,31 @@
         "promotion_gate": "BLOCKED_MISSING_FROZEN_INPUT_BYTES"
       },
       {
-        "age_days": 35,
+        "age_days": 36,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
-        "freshness": "FRESH",
+        "freshness": "AGING",
         "key": "money_nowcast_us",
         "label": "Money nowcast — US"
       },
       {
-        "age_days": 35,
+        "age_days": 36,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
-        "freshness": "FRESH",
+        "freshness": "AGING",
         "key": "money_nowcast_euro_area",
         "label": "Money nowcast — Euro area"
       },
       {
-        "age_days": 35,
+        "age_days": 36,
         "available_date": "2026-09",
         "evidence_tier": "RESEARCH",
-        "freshness": "FRESH",
+        "freshness": "AGING",
         "key": "money_nowcast_japan",
         "label": "Money nowcast — Japan"
       },
       {
-        "age_days": 65,
+        "age_days": 66,
         "available_date": "2026-08",
         "evidence_tier": "RESEARCH",
         "freshness": "STALE",
@@ -83,7 +83,7 @@
         "label": "Money nowcast — China"
       },
       {
-        "age_days": 4,
+        "age_days": 5,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-10-31",
         "decision_critical": true,
@@ -98,7 +98,7 @@
         "refreshable": true
       },
       {
-        "age_days": 96,
+        "age_days": 97,
         "automation_status": "BLOCKED_MISSING_FROZEN_CONSTRUCTION_PROVENANCE",
         "available_date": "2026-07-31",
         "evidence_tier": "OVERLAY",
@@ -112,7 +112,7 @@
         "refreshable": false
       },
       {
-        "age_days": 4,
+        "age_days": 5,
         "automation_status": "ACTIVE_GUARDED_REFRESH",
         "available_date": "2026-10-31",
         "evidence_tier": "OVERLAY",
@@ -126,7 +126,7 @@
         "refreshable": true
       },
       {
-        "age_days": 4,
+        "age_days": 5,
         "assets": [
           "SPY",
           "QQQ",
@@ -141,7 +141,7 @@
         "label": "Core asset completed-month structure"
       },
       {
-        "age_days": 8,
+        "age_days": 9,
         "available_date": "2026-10-27",
         "decision_critical": false,
         "evidence_tier": "RESEARCH",
@@ -152,9 +152,9 @@
       }
     ],
     "oldest_decision_critical_input": {
-      "age_days": 35,
+      "age_days": 36,
       "available_date": "2026-09-30",
-      "freshness": "FRESH",
+      "freshness": "AGING",
       "key": "money_core",
       "label": "Active Money Core V2"
     },
@@ -178,9 +178,9 @@
       "note": "Freshness changes conviction. The promoted Money V2 methodology is frozen, while validated data vintages may advance under its official-source refresh contract.",
       "stale_min_days": 61
     },
-    "status": "HEALTHY"
+    "status": "AGING"
   },
-  "generatedAt": "2026-11-04T14:53:55.531Z",
+  "generatedAt": "2026-11-05T14:59:02.670Z",
   "history": {
     "fiscal": [
       {
@@ -5631,7 +5631,7 @@
     "money": {
       "agreement": "AGREE",
       "availableDate": "2026-09-30",
-      "freshness": "FRESH",
+      "freshness": "AGING",
       "fxNeutralRegime": "NEUTRAL",
       "fxNeutralScore": 43,
       "fxNeutralYoYPct": 5.675999,
@@ -5671,16 +5671,16 @@
   "source": {
     "baseUrl": "https://raw.githubusercontent.com/Garrincha077/NUEVO/gh-pages/api",
     "hashes": {
-      "context-history.json": "644fb7e16c7c160c6324c21e011c1894f890810c62da495096eb16185ce50977",
+      "context-history.json": "2da5c21e08683230ee07e9c8835df3aebe4f40515bbc3261d6c3d9b39369d674",
       "money-extremes.json": "5b1a30562b4eacb02e02c8cc9915860a6a31a739fe4a7bec66225464aba2d36a",
-      "refresh-status.json": "7701dd0bc2b7f335350e72b9ed1c7c90af26c63028af303cb0834a003a7a6c18",
-      "report.json": "d490cbb425e6c95d229e0b50c414b40da44e8f839cbc0989adfc4a4c72d8d280"
+      "refresh-status.json": "aa39149572db986dc034c5a532ada495beeabc5de76e0768b3e0c8c8771b99e9",
+      "report.json": "ed3716bb381edbdf46d20b3c84704e43b622fed270670602e44f21042b029896"
     },
     "ref": "gh-pages",
     "reportSchema": "gmli-report-v1.6",
     "repository": "Garrincha077/NUEVO",
     "upstreamRefreshPolicy": "FETCH_FIRST_WITH_PER_LAYER_LAST_GOOD_FALLBACK",
-    "upstreamRefreshStatus": "PASS_FETCH_FIRST"
+    "upstreamRefreshStatus": "PASS_WITH_LAST_GOOD_FALLBACK"
   },
   "status": "OK",
   "stockScoutImpact": "none; read-only independent macro context"
