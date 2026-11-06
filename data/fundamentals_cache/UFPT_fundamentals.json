@@ -1,28 +1,30 @@
 {
   "data": {
     "ticker": "UFPT",
-    "fetch_date": "2026-10-30T01:20:02.736454",
+    "fetch_date": "2026-11-06T01:50:09.609827",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 151176000.0,
       "2025-09-30 00:00:00": 154558000.0,
       "2025-12-31 00:00:00": 148915000.0,
       "2026-03-31 00:00:00": 154202000.0,
-      "2026-06-30 00:00:00": 173964000.0
+      "2026-06-30 00:00:00": 173964000.0,
+      "2026-09-30 00:00:00": NaN
     },
-    "revenue_qoq_change": 12.815657384469722,
-    "revenue_yoy_change": 15.0738212414669,
+    "revenue_qoq_change": null,
+    "revenue_yoy_change": null,
     "quarterly_eps": {
-      "2025-06-30 00:00:00": 2.21,
+      "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": 2.11,
       "2025-12-31 00:00:00": 2.25,
       "2026-03-31 00:00:00": 2.24,
-      "2026-06-30 00:00:00": 2.68
+      "2026-06-30 00:00:00": 2.68,
+      "2026-09-30 00:00:00": 2.64
     },
-    "eps_qoq_change": 19.64285714285714,
-    "eps_yoy_change": 21.266968325791865,
-    "gross_margin": 29.27,
-    "margin_change": 0.5,
-    "operating_margin": 16.19,
+    "eps_qoq_change": -1.492537313432837,
+    "eps_yoy_change": 25.11848341232229,
+    "gross_margin": NaN,
+    "margin_change": NaN,
+    "operating_margin": NaN,
     "quarterly_inventory": {
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 85200000.0,
@@ -32,7 +34,7 @@
       "2026-06-30 00:00:00": 100090000.0
     },
     "inventory_qoq_change": 6.5,
-    "inventory_to_sales_ratio": 0.575,
+    "inventory_to_sales_ratio": NaN,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -102,9 +104,10 @@
       "2025-09-30",
       "2025-12-31",
       "2026-03-31",
-      "2026-06-30"
+      "2026-06-30",
+      "2026-09-30"
     ]
   },
-  "fetched_at": "2026-10-30T01:20:02.738184",
-  "extended_fetched_at": "2026-10-30T01:32:45.641145"
+  "fetched_at": "2026-11-06T01:50:09.611566",
+  "extended_fetched_at": "2026-11-06T02:04:46.071773"
 }
