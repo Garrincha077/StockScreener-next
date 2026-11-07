@@ -1,28 +1,30 @@
 {
   "data": {
     "ticker": "PJT",
-    "fetch_date": "2026-10-31T01:01:22.468115",
+    "fetch_date": "2026-11-07T01:06:26.148164",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 406884000.0,
       "2025-09-30 00:00:00": 447093000.0,
       "2025-12-31 00:00:00": 535163000.0,
       "2026-03-31 00:00:00": 418204000.0,
-      "2026-06-30 00:00:00": 486290000.0
+      "2026-06-30 00:00:00": 486290000.0,
+      "2026-09-30 00:00:00": NaN
     },
-    "revenue_qoq_change": 16.280571204483937,
-    "revenue_yoy_change": 19.515635906056765,
+    "revenue_qoq_change": null,
+    "revenue_yoy_change": null,
     "quarterly_eps": {
-      "2025-06-30 00:00:00": 1.21,
+      "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": 1.47,
       "2025-12-31 00:00:00": 1.97,
       "2026-03-31 00:00:00": 2.21,
-      "2026-06-30 00:00:00": 1.66
+      "2026-06-30 00:00:00": 1.66,
+      "2026-09-30 00:00:00": 1.15
     },
-    "eps_qoq_change": -24.886877828054303,
-    "eps_yoy_change": 37.1900826446281,
-    "gross_margin": 33.04,
-    "margin_change": 0.06,
-    "operating_margin": 21.88,
+    "eps_qoq_change": -30.722891566265066,
+    "eps_yoy_change": -21.768707482993204,
+    "gross_margin": NaN,
+    "margin_change": NaN,
+    "operating_margin": NaN,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -89,9 +91,10 @@
       "2025-09-30",
       "2025-12-31",
       "2026-03-31",
-      "2026-06-30"
+      "2026-06-30",
+      "2026-09-30"
     ]
   },
-  "fetched_at": "2026-10-31T01:01:22.499457",
-  "extended_fetched_at": "2026-10-31T01:01:22.499457"
+  "fetched_at": "2026-11-07T01:06:26.149149",
+  "extended_fetched_at": "2026-11-07T01:08:00.523990"
 }
