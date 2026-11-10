@@ -1,0 +1,61 @@
+{
+  "data": {
+    "ticker": "NWAX",
+    "fetch_date": "2026-11-10T03:47:41.978609",
+    "quarterly_revenue": {
+      "2025-09-30 00:00:00": NaN,
+      "2026-03-31 00:00:00": 0.0,
+      "2026-06-30 00:00:00": 0.0,
+      "2026-09-30 00:00:00": 0.0
+    },
+    "revenue_qoq_change": null,
+    "quarterly_eps": {
+      "2025-09-30 00:00:00": 0.0,
+      "2026-03-31 00:00:00": 0.04,
+      "2026-06-30 00:00:00": 0.04,
+      "2026-09-30 00:00:00": 0.04
+    },
+    "eps_qoq_change": 0.0,
+    "operating_margin": 0,
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "quarterly_operating_cash_flow": {
+      "2026-03-31 00:00:00": -88580.0,
+      "2026-06-30 00:00:00": -195807.0,
+      "2026-09-30 00:00:00": -108589.0
+    },
+    "operating_cash_flow_qoq_change": 44.54284065431777,
+    "operating_cash_flow_yoy_change": null,
+    "quarterly_free_cash_flow": {
+      "2026-03-31 00:00:00": -88580.0,
+      "2026-06-30 00:00:00": -195807.0,
+      "2026-09-30 00:00:00": -108589.0
+    },
+    "free_cash_flow_qoq_change": 44.54284065431777,
+    "free_cash_flow_yoy_change": null,
+    "free_cash_flow_margin": null,
+    "quarterly_cash": {
+      "2026-03-31 00:00:00": 855526.0,
+      "2026-06-30 00:00:00": 659719.0,
+      "2026-09-30 00:00:00": 551130.0
+    },
+    "cash_latest": 551130.0,
+    "net_debt_latest": -551130.0,
+    "quarterly_shares_outstanding": {
+      "2026-03-31 00:00:00": 49800000.0,
+      "2026-06-30 00:00:00": 49800000.0,
+      "2026-09-30 00:00:00": 49800000.0
+    },
+    "shares_outstanding_latest": 49800000.0,
+    "share_dilution_yoy_change": null,
+    "fundamental_periods": [
+      "2025-09-30",
+      "2026-03-31",
+      "2026-06-30",
+      "2026-09-30"
+    ]
+  },
+  "fetched_at": "2026-11-10T03:47:42.012186",
+  "extended_fetched_at": "2026-11-10T03:47:42.012186"
+}

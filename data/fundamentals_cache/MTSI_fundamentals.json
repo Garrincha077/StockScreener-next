@@ -1,28 +1,30 @@
 {
   "data": {
     "ticker": "MTSI",
-    "fetch_date": "2026-10-31T01:01:02.791424",
+    "fetch_date": "2026-11-10T03:47:32.843090",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 252079000.0,
       "2025-09-30 00:00:00": 261170000.0,
       "2025-12-31 00:00:00": 271612000.0,
       "2026-03-31 00:00:00": 288955000.0,
-      "2026-06-30 00:00:00": 342237000.0
+      "2026-06-30 00:00:00": 342237000.0,
+      "2026-09-30 00:00:00": NaN
     },
-    "revenue_qoq_change": 18.439549410807913,
-    "revenue_yoy_change": 35.76577184136719,
+    "revenue_qoq_change": null,
+    "revenue_yoy_change": null,
     "quarterly_eps": {
-      "2025-06-30 00:00:00": 0.48,
+      "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": 0.59,
       "2025-12-31 00:00:00": 0.64,
       "2026-03-31 00:00:00": 0.6,
-      "2026-06-30 00:00:00": 1.28
+      "2026-06-30 00:00:00": 1.28,
+      "2026-09-30 00:00:00": 1.78
     },
-    "eps_qoq_change": 113.33333333333336,
-    "eps_yoy_change": 166.66666666666669,
-    "gross_margin": 58.31,
-    "margin_change": 1.4,
-    "operating_margin": 22.53,
+    "eps_qoq_change": 39.0625,
+    "eps_yoy_change": 201.6949152542373,
+    "gross_margin": NaN,
+    "margin_change": NaN,
+    "operating_margin": NaN,
     "quarterly_inventory": {
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 215388000.0,
@@ -32,7 +34,7 @@
       "2026-06-30 00:00:00": 281518000.0
     },
     "inventory_qoq_change": 11.63,
-    "inventory_to_sales_ratio": 0.823,
+    "inventory_to_sales_ratio": NaN,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -102,9 +104,10 @@
       "2025-09-30",
       "2025-12-31",
       "2026-03-31",
-      "2026-06-30"
+      "2026-06-30",
+      "2026-09-30"
     ]
   },
-  "fetched_at": "2026-10-31T01:01:02.832868",
-  "extended_fetched_at": "2026-10-31T01:01:02.832868"
+  "fetched_at": "2026-11-10T03:47:32.923342",
+  "extended_fetched_at": "2026-11-10T03:47:32.923342"
 }
