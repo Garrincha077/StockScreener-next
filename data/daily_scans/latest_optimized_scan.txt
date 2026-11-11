@@ -1,17 +1,17 @@
 ================================================================================
 OPTIMIZED FULL MARKET SCAN - ALL US STOCKS
-Scan Date: 2026-11-10
-Generated: 2026-11-10 03:45:24
+Scan Date: 2026-11-11
+Generated: 2026-11-11 01:25:58
 ================================================================================
 
 SCANNING STATISTICS
 --------------------------------------------------------------------------------
-Total Universe: 3,752 stocks
-Analyzed: 1,977 stocks
-Processing Time: 0.9 minutes
-Actual TPS: 69.47
+Total Universe: 3,750 stocks
+Analyzed: 1,978 stocks
+Processing Time: 0.5 minutes
+Actual TPS: 114.30
 🟢 Error Rate: 0.00%
-🟢 Buy Signals: 342
+🟢 Buy Signals: 344
 🔴 Sell Signals: 380
 
 
@@ -27,9 +27,9 @@ BENCHMARK SUMMARY
   🟢 200 SMA: $727.99 (slope: 0.0542)
   🟡 Confidence: 65%
 
-Market Breadth (n=1977):
-  🟡 Phase 1 (Base Building): 1135 stocks (57.4%)
-  🟢 Phase 2 (Uptrend): 400 stocks (20.2%)
+Market Breadth (n=1978):
+  🟡 Phase 1 (Base Building): 1134 stocks (57.3%)
+  🟢 Phase 2 (Uptrend): 402 stocks (20.3%)
   🟡 Phase 3 (Distribution): 29 stocks (1.5%)
   🔴 Phase 4 (Downtrend): 413 stocks (20.9%)
   🔴 Breadth Quality: Fair
@@ -43,7 +43,7 @@ Interpretation:
 
 
 ================================================================================
-🟢 TOP BUY SIGNALS (Score >= 70) - 342 Total
+🟢 TOP BUY SIGNALS (Score >= 70) - 344 Total
 ================================================================================
 
 
@@ -510,7 +510,39 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #15: SONO | Score: 106.4/125
+⭐ BUY #15: ZETA | Score: 106.5/125
+################################################################################
+Phase: 2
+🟢 Entry Quality: Good
+Stop Loss: $31.40
+🟢 Risk/Reward: 9.6:1 (Risk $1.02, Reward $9.73)
+Breakout: $31.72
+🔴 RS: -0.226
+
+Key Reasons:
+  • Weak Stage 2: 2.2% above 50 SMA
+  • SMAs rising strongly (50:0.272, 200:0.233)
+  • 🟢 50 SMA Breakout (volume confirmed)
+  • 🟢 Revenue: 3Q avg 9.7% QoQ (17.0% → 0.4% → 11.7%)
+  • 🟢 EPS: +160% YoY (strong earnings)
+  • Volume pattern neutral (ratio 0.92)
+  • ⚠ Declining RS: -0.226 (underperforming SPY)
+
+============================================================
+FUNDAMENTAL SNAPSHOT - ZETA
+============================================================
+✓ Revenue: ACCELERATING strongly (YoY: +43.5%, QoQ: +11.7%)
+  QoQ Trend (last 4Q): +9.3% → +17.0% → +0.4% → +11.7%
+✓ EPS: STRONG growth (YoY: +160.5%, QoQ: +161.3%)
+  QoQ Trend (last 4Q): +71.7% → +274.8% → -299.4% → +161.3%
+• Margins: Stable/slightly up (59.1%, +0.1pp QoQ)
+
+Overall Assessment:
+✓ Fundamentals SUPPORT technical breakout
+
+
+################################################################################
+⭐ BUY #16: SONO | Score: 106.4/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -538,38 +570,6 @@ FUNDAMENTAL SNAPSHOT - SONO
 ✓ Margins: EXPANDING (50.5%, +6.2pp QoQ)
 • Inventory: Slight draw (-1.7% QoQ, ratio: 0.42)
   Note: Detailed breakdown (raw/WIP/finished) not available via API
-
-Overall Assessment:
-✓ Fundamentals SUPPORT technical breakout
-
-
-################################################################################
-⭐ BUY #16: ZETA | Score: 106.4/125
-################################################################################
-Phase: 2
-🟢 Entry Quality: Good
-Stop Loss: $31.40
-🟢 Risk/Reward: 9.6:1 (Risk $1.02, Reward $9.73)
-Breakout: $31.72
-🔴 RS: -0.226
-
-Key Reasons:
-  • Weak Stage 2: 2.2% above 50 SMA
-  • SMAs rising strongly (50:0.272, 200:0.233)
-  • 🟢 50 SMA Breakout (volume confirmed)
-  • 🟢 Revenue: 3Q avg 9.7% QoQ (17.0% → 0.4% → 11.7%)
-  • 🟢 EPS: +160% YoY (strong earnings)
-  • Volume pattern neutral (ratio 0.91)
-  • ⚠ Declining RS: -0.226 (underperforming SPY)
-
-============================================================
-FUNDAMENTAL SNAPSHOT - ZETA
-============================================================
-✓ Revenue: ACCELERATING strongly (YoY: +43.5%, QoQ: +11.7%)
-  QoQ Trend (last 4Q): +9.3% → +17.0% → +0.4% → +11.7%
-✓ EPS: STRONG growth (YoY: +160.5%, QoQ: +161.3%)
-  QoQ Trend (last 4Q): +71.7% → +274.8% → -299.4% → +161.3%
-• Margins: Stable/slightly up (59.1%, +0.1pp QoQ)
 
 Overall Assessment:
 ✓ Fundamentals SUPPORT technical breakout
@@ -1039,7 +1039,37 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #31: SMP | Score: 102.5/125
+⭐ BUY #31: CNO | Score: 102.6/125
+################################################################################
+Phase: 2
+🟢 Entry Quality: Good
+Stop Loss: $54.25
+🟢 Risk/Reward: 5.9:1 (Risk $2.91, Reward $17.15)
+🟢 RS: 0.542
+
+Key Reasons:
+  • Good Stage 2: 4.3% above 50 SMA
+  • SMAs rising moderately
+  • 🔴 Revenue: 3Q avg nan% QoQ (-9.9% → 24.8% → nan%)
+  • 🟢 EPS: +612% YoY (strong earnings)
+  • Volume pattern neutral (ratio 1.07)
+  • ✓ Strong RS: 0.542 (outperforming SPY)
+  • 🟢 Outstanding R/R: 5.9:1 ($17.15 upside, $2.91 risk)
+
+============================================================
+FUNDAMENTAL SNAPSHOT - CNO
+============================================================
+• Revenue: Data not available
+  QoQ Trend (last 4Q): -3.8% → -9.9% → +24.8% → N/A
+✓ EPS: STRONG growth (YoY: +612.2%, QoQ: +28.5%)
+  QoQ Trend (last 4Q): +295.8% → -58.9% → +241.0% → +28.5%
+
+Overall Assessment:
+✓ Fundamentals SUPPORT technical breakout
+
+
+################################################################################
+⭐ BUY #32: SMP | Score: 102.5/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1073,7 +1103,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #32: CBRL | Score: 102.4/125
+⭐ BUY #33: CBRL | Score: 102.4/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1108,7 +1138,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #33: HBNC | Score: 102.4/125
+⭐ BUY #34: HBNC | Score: 102.4/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1139,7 +1169,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #34: PCRX | Score: 102.3/125
+⭐ BUY #35: PCRX | Score: 102.3/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1170,36 +1200,6 @@ FUNDAMENTAL SNAPSHOT - PCRX
 
 Overall Assessment:
 ⚠ Some concerns: margins contracting
-
-
-################################################################################
-⭐ BUY #35: CNO | Score: 102.2/125
-################################################################################
-Phase: 2
-🟢 Entry Quality: Good
-Stop Loss: $54.25
-🟢 Risk/Reward: 5.9:1 (Risk $2.91, Reward $17.15)
-🟢 RS: 0.542
-
-Key Reasons:
-  • Good Stage 2: 4.3% above 50 SMA
-  • SMAs rising moderately
-  • 🔴 Revenue: 3Q avg nan% QoQ (-9.9% → 24.8% → nan%)
-  • 🟢 EPS: +612% YoY (strong earnings)
-  • Volume pattern neutral (ratio 1.03)
-  • ✓ Strong RS: 0.542 (outperforming SPY)
-  • 🟢 Outstanding R/R: 5.9:1 ($17.15 upside, $2.91 risk)
-
-============================================================
-FUNDAMENTAL SNAPSHOT - CNO
-============================================================
-• Revenue: Data not available
-  QoQ Trend (last 4Q): -3.8% → -9.9% → +24.8% → N/A
-✓ EPS: STRONG growth (YoY: +612.2%, QoQ: +28.5%)
-  QoQ Trend (last 4Q): +295.8% → -58.9% → +241.0% → +28.5%
-
-Overall Assessment:
-✓ Fundamentals SUPPORT technical breakout
 
 
 ################################################################################
@@ -1502,39 +1502,7 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #45: AFG | Score: 100.6/125
-################################################################################
-Phase: 2
-🟢 Entry Quality: Good
-Stop Loss: $148.14
-🟢 Risk/Reward: 4.9:1 (Risk $9.75, Reward $47.37)
-Breakout: $144.60
-🟢 RS: 0.595
-🟢 VCP: 4 contractions: 5.0% → 4.6% → 5.0% → 4.3% (quality: 68/100)
-
-Key Reasons:
-  • Good Stage 2: 9.2% above 50 SMA
-  • SMAs rising strongly (50:0.111, 200:0.088)
-  • 🟢 VCP Breakout (4 contractions) (volume confirmed)
-  • 🔴 Revenue: 3Q avg -4.3% QoQ (-11.4% → -10.0% → 8.5%)
-  • 🟢 EPS: +44% YoY
-  • Volume pattern neutral (ratio 1.07)
-  • ✓ Strong RS: 0.595 (outperforming SPY)
-
-============================================================
-FUNDAMENTAL SNAPSHOT - AFG
-============================================================
-• Revenue: Modest growth (YoY: +3.2%, QoQ: +8.5%)
-  QoQ Trend (last 4Q): +19.4% → -11.4% → -10.0% → +8.5%
-✓ EPS: STRONG growth (YoY: +44.4%, QoQ: +30.6%)
-  QoQ Trend (last 4Q): +24.5% → +38.9% → -36.0% → +30.6%
-
-Overall Assessment:
-✓ Fundamentals SUPPORT technical breakout
-
-
-################################################################################
-⭐ BUY #46: ADI | Score: 100.6/125
+⭐ BUY #45: ADI | Score: 100.6/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1562,6 +1530,38 @@ FUNDAMENTAL SNAPSHOT - ADI
 • Margins: Flat (67.3%, -0.0pp QoQ)
 • Inventory: Slight increase (+4.5% QoQ, ratio: 0.48)
   Note: Detailed breakdown (raw/WIP/finished) not available via API
+
+Overall Assessment:
+✓ Fundamentals SUPPORT technical breakout
+
+
+################################################################################
+⭐ BUY #46: AFG | Score: 100.6/125
+################################################################################
+Phase: 2
+🟢 Entry Quality: Good
+Stop Loss: $148.14
+🟢 Risk/Reward: 4.9:1 (Risk $9.75, Reward $47.37)
+Breakout: $144.60
+🟢 RS: 0.595
+🟢 VCP: 4 contractions: 5.0% → 4.6% → 5.0% → 4.3% (quality: 68/100)
+
+Key Reasons:
+  • Good Stage 2: 9.2% above 50 SMA
+  • SMAs rising strongly (50:0.111, 200:0.088)
+  • 🟢 VCP Breakout (4 contractions) (volume confirmed)
+  • 🔴 Revenue: 3Q avg -4.3% QoQ (-11.4% → -10.0% → 8.5%)
+  • 🟢 EPS: +44% YoY
+  • Volume pattern neutral (ratio 1.07)
+  • ✓ Strong RS: 0.595 (outperforming SPY)
+
+============================================================
+FUNDAMENTAL SNAPSHOT - AFG
+============================================================
+• Revenue: Modest growth (YoY: +3.2%, QoQ: +8.5%)
+  QoQ Trend (last 4Q): +19.4% → -11.4% → -10.0% → +8.5%
+✓ EPS: STRONG growth (YoY: +44.4%, QoQ: +30.6%)
+  QoQ Trend (last 4Q): +24.5% → +38.9% → -36.0% → +30.6%
 
 Overall Assessment:
 ✓ Fundamentals SUPPORT technical breakout
@@ -1693,7 +1693,7 @@ Overall Assessment:
 
 
 ================================================================================
-ADDITIONAL BUYS (292 more)
+ADDITIONAL BUYS (294 more)
 ================================================================================
 
 MCB, V, VSXY, MSGK, AVPT, HZO, CVBF, MFC, ELF, CRVL
@@ -1705,7 +1705,7 @@ INTA, YEXT, AMAL, DSP, SBC, ETSY, KMTS, BIIB, LQDT, PACS
 BLLN, RCEL, JAKK, LLY, ANF, HAE, KIDS, MAS, EXPO, VEEV
 VSTS, CB, DGX, BTSG, SIBN, AMGN, AZTA, ROP, ASH, GRNT
 GRAL, WMG, PCTY, CVLT, NDSN, NTWK, GO, MTN, RAL, DSGX
-GKOS, NTSK, AIZ, GRDN, MORN, ASO, RLGT, KSS, SXC, SBH
+GKOS, NTSK, RLGT, AIZ, GRDN, MORN, ASO, KSS, SXC, SBH
 PFE, APPF, CNK, MTD, PDS, TGTX, EXLS, ADP, HAFC, GCO
 IBEX, QTWO, PTC, S, BB, CTAS, FRHC, HST, VRA, ALRM
 CINF, SKWD, BIO, AMRX, MA, MANH, MCK, OSPN, DXC, PGNY
@@ -1718,14 +1718,14 @@ BRZE, TECH, BDX, CCC, EHC, MSFT, ARHS, FIZZ, TMO, CDNA
 USPH, VIA, ABM, OGN, VLTO, EBAY, MRK, APOG, UNH, CBLL
 DRH, CL, IQV, MSI, ULBI, GILD, VRSN, DV, EGBN, RHP
 LGND, WMK, JXN, GDYN, BWIN, PAYO, TFX, TRV, TASK, ANDG
-HCSG, TBCH, JNJ, SWK, UVE, TREX, AGYS, CBOE, J, THG
-ADT, DEO, NDAQ, CHT, CROX, SAIC, CNC, VRNS, COKE, CTKB
-UTL, HGTY, HCMA, TTEK, NWE, SLAB, AEYE, CRL, DE, DFIN
-SYNA, XERS, APD, WLTH, ZYME, MD, WRB, ARDT, AIG, CPA
-AOUT, IBN, PD, STRC, ELV, ACGL, PLUS, HOG, PVH, ACHC
-IBTA, OABI, PSO, TITN, MOH, SLDE, SGRY, TDC, MRSH, DMAC
-BSY, SPGI, LIND, SIGI, GME, WLY, EG, RLI, WTRG, PCVX
-VRTX, DLB
+HCSG, TBCH, JNJ, SWK, UVE, TREX, AGYS, CBOE, J, MBWM
+THG, ADT, DEO, NDAQ, CHT, CROX, SAIC, CNC, VRNS, COKE
+CTKB, UTL, HGTY, HCMA, TTEK, NWE, SLAB, AEYE, CRL, DE
+DFIN, SYNA, XERS, APD, WLTH, ZYME, MD, WRB, ARDT, AIG
+CPA, AOUT, IBN, PD, STRC, ELV, ACGL, PLUS, HOG, PVH
+ACHC, IBTA, OABI, PSO, TITN, MOH, SLDE, SGRY, TDC, MRSH
+DMAC, BSY, SPGI, LIND, SIGI, GME, WLY, EG, FIGS, RLI
+WTRG, PCVX, VRTX, DLB
 
 
 ================================================================================
@@ -2238,16 +2238,16 @@ PBH, POWI, QUIK, RCUS, SRE, STM, STUB, SXI, SYM, TSSI
 TT, USGO, VC, VMI, VSH, WERN, WMB, HOS, MPLT, AKTS
 ALMS, ALTG, ATEC, AVAV, AVBP, BCC, BCRX, CC, CENX, CPS
 EQPT, ESE, FRPH, HUBB, LII, LKQ, METC, MP, MTRX, NEXT
-OSS, PL, RIO, RSI, SKYD, SNDX, TYG, VRT, VTOL, XYL
-APLD, AXSM, BRUN, CRCL, CYD, KROS, MNRO, NPKI, WDC, ALG
-ALHC, ANAB, ATRO, AZZ, BELFB, BSX, BWXT, CCAP, CCJ, CLB
-CORZ, DUOT, ELE, EQT, GBFH, GLXY, GNL, HAL, HESM, HOV
-HTLD, HUBG, HWM, IE, IMKTA, JBHT, KGC, LAKE, LE, LNN
-MC, MDGL, MFA, MKC, MRAM, MRCY, MRTN, MTX, MTZ, MYRG
-NBHC, NN, NWPX, OCUL, OPFI, PEGA, PHI, PKE, PRIM, PUMP
-RAPP, REFI, REX, RIG, SNEX, SPXC, SQM, SRI, SSYS, STC
-TBBK, TLK, TRMB, UCTT, UEC, USNA, VERA, VNOM, VOYG, WLK
-XRAY, XRN, Z, ZG, AIRO, ALB, ALLY, BFS, BIOA, BKNG
+OSS, PL, RIO, RSI, SKYD, SNDX, VRT, VTOL, XYL, APLD
+AXSM, BRUN, CRCL, CYD, KROS, MNRO, NPKI, WDC, ALG, ALHC
+ANAB, ATRO, AZZ, BELFB, BSX, BWXT, CCAP, CCJ, CLB, CORZ
+DUOT, ELE, EQT, GBFH, GLXY, GNL, HAL, HESM, HOV, HTLD
+HUBG, HWM, IE, IMKTA, JBHT, KGC, LAKE, LE, LNN, MC
+MDGL, MFA, MKC, MRAM, MRCY, MRTN, MTZ, MTX, MYRG, NBHC
+NN, NWPX, OCUL, OPFI, PEGA, PHI, PKE, PRIM, PUMP, RAPP
+REFI, REX, RIG, SNEX, SPXC, SQM, SRI, SSYS, STC, TBBK
+TLK, TRMB, TYG, UCTT, UEC, USNA, VERA, VNOM, VOYG, WLK
+XRN, XRAY, Z, ZG, AIRO, ALB, ALLY, BFS, BIOA, BKNG
 BOH, CBT, CCB, CDE, CDNL, CELC, CLPT, CMC, CTNM, EMN
 FELE, FHB, FHN, FLG, GLSI, GOLD, HL, HSAI, IMNM, IPX
 LGIH, LPTH, MEC, MUX, NMFC, NMRK, ORC, PLD, PWP, RBC
