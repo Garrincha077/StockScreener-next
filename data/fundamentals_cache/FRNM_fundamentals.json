@@ -1,0 +1,17 @@
+{
+  "data": {
+    "ticker": "FRNM",
+    "fetch_date": "2026-11-13T02:07:10.791115",
+    "quarterly_eps": {
+      "2026-09-30 00:00:00": 0.58
+    },
+    "inventory_breakdown_available": false,
+    "extended_fundamentals_model": "upstream-yfinance-additive-v1",
+    "fundamental_data_source": "yfinance",
+    "fundamental_periods": [
+      "2026-09-30"
+    ]
+  },
+  "fetched_at": "2026-11-13T02:07:10.791315",
+  "extended_fetched_at": "2026-11-13T02:16:33.386923"
+}

@@ -1,8 +1,8 @@
 {
-  "generated_at_utc": "2026-11-12T02:38:26.694412+00:00",
-  "workflow_run_id": "43140839394",
+  "generated_at_utc": "2026-11-13T02:28:46.622357+00:00",
+  "workflow_run_id": "43348921997",
   "workflow_run_attempt": "1",
-  "source_commit": "d081261ddbd24b45b84f7f4a6b936cfef803dac9",
+  "source_commit": "e488cc34307f576755493790643eb0a5d335881c",
   "report": "data/daily_scans/latest_optimized_scan.txt",
   "frontend_data": "frontend/public/data/latest.json",
   "frontend_client_data": "frontend/public/data/core.json",
