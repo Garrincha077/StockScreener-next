@@ -1970,5 +1970,33 @@
   "YETI": {
     "last_updated": "2026-11-17T04:10:07.094264",
     "in_earnings_season": false
+  },
+  "ABSI": {
+    "last_updated": "2026-11-18T03:03:33.217406",
+    "in_earnings_season": false
+  },
+  "BILL": {
+    "last_updated": "2026-11-18T03:03:35.296418",
+    "in_earnings_season": false
+  },
+  "TWST": {
+    "last_updated": "2026-11-18T03:03:55.992333",
+    "in_earnings_season": false
+  },
+  "ELA": {
+    "last_updated": "2026-11-18T03:04:09.402257",
+    "in_earnings_season": false
+  },
+  "EVI": {
+    "last_updated": "2026-11-18T03:04:10.258992",
+    "in_earnings_season": false
+  },
+  "IONQ": {
+    "last_updated": "2026-11-18T03:04:13.394319",
+    "in_earnings_season": false
+  },
+  "TRAK": {
+    "last_updated": "2026-11-18T03:04:20.212291",
+    "in_earnings_season": false
   }
 }
