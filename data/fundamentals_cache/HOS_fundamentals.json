@@ -1,44 +1,53 @@
 {
   "data": {
     "ticker": "HOS",
-    "fetch_date": "2026-11-10T03:46:56.904832",
+    "fetch_date": "2026-11-19T02:48:09.167664",
     "quarterly_revenue": {
       "2025-09-30 00:00:00": 199116000.0,
-      "2026-09-30 00:00:00": NaN
+      "2026-09-30 00:00:00": 293341000.0
     },
-    "revenue_qoq_change": null,
+    "revenue_qoq_change": 47.32166174491251,
     "quarterly_eps": {
       "2025-09-30 00:00:00": 0.158795,
       "2026-09-30 00:00:00": -0.4
     },
     "eps_qoq_change": -351.8971000346359,
-    "gross_margin": NaN,
-    "margin_change": NaN,
-    "operating_margin": NaN,
+    "gross_margin": 59.64,
+    "margin_change": -29.68,
+    "operating_margin": -21.03,
+    "quarterly_inventory": {
+      "2025-09-30 00:00:00": NaN,
+      "2026-09-30 00:00:00": 21615000.0
+    },
+    "inventory_qoq_change": null,
+    "inventory_to_sales_ratio": 0.074,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
     "quarterly_cash": {
-      "2025-09-30 00:00:00": 97757000.0
+      "2025-09-30 00:00:00": 97757000.0,
+      "2026-09-30 00:00:00": 471551000.0
     },
-    "cash_latest": 97757000.0,
+    "cash_latest": 471551000.0,
     "quarterly_total_debt": {
-      "2025-09-30 00:00:00": 473811000.0
+      "2025-09-30 00:00:00": 473811000.0,
+      "2026-09-30 00:00:00": 1051279000.0
     },
-    "total_debt_latest": 473811000.0,
-    "total_debt_qoq_change": null,
+    "total_debt_latest": 1051279000.0,
+    "total_debt_qoq_change": 121.87728862352287,
     "total_debt_yoy_change": null,
-    "net_debt_latest": 376054000.0,
+    "net_debt_latest": 579728000.0,
     "quarterly_shares_outstanding": {
-      "2025-09-30 00:00:00": 327000000.0
+      "2025-09-30 00:00:00": 327000000.0,
+      "2026-09-30 00:00:00": 221971035.0
     },
-    "shares_outstanding_latest": 327000000.0,
+    "shares_outstanding_latest": 221971035.0,
     "share_dilution_yoy_change": null,
     "fundamental_periods": [
       "2025-09-30",
       "2026-09-30"
     ]
   },
-  "fetched_at": "2026-11-10T03:46:56.941858",
-  "extended_fetched_at": "2026-11-10T03:46:56.941858"
+  "fetched_at": "2026-11-19T02:48:09.192020",
+  "extended_fetched_at": "2026-11-19T02:48:09.192020"
 }
