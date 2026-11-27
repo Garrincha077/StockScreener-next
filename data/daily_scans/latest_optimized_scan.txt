@@ -1,15 +1,15 @@
 ================================================================================
 OPTIMIZED FULL MARKET SCAN - ALL US STOCKS
-Scan Date: 2026-11-26
-Generated: 2026-11-26 03:44:48
+Scan Date: 2026-11-27
+Generated: 2026-11-27 03:45:35
 ================================================================================
 
 SCANNING STATISTICS
 --------------------------------------------------------------------------------
 Total Universe: 3,737 stocks
 Analyzed: 1,977 stocks
-Processing Time: 0.4 minutes
-Actual TPS: 163.90
+Processing Time: 0.3 minutes
+Actual TPS: 211.76
 🟢 Error Rate: 0.00%
 🟢 Buy Signals: 388
 🔴 Sell Signals: 558
@@ -1401,7 +1401,42 @@ Overall Assessment:
 
 
 ################################################################################
-⭐ BUY #42: EVRG | Score: 99.7/125
+⭐ BUY #42: HMC | Score: 99.8/125
+################################################################################
+Phase: 2
+🟢 Entry Quality: Good
+Stop Loss: $32.65
+🟢 Risk/Reward: 10.0:1 (Risk $1.01, Reward $10.10)
+Breakout: $33.41
+🟡 RS: 0.096
+⭐ VCP: 5 contractions (last 4): 6.2% → 5.6% → 5.7% → 3.7% (quality: 82/100)
+
+Key Reasons:
+  • Weak Stage 2: 0.8% above 50 SMA
+  • SMAs rising strongly (50:0.133, 200:0.062)
+  • 🟡 50 SMA Breakout (low volume)
+  • 🟡 Revenue: 3Q avg 3.9% QoQ (8.9% → 4.1% → -1.4%)
+  • Inventory neutral (0.0% QoQ)
+  • Volume pattern neutral (ratio 1.09)
+  • Positive RS: 0.096
+
+============================================================
+FUNDAMENTAL SNAPSHOT - HMC
+============================================================
+✓ Revenue: Growing well (YoY: +12.9%, QoQ: -1.4%)
+  QoQ Trend (last 4Q): +1.0% → +8.9% → +4.1% → -1.4%
+• EPS: Data not available
+  QoQ Trend (last 4Q): N/A → N/A → N/A → N/A
+✗ Margins: CONTRACTING (14.6%, -7.6pp QoQ)
+• Inventory: Slight increase (+0.0% QoQ, ratio: 0.43)
+  Note: Detailed breakdown (raw/WIP/finished) not available via API
+
+Overall Assessment:
+⚠ Some concerns: margins contracting
+
+
+################################################################################
+⭐ BUY #43: EVRG | Score: 99.7/125
 ################################################################################
 Phase: 2
 🟢 Entry Quality: Good
@@ -1431,41 +1466,6 @@ FUNDAMENTAL SNAPSHOT - EVRG
 
 Overall Assessment:
 ✓ Fundamentals SUPPORT technical breakout
-
-
-################################################################################
-⭐ BUY #43: HMC | Score: 99.6/125
-################################################################################
-Phase: 2
-🟢 Entry Quality: Good
-Stop Loss: $32.65
-🟢 Risk/Reward: 10.0:1 (Risk $1.01, Reward $10.10)
-Breakout: $33.41
-🟡 RS: 0.096
-⭐ VCP: 5 contractions (last 4): 6.2% → 5.6% → 5.7% → 3.7% (quality: 82/100)
-
-Key Reasons:
-  • Weak Stage 2: 0.8% above 50 SMA
-  • SMAs rising strongly (50:0.133, 200:0.062)
-  • 🟡 50 SMA Breakout (low volume)
-  • 🟡 Revenue: 3Q avg 3.9% QoQ (8.9% → 4.1% → -1.4%)
-  • Inventory neutral (0.0% QoQ)
-  • Volume pattern neutral (ratio 1.07)
-  • Positive RS: 0.096
-
-============================================================
-FUNDAMENTAL SNAPSHOT - HMC
-============================================================
-✓ Revenue: Growing well (YoY: +12.9%, QoQ: -1.4%)
-  QoQ Trend (last 4Q): +1.0% → +8.9% → +4.1% → -1.4%
-• EPS: Data not available
-  QoQ Trend (last 4Q): N/A → N/A → N/A → N/A
-✗ Margins: CONTRACTING (14.6%, -7.6pp QoQ)
-• Inventory: Slight increase (+0.0% QoQ, ratio: 0.43)
-  Note: Detailed breakdown (raw/WIP/finished) not available via API
-
-Overall Assessment:
-⚠ Some concerns: margins contracting
 
 
 ################################################################################
@@ -1725,12 +1725,12 @@ TXNM, ABM, BEN, VIA, SWK, UVE, BDX, CCC, CCSI, GME
 LNTH, BATRK, CRL, QLYS, DSGX, DFIN, HOG, OMC, FIGS, SI
 CHH, CSL, ULBI, UNP, CRAI, VTRS, AOUT, EHC, DIN, MO
 FHI, WMK, BOBS, HQY, CBC, HCSG, DAL, MHK, LGND, STRC
-THG, LILA, CME, OGN, TENB, BUD, CL, SBH, PSA, VRNS
+THG, LILA, TENB, CME, OGN, BUD, CL, SBH, PSA, VRNS
 HCA, LLYVK, SAIL, TTC, SIRI, VLY, AVNT, BLMN, MSCI, TMO
 USPH, COKE, MSI, PAYC, CPK, INN, VRTX, DRH, SG, TRV
 MRSH, APOG, TTEK, AGYS, AIN, SRCE, WRB, CTKB, GDYN, IBEX
 MGRC, PSO, BLK, SKY, CATY, CBOE, FCN, MTD, UPBD, KRC
-SAFT, PGNY, ITT, SPG, SKWD, ACGL, MOH, LILAK, BOC, PPG
+ITT, SAFT, PGNY, SPG, SKWD, ACGL, MOH, LILAK, BOC, PPG
 DORM, CNMD, EVTC, MD, HHH, RHP, AEYE, JLL, PAYO, SAIC
 CRCT, HGTY, HZN, FDS, SJM, TASK, NDAQ, PVH, PRTH, STBA
 AES, CPF, BLKB, CGON, DRI, INDB, RLI, OABI, EGBN, SIGI
@@ -2246,12 +2246,12 @@ BKD, BKNG, BWXT, CACC, CASH, CCB, CENX, CGNX, CIM, CLB
 CMC, CMI, CMRE, COF, CRC, CRK, CTRN, CVS, DIOD, DRS
 ENS, EXE, FIG, FIS, FLY, FNB, FTAI, FTI, GAIN, GFS
 GHM, GLUE, HE, HLIO, HOV, HSAI, HXL, IDCC, IIIN, IMNM
-INVX, IPGP, JBL, KE, KLAC, KLIC, KMT, KNOP, KOP, LE
+INVX, IPGP, JBL, KE, KLIC, KLAC, KMT, KNOP, KOP, LE
 LEA, LFUS, LITE, LKQ, LMND, LNN, LOMA, LOPE, LPLA, LSCC
 MC, MCHP, MCRI, MEC, MKSI, MLYS, MTRX, MTX, MTZ, NGVT
 NLY, NMRK, NOV, NPKI, NREF, NXT, OCUL, OII, OIS, ON
-OPY, ORCL, ORN, PDFS, PEGA, RDDT, RMBS, ROCK, ROAD, SAH
-SD, SEG, SNDX, SXI, SYF, TFIN, TG, TYG, USLM, USNA
+OPY, ORCL, ORN, PDFS, PEGA, RDDT, RMBS, ROAD, ROCK, SAH
+SD, SEG, SNDX, SXI, SYF, TFIN, TG, TYG, USNA, USLM
 UTI, VITL, VPG, VRT, VSH, VTS, WAFD, WAL, WFRD, WLFC
 WMS, WSC, WYY, XRN, BIOA, NNE, SSRM, SSYS, ADBE, AKAM
 ALK, ARE, ATRO, AVGO, AX, AZZ, BCRX, BDC, BEAM, BELFB

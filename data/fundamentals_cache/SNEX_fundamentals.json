@@ -1,28 +1,30 @@
 {
   "data": {
     "ticker": "SNEX",
-    "fetch_date": "2026-11-19T02:49:35.532218",
+    "fetch_date": "2026-11-27T03:48:16.805284",
     "quarterly_revenue": {
       "2025-06-30 00:00:00": 34828800000.0,
       "2025-09-30 00:00:00": 32723400000.0,
       "2025-12-31 00:00:00": 39029900000.0,
       "2026-03-31 00:00:00": 45760900000.0,
-      "2026-06-30 00:00:00": 40193000000.0
+      "2026-06-30 00:00:00": 40193000000.0,
+      "2026-09-30 00:00:00": NaN
     },
-    "revenue_qoq_change": -12.16737433048738,
-    "revenue_yoy_change": 15.401621646453508,
+    "revenue_qoq_change": null,
+    "revenue_yoy_change": null,
     "quarterly_eps": {
-      "2025-06-30 00:00:00": 0.542222,
+      "2025-06-30 00:00:00": NaN,
       "2025-09-30 00:00:00": 1.046667,
       "2025-12-31 00:00:00": 1.666667,
       "2026-03-31 00:00:00": 2.07,
-      "2026-06-30 00:00:00": 0.666667
+      "2026-06-30 00:00:00": 0.666667,
+      "2026-09-30 00:00:00": 0.66
     },
-    "eps_qoq_change": -67.79386473429952,
-    "eps_yoy_change": 22.95093153726703,
-    "gross_margin": 2.2,
-    "margin_change": 0.09,
-    "operating_margin": 1.68,
+    "eps_qoq_change": -1.0000494999752467,
+    "eps_yoy_change": -36.942695241179855,
+    "gross_margin": NaN,
+    "margin_change": NaN,
+    "operating_margin": NaN,
     "quarterly_inventory": {
       "2025-03-31 00:00:00": NaN,
       "2025-06-30 00:00:00": 705400000.0,
@@ -32,7 +34,7 @@
       "2026-06-30 00:00:00": 1165500000.0
     },
     "inventory_qoq_change": 12.2,
-    "inventory_to_sales_ratio": 0.029,
+    "inventory_to_sales_ratio": NaN,
     "inventory_breakdown_available": false,
     "extended_fundamentals_model": "upstream-yfinance-additive-v1",
     "fundamental_data_source": "yfinance",
@@ -102,9 +104,10 @@
       "2025-09-30",
       "2025-12-31",
       "2026-03-31",
-      "2026-06-30"
+      "2026-06-30",
+      "2026-09-30"
     ]
   },
-  "fetched_at": "2026-11-19T02:49:35.578193",
-  "extended_fetched_at": "2026-11-19T02:49:35.578193"
+  "fetched_at": "2026-11-27T03:48:16.841592",
+  "extended_fetched_at": "2026-11-27T03:48:16.841592"
 }
