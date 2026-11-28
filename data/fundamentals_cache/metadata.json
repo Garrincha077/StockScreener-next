@@ -1816,7 +1816,7 @@
     "in_earnings_season": false
   },
   "RMNI": {
-    "last_updated": "2026-11-17T04:09:28.287294",
+    "last_updated": "2026-11-28T03:28:21.774413",
     "in_earnings_season": false
   },
   "RXO": {
@@ -7913,6 +7913,14 @@
   },
   "STRK": {
     "last_updated": "2026-11-26T03:45:09.964927",
+    "in_earnings_season": false
+  },
+  "MWH": {
+    "last_updated": "2026-11-28T03:27:52.985875",
+    "in_earnings_season": false
+  },
+  "APC": {
+    "last_updated": "2026-11-28T03:28:09.796403",
     "in_earnings_season": false
   }
 }
